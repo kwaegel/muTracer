@@ -28,7 +28,7 @@ cycleColors(	const		float		time,
 
 	int2 size = get_image_dim(outputImage);
 
-	float4 color;
+	float4 color = backgroundColor;
 
 	color.x = (((float)coord.x) / size.x) * native_sin(((float)coord.x)/20.0f + time*10.0f);
 	color.y = ((float)coord.y) / size.y * native_sin(time*2.0f);
@@ -36,9 +36,9 @@ cycleColors(	const		float		time,
 	color.w = 0.0f;
 	
 	float factor = 1.5f-(color.x + color.y) /2.0f;
-
+	
 	color.x *= copysign(native_sin(time), 1.0f) * factor;
-	color.y *= copysign(native_sin(time+3.141592635f), 1.0f) * factor;
+	color.y *= copysign(native_sin(time+3.141592f), 1.0f) * factor;
 
 	write_imagef(outputImage, coord, color);
 }";

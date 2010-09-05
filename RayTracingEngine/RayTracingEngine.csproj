@@ -20,7 +20,7 @@
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
     <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <DefineConstants>TRACE;DEBUG</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -69,7 +69,6 @@
     <Compile Include="Driver\Game.cs" />
     <None Include="Driver\Program.cs" />
     <None Include="Driver\RayTracingDriver.cs" />
-    <None Include="libraries\TexLib.cs" />
     <Compile Include="Math\Vector3i.cs" />
     <None Include="MuxEngineGL\Movables\Bone.cs" />
     <None Include="MuxEngineGL\LinearAlgebra\EulerAngles.cs" />

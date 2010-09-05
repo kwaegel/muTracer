@@ -129,8 +129,8 @@ namespace Raytracing.Driver
 			//_rtCamera.rotateAboutPoint(Vector3.Zero, Vector3.UnitX, 30f);
 
 			_clCamera = new CLCamera(ClientRectangle, _commandQueue);
-			_clCamera.Position = _rtCamera.Position;
-			_clCamera.Rotation = _rtCamera.Rotation;
+			//_clCamera.Position = _rtCamera.Position;
+			//_clCamera.Rotation = _rtCamera.Rotation;
 
 			// create the scene
 			_scene = new GridScene(16, 1);
