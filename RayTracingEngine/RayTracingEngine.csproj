@@ -85,6 +85,7 @@
     <None Include="MuxEngineGL\Movables\SimpleModel.cs" />
     <None Include="MuxEngineGL\Movables\SingleMeshModel.cs" />
     <None Include="MuxEngineGL\Movables\ThirdPersonCamera.cs" />
+    <None Include="clCameraCode.cl" />
     <None Include="Primitives\Box.cs" />
     <None Include="Primitives\Plane.cs" />
     <Compile Include="Primitives\AbstractPrimitive.cs" />
