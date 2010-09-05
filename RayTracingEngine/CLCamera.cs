@@ -38,6 +38,9 @@ cycleColors(	const		float		time,
 	float factor = 1.5f-(color.x + color.y) /2.0f;
 	
 	color.x *= copysign(native_sin(time), 1.0f) * factor;
+
+	// Oddly enough, the number of digits of PI in this line can cause an InvalidBinaryException...
+	// For example, 3.141592 works, but 3.14159 and 3.14159263 do not.
 	color.y *= copysign(native_sin(time+3.141592f), 1.0f) * factor;
 
 	write_imagef(outputImage, coord, color);
