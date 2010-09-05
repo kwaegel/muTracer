@@ -1,0 +1,117 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">x86</Platform>
+    <ProductVersion>8.0.30703</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{EE3AFA0B-E1C2-4468-B042-FBBF71D4F483}</ProjectGuid>
+    <OutputType>Exe</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>Raytracing</RootNamespace>
+    <AssemblyName>RayTracingEngine</AssemblyName>
+    <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <TargetFrameworkProfile>Mono</TargetFrameworkProfile>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
+    <PlatformTarget>x86</PlatformTarget>
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup>
+    <StartupObject>Raytracing.Driver.Game</StartupObject>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Core">
+    </Reference>
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Data.DataSetExtensions">
+    </Reference>
+    <Reference Include="System.Data" />
+    <Reference Include="Cloo, Version=0.7.3.0, Culture=neutral, PublicKeyToken=null">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\Cloo.dll</HintPath>
+    </Reference>
+    <Reference Include="Mono.Simd, Version=2.0.0.0, Culture=neutral, PublicKeyToken=0738eb9f132ed756">
+      <HintPath>..\..\..\..\..\..\..\Program Files %28x86%29\Mono-2.6.7\lib\mono\2.0\Mono.Simd.dll</HintPath>
+    </Reference>
+    <Reference Include="OpenTK, Version=1.0.0.201, Culture=neutral, PublicKeyToken=bad199fe84eb3df4">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\..\..\Downloads\Development\OpenTK\1.0 - Updated\Binaries\OpenTK\Release\OpenTK.dll</HintPath>
+    </Reference>
+    <Reference Include="OpenTK.GLControl, Version=1.0.0.201, Culture=neutral, PublicKeyToken=bad199fe84eb3df4">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\..\..\Downloads\Development\OpenTK\1.0 - Updated\Binaries\OpenTK\Release\OpenTK.GLControl.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="BoundingVolumes\AxisAlignedBoundingBox.cs" />
+    <Compile Include="CLCamera.cs" />
+    <Compile Include="Timer.cs" />
+    <None Include="BoundingVolumes\Frustum.cs" />
+    <Compile Include="Driver\Game.cs" />
+    <None Include="Driver\Program.cs" />
+    <None Include="Driver\RayTracingDriver.cs" />
+    <None Include="libraries\TexLib.cs" />
+    <Compile Include="Math\Vector3i.cs" />
+    <None Include="MuxEngineGL\Movables\Bone.cs" />
+    <None Include="MuxEngineGL\LinearAlgebra\EulerAngles.cs" />
+    <Compile Include="MuxEngineGL\LinearAlgebra\EVector3.cs" />
+    <Compile Include="MuxEngineGL\LinearAlgebra\Matrix3.cs" />
+    <Compile Include="MuxEngineGL\LinearAlgebra\Matrix4.cs" />
+    <Compile Include="MuxEngineGL\Movables\Camera.cs" />
+    <None Include="MuxEngineGL\Movables\CastableModel.cs" />
+    <None Include="MuxEngineGL\Movables\FirstPersonCamera.cs" />
+    <Compile Include="MuxEngineGL\Movables\IMovable.cs" />
+    <Compile Include="MuxEngineGL\Movables\Movable.cs" />
+    <None Include="MuxEngineGL\Movables\MovableModel.cs" />
+    <None Include="MuxEngineGL\Movables\MovableQuat.cs" />
+    <None Include="MuxEngineGL\Movables\SimpleModel.cs" />
+    <None Include="MuxEngineGL\Movables\SingleMeshModel.cs" />
+    <None Include="MuxEngineGL\Movables\ThirdPersonCamera.cs" />
+    <None Include="Primitives\Box.cs" />
+    <None Include="Primitives\Plane.cs" />
+    <Compile Include="Primitives\AbstractPrimitive.cs" />
+    <Compile Include="Primitives\Ray.cs" />
+    <Compile Include="Primitives\SceneObjects.cs" />
+    <Compile Include="Primitives\Sphere.cs" />
+    <None Include="Primitives\Triangle.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <None Include="RayCastingUtils.cs" />
+    <Compile Include="RayTracingCamera.cs" />
+    <Compile Include="SceneStructures\GridScene.cs" />
+    <None Include="SceneStructures\LinearScene.cs" />
+    <None Include="SceneStructures\OctreeScene.cs" />
+    <Compile Include="SceneStructures\Scene.cs" />
+    <None Include="SceneStructures\SimpleScene.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="app.config" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>
