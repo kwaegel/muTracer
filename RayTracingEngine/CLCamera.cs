@@ -30,9 +30,9 @@ cycleColors(	const		float		time,
 
 	float4 color;
 
-	color.x = 0.2f;
-	color.y = (0.5f;
-	color.z = 0.4f;
+	color.x = (((float)coord.x) / size.x) * native_sin(((float)coord.x)/20.0f + time*10.0f);
+	color.y = ((float)coord.y) / size.y * native_sin(time*2.0f);
+	color.z = backgroundColor.z;
 	color.w = 0.0f;
 	
 	float factor = 1.5f-(color.x + color.y) /2.0f;
@@ -41,82 +41,83 @@ cycleColors(	const		float		time,
 	color.y *= copysign(native_sin(time+3.141592635f), 1.0f) * factor;
 
 	write_imagef(outputImage, coord, color);
-}
-
-kernel void render (	const		float4		cameraPosition,
-						const		float16		unprojectionMatrix,
-						write_only	image2d_t	outputImage)
-{
-	int2 coord = (int2)(get_global_id(0), get_global_id(1));
-	int2 size = get_image_dim(outputImage);
-
-	// convert to normilized device coordinates
-	float2 screenPoint2d = 2.0f * coord / size - 1.0f;
-
-	// unproject screen point to world
-	float4 screenPoint = (float4)(screenPoint2d.x, screenPoint2d.y, 0.0f, 1.0f);
-	float4 rayOrigin = transformPre(unprojectionMatrix, screenPoint);
-	rayOrigin.w = 1;
-	float4 rayDirection = native_normalize(rayOrigin, cameraPosition);
-
-	// create test sphere
-	float radius = 1;
-	float4 spherePosition = (float4)(0.0f, 0.0f, 0.0f, 1.0f);
-
-	// cast ray
-	float4 color;
-	float t = raySphereIntersect(rayOrigin, rayDirection, 
-
-	if (t > 0)
-	{
-		float4 collisionPoint = origin + minT * direction;
-		float4 surfaceNormal = collisionPoint - center;
-		surfaceNormal = normalize(surfaceNormal);
-		
-		color = (float4)(1.0f, 0.0f, 0.0f, 0.0f);
-	}
-
-	write_imagef(outputImage, coord, color);
-}
-
-// transfrom a vector by a row-major matrix
-float4 transformPre(	__private	float4*		transform, 
-						__private	float4		vector)
-{
-	float4 result;
-	result.x = dot(vector, transform[0]);
-	result.y = dot(vector, transform[2]);
-	result.z = dot(vector, transform[3]);
-	result.w = dot(vector, transform[4]);
-
-	// homogeneous divide to normalize scale
-	result /= result.w;
-
-	return result;
-}
-
-
-float raySphereIntersect(	private float4	origin, 
-							private float4	direction, 
-							private float4	center, 
-							private float	radius)
-{
-	float4 originSubCenter = origin - center;
-
-	float b = dot(direction, originSubCenter);
-	float c = dot(originSubCenter, originSubCenter) - radius * radius;
-
-	float sqrtBC = native_sqrt(b * b - c);
-	// if sqrtBC < 0, ray misses sphere
-
-	float tPos = -b + sqrtBC;
-	float tNeg = -b - sqrtBC;
-
-	float minT = min(tPos, tNeg);
-
-	return minT;
-}
-";
+}";
+//
+//kernel void render (	const		float4		cameraPosition,
+//						const		float16		unprojectionMatrix,
+//						write_only	image2d_t	outputImage)
+//{
+//	int2 coord = (int2)(get_global_id(0), get_global_id(1));
+//	int2 size = get_image_dim(outputImage);
+//
+//	// convert to normilized device coordinates
+//	float2 screenPoint2d = (float2)(2.0f, 2.0f) * convert_float2(coord) / convert_float2(size) - (float2)(1.0f, 1.0f);
+//
+//	// unproject screen point to world
+//	float4 screenPoint = (float4)(screenPoint2d.x, screenPoint2d.y, 0.0f, 1.0f);
+//	float4 rayOrigin;// = 
+//	transformVector(unprojectionMatrix, screenPoint);
+//	rayOrigin.w = 1;
+//	float4 rayDirection = native_normalize(rayOrigin, cameraPosition);
+//
+//	// create test sphere
+//	float radius = 1;
+//	float4 spherePosition = (float4)(0.0f, 0.0f, 0.0f, 1.0f);
+//
+//	// cast ray
+//	float4 color;
+//	float t = raySphereIntersect(rayOrigin, rayDirection, spherePosition, radius);
+//
+//	if (t > 0)
+//	{
+//		float4 collisionPoint = rayOrigin + t * rayDirection;
+//		float4 surfaceNormal = collisionPoint - spherePosition;
+//		surfaceNormal = normalize(surfaceNormal);
+//		
+//		color = (float4)(1.0f, 0.0f, 0.0f, 0.0f);
+//	}
+//
+//	write_imagef(outputImage, coord, color);
+//}
+//
+//// transfrom a vector by a row-major matrix
+//float4 transformVector(	__private	float4*		transform, 
+//					__private	float4		vector)
+//{
+//	float4 result;
+//	result.x = dot(vector, transform[0]);
+//	result.y = dot(vector, transform[2]);
+//	result.z = dot(vector, transform[3]);
+//	result.w = dot(vector, transform[4]);
+//
+//	// homogeneous divide to normalize scale
+//	result /= result.w;
+//
+//	return result;
+//}
+//
+//
+//private float raySphereIntersect(	private float4	origin, 
+//							private float4	direction, 
+//							private float4	center, 
+//							private float	radius)
+//{
+//	float4 originSubCenter = origin - center;
+//
+//	float b = dot(direction, originSubCenter);
+//	float c = dot(originSubCenter, originSubCenter) - radius * radius;
+//
+//	float sqrtBC = native_sqrt(b * b - c);
+//	// if sqrtBC < 0, ray misses sphere
+//
+//	float tPos = -b + sqrtBC;
+//	float tNeg = -b - sqrtBC;
+//
+//	float minT = min(tPos, tNeg);
+//
+//	return minT;
+//}
+//";
 
 		#endregion
 
@@ -152,18 +153,20 @@ float raySphereIntersect(	private float4	origin,
 		public CLCamera(Rectangle clientBounds, ComputeCommandQueue commandQueue, MuxEngine.LinearAlgebra.Matrix4 transform)
 			: base(clientBounds, transform)
 		{
-			rayTracingInit();
+			rayTracingInit(commandQueue);
 		}
 
 		public CLCamera(Rectangle clientBounds, ComputeCommandQueue commandQueue, 
 			Vector3 forward, Vector3 up, Vector3 position)
 			: base (clientBounds, forward, up, position)
 		{
-			rayTracingInit();
+			rayTracingInit(commandQueue);
 		}
 
-		private void rayTracingInit()
+		private void rayTracingInit(ComputeCommandQueue commandQueue)
 		{
+			_commandQueue = commandQueue;
+
 			createSharedTexture();
 
 			buildOpenCLProgram();
@@ -195,11 +198,19 @@ float raySphereIntersect(	private float4	origin,
 			}
 			catch (BuildProgramFailureComputeException ex)
 			{
-
 				String buildLog = _clProgram.GetBuildLog(_commandQueue.Device);
 				System.Diagnostics.Trace.WriteLine(buildLog);
 
-				throw ex;
+				// Unable to handle error. Terminate application.
+				Environment.Exit(-1);
+			}
+			catch (InvalidBuildOptionsComputeException ex)
+			{
+				String buildLog = _clProgram.GetBuildLog(_commandQueue.Device);
+				System.Diagnostics.Trace.WriteLine(buildLog);
+
+				// Unable to handle error. Terminate application.
+				Environment.Exit(-1);
 			}
 		}
 
@@ -287,19 +298,19 @@ float raySphereIntersect(	private float4	origin,
 		public void render(Scene scene, float time)
 		{
 			// Raytrace the scene and render to a texture
-			renderSceneToTexture();
+			renderSceneToTexture(time);
 
 			// Draw the texture to the screen.
-			drawBaseTexture();
+			drawTextureToScreen();
 		}
 
-		private void renderSceneToTexture()
+		private void renderSceneToTexture(float time)
 		{
 			// aquire openGL objects
 			GL.Finish();
 			_commandQueue.AcquireGLObjects(_sharedObjects, null);
 
-			_renderKernel.SetValueArgument<float>(0, (float)_totalTime);
+			_renderKernel.SetValueArgument<float>(0, time);	// test value
 			_renderKernel.SetValueArgument<Color4>(1, Color4.DarkBlue);
 			_renderKernel.SetMemoryArgument(2, _renderTarget);
 			
@@ -314,7 +325,7 @@ float raySphereIntersect(	private float4	origin,
 		/// Draw the texture that OpenCL renders into using a full-viewport quad. Drawn 
 		/// at z=1 so it is behind all other elements.
 		/// </summary>
-		private void drawBaseTexture()
+		private void drawTextureToScreen()
 		{
 			GL.Color4(Color4.Transparent);		// No blend Color.
 

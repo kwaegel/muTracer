@@ -1,6 +1,10 @@
 // Released to the public domain. Use, modify and relicense at will.
 
 using System;
+using System.Collections.Generic;
+using System.Runtime.InteropServices;
+
+using Mono.Simd;
 
 using OpenTK;
 using OpenTK.Graphics;
@@ -9,7 +13,7 @@ using OpenTK.Audio;
 using OpenTK.Audio.OpenAL;
 using OpenTK.Input;
 
-using Mono.Simd;
+using Cloo;
 
 using Raytracing.SceneStructures;
 using Raytracing.Primitives;
@@ -18,14 +22,17 @@ namespace Raytracing.Driver
 {
     class Game : GameWindow
     {
+		
 
 #if DEBUG
 		private static readonly bool limitFrames = true;
 #else
 		private static readonly bool limitFrames = false;
 #endif
-		private int _frameLimit = 1;
-		
+		private int _frameLimit = 500;
+
+		#region Constants
+
 		public static readonly Vector3 Forward = -Vector3.UnitZ;
 		public static readonly Vector3 Backward = Vector3.UnitZ;
 		public static readonly Vector3 Left = -Vector3.UnitX;
@@ -36,16 +43,42 @@ namespace Raytracing.Driver
 		private static float CameraMovementSpeed = 0.3f;	// in units
 		private static float CameraRotationSpeed = 5f;	// in degrees
 
-		RayTracingCamera _rtCamera;
-		
-		private int _frames = 0;
+		#endregion
 
+		#region Game properties
+
+		private int _frames = 0;
+		double _totalTime = 0;
+
+		#endregion
+
+		#region OpenCL-OpenGL properties
+
+		// Platform invoke required for OpenCL-OpenGL interop setup.
+		[DllImport("opengl32.dll")]
+		extern static IntPtr wglGetCurrentDC();
+
+		ComputeContext _context;
+		IGraphicsContextInternal _glContext;
+		ComputeContext _computeContext;
+		ComputeCommandQueue _commandQueue;
+
+		#endregion
+
+		#region Cameras
+
+		RayTracingCamera _rtCamera;
+		CLCamera _clCamera;	// test camera using OpenCL
+
+		#endregion	
+
+		#region Scene structures
 		Scene _scene;
 		PointLight _light;
 
-		double _totalTime = 0;
+		#endregion
 
-        /// <summary>Creates a window with the specified title.</summary>
+		/// <summary>Creates a window with the specified title.</summary>
         public Game()
             : base(400, 400, GraphicsMode.Default, "Raytracing tester")
         {
@@ -71,6 +104,8 @@ namespace Raytracing.Driver
 
 		}
 
+		#region onLoad
+
         /// <summary>Load resources here.</summary>
         /// <param name="e">Not used.</param>
         protected override void OnLoad(EventArgs e)
@@ -79,6 +114,8 @@ namespace Raytracing.Driver
 
 			GL.ClearColor(Color4.Black);
             GL.Enable(EnableCap.DepthTest);
+
+			openCLSharedInit();
 
 			// create the camera
 			// looking down the Z-axis into the scene
@@ -91,6 +128,10 @@ namespace Raytracing.Driver
 			_rtCamera.setRotation(cameraRotation);
 			//_rtCamera.rotateAboutPoint(Vector3.Zero, Vector3.UnitX, 30f);
 
+			_clCamera = new CLCamera(ClientRectangle, _commandQueue);
+			_clCamera.Position = _rtCamera.Position;
+			_clCamera.Rotation = _rtCamera.Rotation;
+
 			// create the scene
 			_scene = new GridScene(16, 1);
 			_scene.BackgroundColor = Color4.Black;
@@ -100,7 +141,29 @@ namespace Raytracing.Driver
 			//buildXYZScene(_scene);
         }
 
-		#region onLoad
+		// Create a sharde context between OpenGL and OpenCL. 
+		private void openCLSharedInit()
+		{
+			// select OpenCL device and platform
+			ComputePlatform platform = ComputePlatform.Platforms[0];
+			ComputeDevice device = platform.Devices[0];
+
+
+			IntPtr curDC = wglGetCurrentDC();
+
+			_glContext = (OpenTK.Graphics.IGraphicsContextInternal)OpenTK.Graphics.GraphicsContext.CurrentContext;
+			IntPtr raw_context_handle = _glContext.Context.Handle;
+			ComputeContextProperty p1 = new ComputeContextProperty(ComputeContextPropertyName.CL_GL_CONTEXT_KHR, raw_context_handle);
+			ComputeContextProperty p2 = new ComputeContextProperty(ComputeContextPropertyName.CL_WGL_HDC_KHR, curDC);
+			ComputeContextProperty p3 = new ComputeContextProperty(ComputeContextPropertyName.Platform, platform.Handle);
+			List<ComputeContextProperty> props = new List<ComputeContextProperty>() { p1, p2, p3 };
+			ComputeContextPropertyList Properties = new ComputeContextPropertyList(props);
+
+			_computeContext = new ComputeContext(ComputeDeviceTypes.Gpu, Properties, null, IntPtr.Zero);
+
+			//Create the command queue from the context and device
+			_commandQueue = new ComputeCommandQueue(_computeContext, device, ComputeCommandQueueFlags.None);
+		}
 
 		private void buildXYZScene(Scene scene)
 		{
@@ -169,10 +232,16 @@ namespace Raytracing.Driver
 			_rtCamera.setClientBounds(ClientRectangle);
 			_rtCamera.computeProjection();
 
-			GL.Viewport(ClientRectangle.X, ClientRectangle.Y, ClientRectangle.Width, ClientRectangle.Height);
-			Matrix4 projection = Matrix4.CreatePerspectiveFieldOfView(OpenTK.MathHelper.Pi / 4, Width / (float)Height, 1.0f, 64.0f);
 			GL.MatrixMode(MatrixMode.Projection);
-			GL.LoadMatrix(ref projection);
+			GL.Viewport(0, 0, ClientRectangle.Width, ClientRectangle.Height);
+
+			// orthographic projection
+			GL.LoadIdentity();
+			GL.Ortho(0, ClientRectangle.Width, 0, ClientRectangle.Height, -1, 1);
+
+			// perspective projection
+			//Matrix4 projection = Matrix4.CreatePerspectiveFieldOfView(OpenTK.MathHelper.Pi / 4, Width / (float)Height, 1.0f, 64.0f);
+			//GL.LoadMatrix(ref projection);
         }
 
         /// <summary>
@@ -288,8 +357,9 @@ namespace Raytracing.Driver
 
 			// raytrace the scene
 			Timer.start();
-			_rtCamera.computeView();
-			_rtCamera.render(_scene);
+			//_rtCamera.computeView();
+			//_rtCamera.render(_scene);
+			_clCamera.render(_scene, (float)_totalTime);
 			Timer.stop();
 
 			// display the new frame
