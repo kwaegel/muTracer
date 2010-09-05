@@ -25,11 +25,11 @@ namespace Raytracing.Driver
 		
 
 #if DEBUG
-		private static readonly bool limitFrames = true;
+		private static readonly bool limitFrames = false;
 #else
 		private static readonly bool limitFrames = false;
 #endif
-		private int _frameLimit = 500;
+		private int _frameLimit = 1;
 
 		#region Constants
 
@@ -119,7 +119,7 @@ namespace Raytracing.Driver
 
 			// create the camera
 			// looking down the Z-axis into the scene
-			Vector3 cameraPosition = new Vector3(0, 0, 3f);
+			Vector3 cameraPosition = new Vector3(0, 0, -3f);
 			Quaternion cameraRotation = Quaternion.Identity;
 
 			_rtCamera = new RayTracingCamera(ClientRectangle, (-Vector3.UnitZ), Vector3.UnitY, cameraPosition);
@@ -129,8 +129,8 @@ namespace Raytracing.Driver
 			//_rtCamera.rotateAboutPoint(Vector3.Zero, Vector3.UnitX, 30f);
 
 			_clCamera = new CLCamera(ClientRectangle, _commandQueue);
-			//_clCamera.Position = _rtCamera.Position;
-			//_clCamera.Rotation = _rtCamera.Rotation;
+			_clCamera.Position = _rtCamera.Position;
+			_clCamera.Rotation = _rtCamera.Rotation;
 
 			// create the scene
 			_scene = new GridScene(16, 1);
@@ -275,58 +275,61 @@ namespace Raytracing.Driver
 				this.Exit();
 			}
 
+			//MuxEngine.Movables.Camera currentCamera = _rtCamera;
+			MuxEngine.Movables.Camera currentCamera = _clCamera;
+
 			if (Keyboard[Key.A])
 			{
-				_rtCamera.moveLocal(Left, CameraMovementSpeed);
+				currentCamera.moveLocal(Left, CameraMovementSpeed);
 			}
 			else if (Keyboard[Key.E])
 			{
-				_rtCamera.moveLocal(Right, CameraMovementSpeed);
+				currentCamera.moveLocal(Right, CameraMovementSpeed);
 			}
 			
 			if (Keyboard[Key.Comma])
 			{
-				_rtCamera.moveLocal(Forward, CameraMovementSpeed);
+				currentCamera.moveLocal(Forward, CameraMovementSpeed);
 			}
 			else if (Keyboard[Key.O])
 			{
-				_rtCamera.moveLocal(Backward, CameraMovementSpeed);
+				currentCamera.moveLocal(Backward, CameraMovementSpeed);
 			}
 			
 			if (Keyboard[Key.Period])
 			{
-				_rtCamera.moveLocal(Up, CameraMovementSpeed);
+				currentCamera.moveLocal(Up, CameraMovementSpeed);
 			}
 			else if (Keyboard[Key.J])
 			{
-				_rtCamera.moveLocal(Down, CameraMovementSpeed);
+				currentCamera.moveLocal(Down, CameraMovementSpeed);
 			}
 
 			if (Keyboard[Key.Keypad4])
 			{
-				_rtCamera.yaw(CameraRotationSpeed);
+				currentCamera.yaw(CameraRotationSpeed);
 			}
 			else if (Keyboard[Key.Keypad6])
 			{
-				_rtCamera.yaw(-CameraRotationSpeed);
+				currentCamera.yaw(-CameraRotationSpeed);
 			}
 
 			if (Keyboard[Key.Keypad8])
 			{
-				_rtCamera.pitch(CameraRotationSpeed);
+				currentCamera.pitch(CameraRotationSpeed);
 			}
 			else if (Keyboard[Key.Keypad2])
 			{
-				_rtCamera.pitch(-CameraRotationSpeed);
+				currentCamera.pitch(-CameraRotationSpeed);
 			}
 
 			if (Keyboard[Key.Keypad7])
 			{
-				_rtCamera.roll(-CameraRotationSpeed);
+				currentCamera.roll(-CameraRotationSpeed);
 			}
 			else if (Keyboard[Key.Keypad9])
 			{
-				_rtCamera.roll(CameraRotationSpeed);
+				currentCamera.roll(CameraRotationSpeed);
 			}
 
 			//_rtCamera.rotateAboutPoint(Vector3.Zero, Vector3.UnitY, 2f);
@@ -355,12 +358,15 @@ namespace Raytracing.Driver
 			// clear the screen
             GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
 
-			// raytrace the scene
-			Timer.start();
+			// render the scene
+			_clCamera.render(_scene, (float)_totalTime);
+
+			//// raytrace the scene
+			//Timer.start();
 			//_rtCamera.computeView();
 			//_rtCamera.render(_scene);
-			_clCamera.render(_scene, (float)_totalTime);
-			Timer.stop();
+			//System.Diagnostics.Trace.Write("Frame " + _frames + " ");
+			//Timer.stop();
 
 			// display the new frame
             SwapBuffers();

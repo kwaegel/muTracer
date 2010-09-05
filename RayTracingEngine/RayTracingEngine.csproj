@@ -67,6 +67,9 @@
     <Compile Include="Timer.cs" />
     <None Include="BoundingVolumes\Frustum.cs" />
     <Compile Include="Driver\Game.cs" />
+    <None Include="CycleColors.cl">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Include="Driver\Program.cs" />
     <None Include="Driver\RayTracingDriver.cs" />
     <Compile Include="Math\Vector3i.cs" />
@@ -85,7 +88,9 @@
     <None Include="MuxEngineGL\Movables\SimpleModel.cs" />
     <None Include="MuxEngineGL\Movables\SingleMeshModel.cs" />
     <None Include="MuxEngineGL\Movables\ThirdPersonCamera.cs" />
-    <None Include="clCameraCode.cl" />
+    <None Include="clCameraCode.cl">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Include="Primitives\Box.cs" />
     <None Include="Primitives\Plane.cs" />
     <Compile Include="Primitives\AbstractPrimitive.cs" />

@@ -1,6 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Drawing;
+using System.IO;
+using System.Collections.Generic;
+
 
 using Cloo;
 
@@ -15,111 +17,6 @@ namespace Raytracing
 {
 	class CLCamera : MuxEngine.Movables.Camera
 	{
-		#region OpenCL program code
-
-		static string _GPUraytracingSource = @"
-// transfrom a vector by a row-major matrix
-float4 transformVector(	__private	float4*		transform, 
-						__private	float4		vector)
-{
-	float4 result;
-	result.x = dot(vector, transform[0]);
-	result.y = dot(vector, transform[2]);
-	result.z = dot(vector, transform[3]);
-	result.w = dot(vector, transform[4]);
-
-	// homogeneous divide to normalize scale
-	result /= result.w;
-
-	return result;
-}
-
-float raySphereIntersect(	private float4	origin, 
-							private float4	direction, 
-							private float4	center, 
-							private float	radius)
-{
-	float4 originSubCenter = origin - center;
-
-	float b = dot(direction, originSubCenter);
-	float c = dot(originSubCenter, originSubCenter) - radius * radius;
-
-	float sqrtBC = native_sqrt(b * b - c);
-	// if sqrtBC < 0, ray misses sphere
-
-	float tPos = -b + sqrtBC;
-	float tNeg = -b - sqrtBC;
-
-	float minT = min(tPos, tNeg);
-
-	return minT;
-}
-
-kernel void
-cycleColors(	const		float		time,
-				const		float4		backgroundColor,
-				write_only	image2d_t	outputImage)
-{
-	int2 coord = (int2)(get_global_id(0), get_global_id(1));
-
-	int2 size = get_image_dim(outputImage);
-
-	float4 color = backgroundColor;
-
-	color.x = (((float)coord.x) / size.x) * native_sin(((float)coord.x)/20.0f + time*10.0f);
-	color.y = ((float)coord.y) / size.y * native_sin(time*2.0f);
-	color.z = backgroundColor.z;
-	color.w = 0.0f;
-	
-	float factor = 1.5f-(color.x + color.y) /2.0f;
-	
-	color.x *= copysign(native_sin(time), 1.0f) * factor;
-
-	// Oddly enough, the number of digits of PI in this line can cause an InvalidBinaryException...
-	// For example, 3.141592 works, but 3.14159 and 3.14159263 do not.
-	color.y *= copysign(native_sin(time+3.141592f), 1.0f) * factor;
-
-	write_imagef(outputImage, coord, color);
-}
-
-kernel void render (	const		float4		cameraPosition,
-						const		float16		unprojectionMatrix,
-						write_only	image2d_t	outputImage)
-{
-	int2 coord = (int2)(get_global_id(0), get_global_id(1));
-	int2 size = get_image_dim(outputImage);
-
-	// convert to normilized device coordinates
-	float2 screenPoint2d = (float2)(2.0f, 2.0f) * convert_float2(coord) / convert_float2(size) - (float2)(1.0f, 1.0f);
-
-	// unproject screen point to world
-	float4 screenPoint = (float4)(screenPoint2d.x, screenPoint2d.y, 0.0f, 1.0f);
-	float4 rayOrigin = transformVector(unprojectionMatrix, screenPoint);
-	rayOrigin.w = 1;
-	float4 rayDirection = fast_normalize(rayOrigin - cameraPosition);
-
-	// create test sphere
-	float radius = 1;
-	float4 spherePosition = (float4)(0.0f, 0.0f, 0.0f, 1.0f);
-
-	// cast ray
-	float4 color;
-	float t = raySphereIntersect(rayOrigin, rayDirection, spherePosition, radius);
-
-	if (t > 0)
-	{
-		float4 collisionPoint = rayOrigin + t * rayDirection;
-		float4 surfaceNormal = collisionPoint - spherePosition;
-		surfaceNormal = normalize(surfaceNormal);
-		
-		color = (float4)(1.0f, 0.0f, 0.0f, 0.0f);
-	}
-
-	write_imagef(outputImage, coord, color);
-}
-";
-
-		#endregion
 
 		#region Fields
 
@@ -140,6 +37,7 @@ kernel void render (	const		float4		cameraPosition,
 
 		ComputeProgram _clProgram;
 		ComputeKernel _renderKernel;
+		ComputeKernel _testKernel;
 
 		#endregion
 
@@ -184,19 +82,26 @@ kernel void render (	const		float4		cameraPosition,
 
 		private void buildOpenCLProgram()
 		{
-			//build and compile an OpenCL program to change screen colors
+			// Load the OpenCL clSource code
+			//StreamReader sourceReader = new StreamReader("CycleColors.cl");
+			StreamReader sourceReader = new StreamReader("clCameraCode.cl");
+			String clSource = sourceReader.ReadToEnd();
+
+			// Build and compile the OpenCL program
 			_renderKernel = null;
-			_clProgram = new ComputeProgram(_commandQueue.Context, _GPUraytracingSource);
+			_clProgram = new ComputeProgram(_commandQueue.Context, clSource);
 			try
 			{
 				// build the program
 				_clProgram.Build(null, null, null, IntPtr.Zero);
 
 				// create a reference a kernel function
-				_renderKernel = _clProgram.CreateKernel("cycleColors");
-				//_renderKernel = _clProgram.CreateKernel("render");
+				//_renderKernel = _clProgram.CreateKernel("cycleColors");
+				_renderKernel = _clProgram.CreateKernel("render");
+
+				_testKernel = _clProgram.CreateKernel("hostTransform");
 			}
-			catch (BuildProgramFailureComputeException ex)
+			catch (BuildProgramFailureComputeException)
 			{
 				String buildLog = _clProgram.GetBuildLog(_commandQueue.Device);
 				System.Diagnostics.Trace.WriteLine(buildLog);
@@ -204,7 +109,7 @@ kernel void render (	const		float4		cameraPosition,
 				// Unable to handle error. Terminate application.
 				Environment.Exit(-1);
 			}
-			catch (InvalidBuildOptionsComputeException ex)
+			catch (InvalidBuildOptionsComputeException)
 			{
 				String buildLog = _clProgram.GetBuildLog(_commandQueue.Device);
 				System.Diagnostics.Trace.WriteLine(buildLog);
@@ -228,7 +133,7 @@ kernel void render (	const		float4		cameraPosition,
 			int textureID = GL.GenTexture();
 			GL.BindTexture(TextureTarget.Texture2D, textureID);
 
-			// Allocate space for texture with undefined data.
+			// Allocate space for texture with undefined resultData.
 			GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba32f, width, height, 0, PixelFormat.Rgba, PixelType.Float, IntPtr.Zero);
 
 			// These are needed to disable mipmapping.
@@ -310,9 +215,37 @@ kernel void render (	const		float4		cameraPosition,
 			GL.Finish();
 			_commandQueue.AcquireGLObjects(_sharedObjects, null);
 
-			_renderKernel.SetValueArgument<float>(0, time);	// test value
-			_renderKernel.SetValueArgument<Color4>(1, Color4.DarkBlue);
+			Vector4 homogeneousPosition = new Vector4(Position, 1);
+
+
+			Vector4 testVector = new Vector4(1, 1, 1, 1);
+			Matrix4 translationMatrix = Matrix4.CreateTranslation(new Vector3(1, 1, 1));
+			System.Diagnostics.Trace.WriteLine(translationMatrix.ToString());
+
+			float[] resultData = new float[4];
+			ComputeBuffer<float> resultBuffer = new ComputeBuffer<float>(_commandQueue.Context, ComputeMemoryFlags.UseHostPointer, resultData);
+
+			_testKernel.SetValueArgument<Matrix4>(0, translationMatrix);
+			_testKernel.SetValueArgument<Vector4>(1, testVector);
+			_testKernel.SetMemoryArgument(2, resultBuffer);
+			_commandQueue.Execute(_testKernel, null, new long[] { 1 }, null, null);
+			_commandQueue.ReadFromBuffer<float>(resultBuffer, ref resultData, true, 0, 0, 4, null);
+
+			resultBuffer.Dispose();
+
+
+			System.Diagnostics.Trace.WriteLine(resultData.ToString());
+
+			System.Diagnostics.Trace.WriteLine(homogeneousPosition);
+
+			_renderKernel.SetValueArgument<Vector4>(0, homogeneousPosition);
+			_renderKernel.SetValueArgument<Matrix4>(1, _screenToWorldMatrix);
 			_renderKernel.SetMemoryArgument(2, _renderTarget);
+
+
+			//_renderKernel.SetValueArgument<float>(0, time);	// test value
+			//_renderKernel.SetValueArgument<Color4>(1, Color4.DarkBlue);
+			//_renderKernel.SetMemoryArgument(2, _renderTarget);
 			
 			_commandQueue.Execute(_renderKernel, null, new long[] { ClientBounds.Width, ClientBounds.Height }, null, null);
 

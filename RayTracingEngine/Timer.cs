@@ -19,7 +19,7 @@ namespace Raytracing
 		{
 			stopwatch.Stop();
 
-			System.Console.WriteLine("delta T: " + stopwatch.ElapsedMilliseconds + " ms");
+			System.Diagnostics.Trace.WriteLine(stopwatch.ElapsedMilliseconds + " ms");
 
 			stopwatch.Reset();
 		}
