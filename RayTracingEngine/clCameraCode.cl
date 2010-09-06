@@ -19,66 +19,24 @@ raySphereIntersect(	private float4	origin,
 					private float4	center, 
 					private float	radius)
 {
-	// l = c - o
-	float4 distanceVector = origin - center;
+	float4 originSubCenter = origin - center;
 
-	// project the calculated direction vector onto the ray direction vector
-	// s = l * d
-	float projectedDistance = dot(distanceVector, direction);
+	float b = dot(direction, originSubCenter);
+	float c = dot(originSubCenter, originSubCenter) - radius * radius;
+	
+	float bSqrSubC = b * b - c;
+	// if (b*b-c) < 0, ray misses sphere
+	if (bSqrSubC < 0)
+		return -1;
 
-	// l2 = l * l
-	float lsquared = dot(distanceVector, distanceVector);
+	float sqrtBC = native_sqrt(b * b - c);
 
-	// test if the sphere is outside and behind the ray
-	float radiusSquared = radius * radius;
-	// if s < 0 and l2 > r2
-	if (projectedDistance < 0 && lsquared > radiusSquared)
-	{
-		return -1.0f;
-	}
+	float tPos = -b + sqrtBC;
+	float tNeg = -b - sqrtBC;
 
-	// m2 = l2 - s2
-	float rayDistanceFromCenterSquared = lsquared - projectedDistance * projectedDistance;
+	float minT = min(tPos, tNeg);
 
-	// if the ray is pointing away from the sphere
-	// if (m2 > r2)
-	if (rayDistanceFromCenterSquared > radiusSquared)
-	{
-		return -1.0f;
-	}
-
-	// q = sqrt(r2 - m2)
-	float q = native_sqrt(radiusSquared - rayDistanceFromCenterSquared);
-
-	// pick the nearer value of t (the collision distance)
-	float t;
-	// if l2 > r2
-	//	t = s - q
-	if (lsquared > radiusSquared)
-	{
-		t = projectedDistance - q;
-	}
-	else
-	{
-		t = projectedDistance + q;
-	}	
-
-	return t;
-
-	//float4 originSubCenter = origin - center;
-
-	//float b = dot(direction, originSubCenter);
-	//float c = dot(originSubCenter, originSubCenter) - radius * radius;
-
-	//float sqrtBC = native_sqrt(b * b - c);
-	// if sqrtBC < 0, ray misses sphere
-
-	//float tPos = -b + sqrtBC;
-	//float tNeg = -b - sqrtBC;
-
-	//float minT = min(tPos, tNeg);
-
-	//return minT;
+	return minT;
 }
 
 kernel
@@ -102,8 +60,13 @@ render (	const		float4		cameraPosition,
 	float radius = 1;
 	float4 spherePosition = (float4)(0.0f, 0.0f, 0.0f, 1.0f);
 
-	// cast ray
-	float4 color;
+	// create test light
+	float4 lightPosition = (float4)(0.0f, 5.0f, -1.0f, 1.0f);
+
+	// set the default background color
+	float4 color = (float4)(0.0f, 0.0f, 0.2f, 0.0f);
+
+	// cast ray and check for collisions
 	float t = raySphereIntersect(rayOrigin, rayDirection, spherePosition, radius);
 
 	if (t > 0)
@@ -111,12 +74,13 @@ render (	const		float4		cameraPosition,
 		float4 collisionPoint = rayOrigin + t * rayDirection;
 		float4 surfaceNormal = collisionPoint - spherePosition;
 		surfaceNormal = normalize(surfaceNormal);
+
+		// get shading
+		float4 lightDirection = lightPosition - collisionPoint;
+		float shadeFactor = dot(surfaceNormal, lightDirection);
 		
 		color = (float4)(0.0f, 0.5f, 0.0f, 0.0f);
-	}
-	else
-	{
-		color = (float4)(t, 0.0f, 0.0f, 0.0f);
+		color *= shadeFactor;
 	}
 
 	write_imagef(outputImage, coord, color);
