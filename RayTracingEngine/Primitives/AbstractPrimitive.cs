@@ -30,11 +30,8 @@ namespace Raytracing.Primitives
 			set;
 		}
 
-		public abstract float? intersects(ref Ray r, ref Vector3 collisionPoint,
+		public abstract float intersects(ref Ray r, ref Vector3 collisionPoint,
 			ref Vector3 surfaceNormal);
-
-		// only check for intersection, not location of intersection
-		public abstract bool simpleIntersects(ref Ray r);
 
 		public virtual AxisAlignedBoundingBox getBoundingBox()
 		{

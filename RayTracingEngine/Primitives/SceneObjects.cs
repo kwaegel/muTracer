@@ -85,12 +85,12 @@ namespace Raytracing.Primitives
 		}
 
 		// pass the ray and sphere by ref for speed. They will not be modified.
-		public override float? intersects(ref Ray r, ref Vector3 collisionPoint,
+		public override float intersects(ref Ray r, ref Vector3 collisionPoint,
 			ref Vector3 surfaceNormal)
 		{
 			// call the XNA intersection for now
-			float? distance = r.Intersects(_box);
-			if (distance.HasValue)
+			float distance = r.Intersects(_box);
+			if (!float.IsInfinity(distance))
 			{
 				// subtract a small ammount from the distance or the collision point will be
 				// inside the surface
@@ -113,14 +113,15 @@ namespace Raytracing.Primitives
 			return distance;
 		}
 
-		// pass the ray and sphere by ref for speed. They will not be modified.
-		public override bool simpleIntersects(ref Ray r)
-		{
-			// call the XNA intersection for now
-			if (r.Intersects(_box).HasValue)
-				return true;
-			return false;
-		}
+		//// pass the ray and sphere by ref for speed. They will not be modified.
+		//public override bool simpleIntersects(ref Ray r)
+		//{
+		//    // call the XNA intersection for now
+		//    float distance = r.Intersects(_box);
+		//    if (!float.IsInfinity(distance))
+		//        return true;
+		//    return false;
+		//}
 	}
 
 

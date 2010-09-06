@@ -167,7 +167,7 @@ namespace Raytracing.SceneStructures
 
 					float? intersection = prim.intersects(ref r, ref cp, ref sn);
 
-					if (intersection.HasValue && intersection < nearestIntersection)
+					if (intersection < nearestIntersection)
 					{
 						nearestIntersection = (float)intersection;
 						collisionPoint = cp;
@@ -293,8 +293,9 @@ namespace Raytracing.SceneStructures
 				Vector3 startPositionInWorld = new Vector3();
 
 				// create the starting location in grid space coordinates
-				float? worldT = worldRay.Intersects(gridWorldBounds);
-				if (worldT.HasValue)
+				float worldT = (float)worldRay.Intersects(gridWorldBounds);
+
+				if (!float.IsInfinity(worldT))
 				{
 					// the ray started outside the grid bounds, set starting point to nearest intersection point
 					if (worldT > 0)

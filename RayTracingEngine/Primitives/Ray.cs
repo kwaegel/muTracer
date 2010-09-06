@@ -79,8 +79,9 @@ namespace Raytracing.Primitives
 			return (float)t;
 		}
 
-		public float? Intersects(BoundingVolumes.AxisAlignedBoundingBox box)
+		public float Intersects(BoundingVolumes.AxisAlignedBoundingBox box)
 		{
+			// Return zero to assume the collision has occured.
 			return 0;
 		}
 
