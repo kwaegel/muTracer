@@ -245,22 +245,20 @@ namespace Raytracing
 			GL.BindTexture(TextureTarget.Texture2D, _renderTextureID);
 
 			GL.Begin(BeginMode.Quads);
-			// Texture has (0,0) at upper left
-			// OpenGL has (0,0) at lower left.
-			// Invert second coordinate to compensate.
 
-			GL.TexCoord2(0, 0);
-			GL.Vertex3(-1, 1, 0.999);
+				GL.TexCoord2(0, 0);
+				GL.Vertex3(-1, -1, 0.9999f);
 
-			GL.TexCoord2(1, 0);
-			GL.Vertex3(1, 1, 0.999);
+				GL.TexCoord2(1, 0);
+				GL.Vertex3(1, -1, 0.9999f);
 
-			GL.TexCoord2(1, 1);
-			GL.Vertex3(1, -1, 0.999);
+				GL.TexCoord2(1, 1);
+				GL.Vertex3(1, 1, 0.9999f);
 
 
-			GL.TexCoord2(0, 1);
-			GL.Vertex3(-1, -1, 0.999);
+				GL.TexCoord2(0, 1);
+				GL.Vertex3(-1, 1, 0.9999f);
+
 			GL.End();
 			GL.Disable(EnableCap.Texture2D);
 
