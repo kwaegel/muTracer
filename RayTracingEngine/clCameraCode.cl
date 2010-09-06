@@ -1,11 +1,9 @@
 ﻿float4 
-transformVector16(	const	float16		transform, 
+transformVector(	const	float16		transform, 
 					const	float4		vector)
 {
-	
-	// swizzle to get each part of the transform
-
-	// Dot product the vector by the columns of a row-major matrix
+	// Swizzle to get each part of the transform.
+	// Dot product the vector by the columns of a row-major matrix.
 	float4 result;
 	result.x = dot(vector, transform.s02468ace.s0246);	// even even	-> first column
 	result.y = dot(vector, transform.s13579bdf.s0246);	// odd even		-> second column
@@ -15,58 +13,72 @@ transformVector16(	const	float16		transform,
 	return result;
 }
 
-kernel
-void
-hostTransform(	const		float16	transform,
-				const		float4	vector,
-				__global write_only	float *	vectorOut,
-				__global write_only float * matrixOut)
-{
-	float4 result = transformVector16(transform, vector);
-
-	vectorOut[0] = result.x;
-	vectorOut[1] = result.y;
-	vectorOut[2] = result.z;
-	vectorOut[3] = result.w;
-
-	matrixOut[0] = transform.s0;
-	matrixOut[1] = transform.s1;
-	matrixOut[2] = transform.s2;
-	matrixOut[3] = transform.s3;
-	matrixOut[4] = transform.s4;
-	matrixOut[5] = transform.s5;
-	matrixOut[6] = transform.s6;
-	matrixOut[7] = transform.s7;
-	matrixOut[8] = transform.s8;
-	matrixOut[9] = transform.s9;
-	matrixOut[10] = transform.sa;
-	matrixOut[11] = transform.sb;
-	matrixOut[12] = transform.sc;
-	matrixOut[13] = transform.sd;
-	matrixOut[14] = transform.se;
-	matrixOut[15] = transform.sf;
-}
-
 float
 raySphereIntersect(	private float4	origin, 
 					private float4	direction, 
 					private float4	center, 
 					private float	radius)
 {
-	float4 originSubCenter = origin - center;
+	// l = c - o
+	float4 distanceVector = origin - center;
 
-	float b = dot(direction, originSubCenter);
-	float c = dot(originSubCenter, originSubCenter) - radius * radius;
+	// project the calculated direction vector onto the ray direction vector
+	// s = l * d
+	float projectedDistance = dot(distanceVector, direction);
 
-	float sqrtBC = native_sqrt(b * b - c);
+	// l2 = l * l
+	float lsquared = dot(distanceVector, distanceVector);
+
+	// test if the sphere is outside and behind the ray
+	float radiusSquared = radius * radius;
+	// if s < 0 and l2 > r2
+	if (projectedDistance < 0 && lsquared > radiusSquared)
+	{
+		return -1.0f;
+	}
+
+	// m2 = l2 - s2
+	float rayDistanceFromCenterSquared = lsquared - projectedDistance * projectedDistance;
+
+	// if the ray is pointing away from the sphere
+	// if (m2 > r2)
+	if (rayDistanceFromCenterSquared > radiusSquared)
+	{
+		return -1.0f;
+	}
+
+	// q = sqrt(r2 - m2)
+	float q = native_sqrt(radiusSquared - rayDistanceFromCenterSquared);
+
+	// pick the nearer value of t (the collision distance)
+	float t;
+	// if l2 > r2
+	//	t = s - q
+	if (lsquared > radiusSquared)
+	{
+		t = projectedDistance - q;
+	}
+	else
+	{
+		t = projectedDistance + q;
+	}	
+
+	return t;
+
+	//float4 originSubCenter = origin - center;
+
+	//float b = dot(direction, originSubCenter);
+	//float c = dot(originSubCenter, originSubCenter) - radius * radius;
+
+	//float sqrtBC = native_sqrt(b * b - c);
 	// if sqrtBC < 0, ray misses sphere
 
-	float tPos = -b + sqrtBC;
-	float tNeg = -b - sqrtBC;
+	//float tPos = -b + sqrtBC;
+	//float tNeg = -b - sqrtBC;
 
-	float minT = min(tPos, tNeg);
+	//float minT = min(tPos, tNeg);
 
-	return minT;
+	//return minT;
 }
 
 kernel
@@ -83,8 +95,7 @@ render (	const		float4		cameraPosition,
 
 	// unproject screen point to world
 	float4 screenPoint = (float4)(screenPoint2d.x, screenPoint2d.y, 0.0f, 1.0f);
-	float4 rayOrigin = transformVector16(unprojectionMatrix, screenPoint);
-	rayOrigin.w = 0.001f;
+	float4 rayOrigin = transformVector(unprojectionMatrix, screenPoint);
 	float4 rayDirection = fast_normalize(rayOrigin - cameraPosition);
 
 	// create test sphere
@@ -105,7 +116,7 @@ render (	const		float4		cameraPosition,
 	}
 	else
 	{
-		color = (float4)(0.0f, 0.0f, 0.0f, 0.0f);
+		color = (float4)(t, 0.0f, 0.0f, 0.0f);
 	}
 
 	write_imagef(outputImage, coord, color);
