@@ -133,7 +133,7 @@ namespace Raytracing
 			int textureID = GL.GenTexture();
 			GL.BindTexture(TextureTarget.Texture2D, textureID);
 
-			// Allocate space for texture with undefined resultData.
+			// Allocate space for texture with undefined resultVector.
 			GL.TexImage2D(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba32f, width, height, 0, PixelFormat.Rgba, PixelType.Float, IntPtr.Zero);
 
 			// These are needed to disable mipmapping.
@@ -202,11 +202,62 @@ namespace Raytracing
 
 		public void render(Scene scene, float time)
 		{
+			// testing
+			Vector4 homogeneousPosition = new Vector4(Position, 1);
+
+			Vector4 testVector = new Vector4(1, 1, 1, 0);
+			//Matrix4 translationMatrix = Matrix4.CreateRotationY(MathHelper.PiOver2);
+			Matrix4 translationMatrix = Matrix4.CreateTranslation(1, 1, 1);
+			System.Diagnostics.Trace.WriteLine(translationMatrix.ToString());
+
+			float[] resultVector = new float[4];
+			ComputeBuffer<float> vectorResultBuffer = new ComputeBuffer<float>(_commandQueue.Context, ComputeMemoryFlags.UseHostPointer, resultVector);
+			float[] resultMatrix = new float[16];
+			ComputeBuffer<float> matrixResultBuffer = new ComputeBuffer<float>(_commandQueue.Context, ComputeMemoryFlags.UseHostPointer, resultMatrix);
+
+
+			_testKernel.SetValueArgument<Matrix4>(0, translationMatrix);
+			_testKernel.SetValueArgument<Vector4>(1, testVector);
+			_testKernel.SetMemoryArgument(2, vectorResultBuffer);
+			_testKernel.SetMemoryArgument(3, matrixResultBuffer);
+			_commandQueue.Execute(_testKernel, null, new long[] { 1 }, null, null);
+			_commandQueue.ReadFromBuffer<float>(vectorResultBuffer, ref resultVector, true, 0, 0, 4, null);
+			_commandQueue.ReadFromBuffer<float>(matrixResultBuffer, ref resultMatrix, true, 0, 0, 16, null);
+
+			vectorResultBuffer.Dispose();
+			matrixResultBuffer.Dispose();
+
+			//System.Diagnostics.Trace.WriteLine(resultVector.ToString());
+			System.Diagnostics.Trace.Write(testVector.ToString() + " ==> ");
+			printVector(resultVector);
+
+			System.Diagnostics.Trace.WriteLine(homogeneousPosition);
+
+
+
+
+
 			// Raytrace the scene and render to a texture
 			renderSceneToTexture(time);
 
 			// Draw the texture to the screen.
 			drawTextureToScreen();
+		}
+
+		private void printVector(float[] floats)
+		{
+			System.Diagnostics.Trace.Write("(");
+			int numPrinted = 0;
+			foreach (float f in floats)
+			{
+				if (numPrinted == floats.Length-1)
+					System.Diagnostics.Trace.WriteLine(f + ")");
+				else if (++numPrinted % 4 == 0)
+					System.Diagnostics.Trace.WriteLine(f);
+				else
+					System.Diagnostics.Trace.Write(f + ", ");
+			}
+			//System.Diagnostics.Trace.WriteLine(")");
 		}
 
 		private void renderSceneToTexture(float time)
@@ -216,27 +267,6 @@ namespace Raytracing
 			_commandQueue.AcquireGLObjects(_sharedObjects, null);
 
 			Vector4 homogeneousPosition = new Vector4(Position, 1);
-
-
-			Vector4 testVector = new Vector4(1, 1, 1, 1);
-			Matrix4 translationMatrix = Matrix4.CreateTranslation(new Vector3(1, 1, 1));
-			System.Diagnostics.Trace.WriteLine(translationMatrix.ToString());
-
-			float[] resultData = new float[4];
-			ComputeBuffer<float> resultBuffer = new ComputeBuffer<float>(_commandQueue.Context, ComputeMemoryFlags.UseHostPointer, resultData);
-
-			_testKernel.SetValueArgument<Matrix4>(0, translationMatrix);
-			_testKernel.SetValueArgument<Vector4>(1, testVector);
-			_testKernel.SetMemoryArgument(2, resultBuffer);
-			_commandQueue.Execute(_testKernel, null, new long[] { 1 }, null, null);
-			_commandQueue.ReadFromBuffer<float>(resultBuffer, ref resultData, true, 0, 0, 4, null);
-
-			resultBuffer.Dispose();
-
-
-			System.Diagnostics.Trace.WriteLine(resultData.ToString());
-
-			System.Diagnostics.Trace.WriteLine(homogeneousPosition);
 
 			_renderKernel.SetValueArgument<Vector4>(0, homogeneousPosition);
 			_renderKernel.SetValueArgument<Matrix4>(1, _screenToWorldMatrix);

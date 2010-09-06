@@ -12,9 +12,6 @@ transformVector16(	const	float16		transform,
 	result.z = dot(vector, transform.s02468ace.s1357);	// even odd		-> third column
 	result.w = dot(vector, transform.s13579bdf.s1357);	// odd odd		-> fourth column
 
-	// homogeneous divide to normalize scale
-	result /= result.w;
-
 	return result;
 }
 
@@ -22,14 +19,32 @@ kernel
 void
 hostTransform(	const		float16	transform,
 				const		float4	vector,
-				__global write_only	float *	resultOut)
+				__global write_only	float *	vectorOut,
+				__global write_only float * matrixOut)
 {
 	float4 result = transformVector16(transform, vector);
 
-	resultOut[0] = result.x;
-	resultOut[1] = result.y;
-	resultOut[2] = result.z;
-	resultOut[3] = result.w;
+	vectorOut[0] = result.x;
+	vectorOut[1] = result.y;
+	vectorOut[2] = result.z;
+	vectorOut[3] = result.w;
+
+	matrixOut[0] = transform.s0;
+	matrixOut[1] = transform.s1;
+	matrixOut[2] = transform.s2;
+	matrixOut[3] = transform.s3;
+	matrixOut[4] = transform.s4;
+	matrixOut[5] = transform.s5;
+	matrixOut[6] = transform.s6;
+	matrixOut[7] = transform.s7;
+	matrixOut[8] = transform.s8;
+	matrixOut[9] = transform.s9;
+	matrixOut[10] = transform.sa;
+	matrixOut[11] = transform.sb;
+	matrixOut[12] = transform.sc;
+	matrixOut[13] = transform.sd;
+	matrixOut[14] = transform.se;
+	matrixOut[15] = transform.sf;
 }
 
 float
