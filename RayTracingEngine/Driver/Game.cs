@@ -359,6 +359,7 @@ namespace Raytracing.Driver
             GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
 
 			// render the scene
+			_clCamera.computeView();
 			_clCamera.render(_scene, (float)_totalTime);
 
 			//// raytrace the scene
