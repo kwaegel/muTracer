@@ -64,6 +64,7 @@
   <ItemGroup>
     <Compile Include="BoundingVolumes\AxisAlignedBoundingBox.cs" />
     <Compile Include="CLCamera.cs" />
+    <Compile Include="DebugUtils.cs" />
     <Compile Include="Timer.cs" />
     <None Include="BoundingVolumes\Frustum.cs" />
     <Compile Include="Driver\Game.cs" />
