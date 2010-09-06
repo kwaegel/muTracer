@@ -80,7 +80,7 @@ namespace Raytracing.Driver
 
 		/// <summary>Creates a window with the specified title.</summary>
         public Game()
-            : base(400, 400, GraphicsMode.Default, "Raytracing tester")
+            : base(600, 600, GraphicsMode.Default, "Raytracing tester")
         {
             VSync = VSyncMode.On;
 
@@ -119,18 +119,18 @@ namespace Raytracing.Driver
 
 			// create the camera
 			// looking down the Z-axis into the scene
-			Vector3 cameraPosition = new Vector3(0, 0, -3f);
+			Vector3 cameraPosition = new Vector3(0, 0, 8f);
 			Quaternion cameraRotation = Quaternion.Identity;
 
 			_rtCamera = new RayTracingCamera(ClientRectangle, (-Vector3.UnitZ), Vector3.UnitY, cameraPosition);
 			_rtCamera.VerticalFieldOfView = 70.0f;
 			_rtCamera.computeProjection();
 			_rtCamera.setRotation(cameraRotation);
-			//_rtCamera.rotateAboutPoint(Vector3.Zero, Vector3.UnitX, 30f);
 
-			_clCamera = new CLCamera(ClientRectangle, _commandQueue);
-			_clCamera.Position = _rtCamera.Position;
-			_clCamera.Rotation = _rtCamera.Rotation;
+			_clCamera = new CLCamera(ClientRectangle, _commandQueue, -Vector3.UnitZ, Vector3.UnitY, cameraPosition);
+			_clCamera.VerticalFieldOfView = 50.0f;
+			_clCamera.computeProjection();
+			_clCamera.setRotation(cameraRotation);
 
 			// create the scene
 			_scene = new GridScene(16, 1);
@@ -358,25 +358,21 @@ namespace Raytracing.Driver
 			// clear the screen
             GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
 
+			// Render the scene
+			//Timer.start();
+
 			// render the scene
 			_clCamera.computeView();
 			_clCamera.render(_scene, (float)_totalTime);
 
-			//// raytrace the scene
-			//Timer.start();
 			//_rtCamera.computeView();
 			//_rtCamera.render(_scene);
+
 			//System.Diagnostics.Trace.Write("Frame " + _frames + " ");
 			//Timer.stop();
 
 			// display the new frame
             SwapBuffers();
-
-			//// take a screenshot
-			//System.Drawing.Bitmap b = null;
-			//System.Drawing.Image image = System.Drawing.Image.FromHbitmap(b.GetHbitmap());
-			//image.Save(null, System.Drawing.Imaging.ImageFormat.Png);
-			
         }
 
         /// <summary>
