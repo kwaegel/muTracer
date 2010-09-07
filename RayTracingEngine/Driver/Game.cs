@@ -50,6 +50,10 @@ namespace Raytracing.Driver
 		private int _frames = 0;
 		double _totalTime = 0;
 
+		private bool _renderCLCamera = false;
+		private bool _renderSoftwareRTCamera = false;
+		private bool _cameraSelectionPressed = false;
+
 		#endregion
 
 		#region OpenCL-OpenGL properties
@@ -80,7 +84,7 @@ namespace Raytracing.Driver
 
 		/// <summary>Creates a window with the specified title.</summary>
         public Game()
-            : base(600, 600, GraphicsMode.Default, "Raytracing tester")
+            : base(700, 700, GraphicsMode.Default, "Raytracing tester")
         {
             VSync = VSyncMode.On;
 
@@ -112,6 +116,8 @@ namespace Raytracing.Driver
         {
             base.OnLoad(e);
 
+			// ignore multiple events
+
 			GL.ClearColor(Color4.Black);
             GL.Enable(EnableCap.DepthTest);
 
@@ -130,15 +136,15 @@ namespace Raytracing.Driver
 			_clCamera = new CLCamera(ClientRectangle, _commandQueue, -Vector3.UnitZ, Vector3.UnitY, cameraPosition);
 			_clCamera.VerticalFieldOfView = 50.0f;
 			_clCamera.computeProjection();
-			_clCamera.setRotation(cameraRotation);
+			_clCamera.Transform4 = _rtCamera.Transform4;
 
 			// create the scene
 			_scene = new GridScene(16, 1);
 			_scene.BackgroundColor = Color4.Black;
 			Timer.start();
-			buildBlockScene(_scene);
+			//buildBlockScene(_scene);
 			Timer.stop();
-			//buildXYZScene(_scene);
+			buildXYZScene(_scene);
         }
 
 		// Create a sharde context between OpenGL and OpenCL. 
@@ -238,10 +244,6 @@ namespace Raytracing.Driver
 			// orthographic projection
 			GL.LoadIdentity();
 			GL.Ortho(0, ClientRectangle.Width, 0, ClientRectangle.Height, -1, 1);
-
-			// perspective projection
-			//Matrix4 projection = Matrix4.CreatePerspectiveFieldOfView(OpenTK.MathHelper.Pi / 4, Width / (float)Height, 1.0f, 64.0f);
-			//GL.LoadMatrix(ref projection);
         }
 
         /// <summary>
@@ -275,9 +277,39 @@ namespace Raytracing.Driver
 				this.Exit();
 			}
 
-			//MuxEngine.Movables.Camera currentCamera = _rtCamera;
-			MuxEngine.Movables.Camera currentCamera = _clCamera;
+			// toggle either camera on or off
+			if (!_cameraSelectionPressed)
+			{
+				if (Keyboard[Key.Number1])
+				{
+					_renderCLCamera = !_renderCLCamera;
+					System.Console.WriteLine("CL camera enabled =" + _renderCLCamera);
+					_cameraSelectionPressed = true;
+				}
 
+				if (Keyboard[Key.Number2])
+				{
+					_renderSoftwareRTCamera = !_renderSoftwareRTCamera;
+					System.Console.WriteLine("RT camera enabled =" + _renderSoftwareRTCamera);
+					_cameraSelectionPressed = true;
+				}
+			}
+			else if (!Keyboard[Key.Number1] && !Keyboard[Key.Number2])
+			{
+				_cameraSelectionPressed = false;
+			}
+
+
+			// move both cameras
+			processCameraMovement(_rtCamera);
+			processCameraMovement(_clCamera);
+
+            if (Keyboard[Key.Escape])
+                Exit();
+        }
+
+		private void processCameraMovement(MuxEngine.Movables.Camera currentCamera)
+		{
 			if (Keyboard[Key.A])
 			{
 				currentCamera.moveLocal(Left, CameraMovementSpeed);
@@ -286,7 +318,7 @@ namespace Raytracing.Driver
 			{
 				currentCamera.moveLocal(Right, CameraMovementSpeed);
 			}
-			
+
 			if (Keyboard[Key.Comma])
 			{
 				currentCamera.moveLocal(Forward, CameraMovementSpeed);
@@ -295,7 +327,7 @@ namespace Raytracing.Driver
 			{
 				currentCamera.moveLocal(Backward, CameraMovementSpeed);
 			}
-			
+
 			if (Keyboard[Key.Period])
 			{
 				currentCamera.moveLocal(Up, CameraMovementSpeed);
@@ -331,14 +363,7 @@ namespace Raytracing.Driver
 			{
 				currentCamera.roll(CameraRotationSpeed);
 			}
-
-			//_rtCamera.rotateAboutPoint(Vector3.Zero, Vector3.UnitY, 2f);
-			//_rtCamera.rotateAboutPoint(Vector3.Zero, Vector3.UnitX, 2f);
-			//_rtCamera.rotateAboutPoint(Vector3.Zero, Vector3.UnitZ, 2f);
-
-            if (Keyboard[Key.Escape])
-                Exit();
-        }
+		}
 
         /// <summary>
         /// Called when it is time to render the next frame. Add your rendering code here.
@@ -352,28 +377,43 @@ namespace Raytracing.Driver
 			String pixelString = String.Format("{0:n0}", pixels);
 
 			float fps = (float)(1.0 / e.Time);
-			String fpsString = String.Format("{0:##.#}", fps);
-			this.Title = "Raytracing tester (" + fpsString + " FPS, " + pixelString + " pixels)";
+			updateTitle(fps);
 
 			// clear the screen
             GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
 
 			// Render the scene
-			//Timer.start();
+			if (_renderSoftwareRTCamera)
+			{
+				_rtCamera.computeView();
+				_rtCamera.render(_scene);
+			}
 
-			// render the scene
-			_clCamera.computeView();
-			_clCamera.render(_scene, (float)_totalTime);
-
-			//_rtCamera.computeView();
-			//_rtCamera.render(_scene);
-
-			//System.Diagnostics.Trace.Write("Frame " + _frames + " ");
-			//Timer.stop();
+			if (_renderCLCamera)
+			{
+				_clCamera.computeView();
+				_clCamera.render(_scene, (float)_totalTime);
+			}
 
 			// display the new frame
             SwapBuffers();
         }
+
+		// Display the FPS in the title bar.
+		private void updateTitle(float fps)
+		{
+			String fpsString = null;
+			if (fps >= 30)
+			{
+				fps = (float)System.Math.Round(fps, 2, MidpointRounding.ToEven);
+				fpsString = String.Format("{0:##}", fps);
+			}
+			else
+			{
+				fpsString = String.Format("{0:##.0}", fps);
+			}
+			this.Title = "Raytracing tester (" + fpsString + " FPS, " + pixelString + " pixels)";
+		}
 
         /// <summary>
         /// The main entry point for the application.
