@@ -40,6 +40,9 @@ namespace Raytracing
 
 		Matrix4 _screenToWorldMatrix;
 
+		// OpenGL texture to render on
+		int _renderTextureID;
+
 		#region Initialization
 
 		public RayTracingCamera(System.Drawing.Rectangle clientBounds)
@@ -61,6 +64,7 @@ namespace Raytracing
 
 		private void rayTracingInit()
 		{
+			_renderTextureID = GL.GenTexture();
 			_oldView = new Matrix4();
 		}
 
@@ -215,11 +219,65 @@ namespace Raytracing
 			// block until all the worker threads have finished
 			WaitHandle.WaitAll(_resetEvents);
 
-			// draw pixel buffer to the back buffer with z-sorting turned off
-			GL.DepthMask(false);
-			GL.DrawPixels<Color4>(width, height, PixelFormat.Rgba, PixelType.Float, _pixelBuffer);
-			GL.DepthMask(true);
+			// draw pixels to the screen using a textured quad
+			copyPixelsToTexture(_renderTextureID, _pixelBuffer);
+			drawTextureToScreen();
 		}
+
+		private void copyPixelsToTexture(int textureID, Color4[] pixels)
+		{
+			// Copy pixel data to texture
+			GL.BindTexture(TextureTarget.Texture2D, textureID);
+			GL.TexImage2D<Color4>(TextureTarget.Texture2D, 0, PixelInternalFormat.Rgba32f, ClientBounds.Width, ClientBounds.Height, 0, PixelFormat.Rgba, PixelType.Float, pixels);
+
+			// These are needed to disable mipmapping.
+			GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Linear);
+			GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Linear);
+		}
+
+
+		/// <summary>
+		/// Draw the texture that OpenCL renders into using a full-viewport quad. Drawn 
+		/// at z=1 so it is behind all other elements.
+		/// </summary>
+		private void drawTextureToScreen()
+		{
+			GL.Color4(Color4.Transparent);		// No blend Color.
+
+			GL.MatrixMode(MatrixMode.Modelview);
+			GL.PushMatrix();
+			GL.LoadIdentity();
+			GL.MatrixMode(MatrixMode.Projection);
+			GL.PushMatrix();
+			GL.LoadIdentity();
+
+			GL.Enable(EnableCap.Texture2D);
+			GL.BindTexture(TextureTarget.Texture2D, _renderTextureID);
+
+			GL.Begin(BeginMode.Quads);
+
+			GL.TexCoord2(0, 0);
+			GL.Vertex3(-1, -1, 0.9999f);
+
+			GL.TexCoord2(1, 0);
+			GL.Vertex3(1, -1, 0.9999f);
+
+			GL.TexCoord2(1, 1);
+			GL.Vertex3(1, 1, 0.9999f);
+
+
+			GL.TexCoord2(0, 1);
+			GL.Vertex3(-1, 1, 0.9999f);
+
+			GL.End();
+
+			GL.Disable(EnableCap.Texture2D);
+
+			GL.PopMatrix();
+			GL.MatrixMode(MatrixMode.Modelview);
+			GL.PopMatrix();
+		}
+
 
 		// process rays by row
 		private void gridWorker(Object o)
