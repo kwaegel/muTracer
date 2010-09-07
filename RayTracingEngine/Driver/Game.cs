@@ -185,9 +185,10 @@ namespace Raytracing.Driver
 			scene.add(_light);
 
 			// XYZ => RGB
-			scene.add(new Sphere(Vector3.UnitX, 1.0f, new Material(Color4.Red)));
-			scene.add(new Sphere(Vector3.UnitY, 1.0f, new Material(Color4.Green)));
-			scene.add(new Sphere(Vector3.UnitZ, 1.0f, new Material(Color4.Blue)));
+			scene.add(new Sphere(Vector3.Zero, 1.0f, new Material(Color4.White)));
+			scene.add(new Sphere(Vector3.UnitX*2, 0.5f, new Material(Color4.Red)));
+			scene.add(new Sphere(Vector3.UnitY*2, 0.5f, new Material(Color4.Green)));
+			scene.add(new Sphere(Vector3.UnitZ*2, 0.5f, new Material(Color4.Blue)));
 		}
 
 		private void buildBlockScene(Scene scene)
