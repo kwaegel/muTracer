@@ -1,6 +1,7 @@
 // Released to the public domain. Use, modify and relicense at will.
 
 using System;
+using System.Drawing;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 
@@ -50,8 +51,9 @@ namespace Raytracing.Driver
 		private int _frames = 0;
 		double _totalTime = 0;
 
-		private bool _renderCLCamera = false;
-		private bool _renderSoftwareRTCamera = false;
+		private bool _renderCLCamera = true;
+		private bool _renderSoftwareRTCamera = true;
+
 		private bool _cameraSelectionPressed = false;
 
 		#endregion
@@ -84,7 +86,7 @@ namespace Raytracing.Driver
 
 		/// <summary>Creates a window with the specified title.</summary>
         public Game()
-            : base(700, 700, GraphicsMode.Default, "Raytracing tester")
+            : base(800, 400, GraphicsMode.Default, "Raytracing tester")
         {
             VSync = VSyncMode.On;
 
@@ -128,13 +130,17 @@ namespace Raytracing.Driver
 			Vector3 cameraPosition = new Vector3(0, 0, 8f);
 			Quaternion cameraRotation = Quaternion.Identity;
 
-			_rtCamera = new RayTracingCamera(ClientRectangle, (-Vector3.UnitZ), Vector3.UnitY, cameraPosition);
+			int halfWidth = ClientRectangle.Width / 2;
+
+			Rectangle rtDrawBounds = new Rectangle(halfWidth, 0, halfWidth, ClientRectangle.Height);
+			_rtCamera = new RayTracingCamera(rtDrawBounds, (-Vector3.UnitZ), Vector3.UnitY, cameraPosition);
 			_rtCamera.VerticalFieldOfView = 70.0f;
 			_rtCamera.computeProjection();
 			_rtCamera.setRotation(cameraRotation);
 
-			_clCamera = new CLCamera(ClientRectangle, _commandQueue, -Vector3.UnitZ, Vector3.UnitY, cameraPosition);
-			_clCamera.VerticalFieldOfView = 50.0f;
+			Rectangle clDrawBounds = new Rectangle(0, 0, halfWidth, ClientRectangle.Height);
+			_clCamera = new CLCamera(clDrawBounds, _commandQueue, -Vector3.UnitZ, Vector3.UnitY, cameraPosition);
+			_clCamera.VerticalFieldOfView = 70.0f;
 			_clCamera.computeProjection();
 			_clCamera.Transform4 = _rtCamera.Transform4;
 
@@ -145,6 +151,8 @@ namespace Raytracing.Driver
 			//buildBlockScene(_scene);
 			Timer.stop();
 			buildXYZScene(_scene);
+
+			_scene.BackgroundColor = Color4.DarkBlue;
         }
 
 		// Create a sharde context between OpenGL and OpenCL. 
@@ -177,9 +185,9 @@ namespace Raytracing.Driver
 			scene.add(_light);
 
 			// XYZ => RGB
-			scene.add(new Sphere(Vector3.UnitX, 0.5f, new Material(Color4.Red)));
-			scene.add(new Sphere(Vector3.UnitY, 0.5f, new Material(Color4.Green)));
-			scene.add(new Sphere(Vector3.UnitZ, 0.5f, new Material(Color4.Blue)));
+			scene.add(new Sphere(Vector3.UnitX, 1.0f, new Material(Color4.Red)));
+			scene.add(new Sphere(Vector3.UnitY, 1.0f, new Material(Color4.Green)));
+			scene.add(new Sphere(Vector3.UnitZ, 1.0f, new Material(Color4.Blue)));
 		}
 
 		private void buildBlockScene(Scene scene)
@@ -233,15 +241,25 @@ namespace Raytracing.Driver
         /// <param name="e">Not used.</param>
         protected override void OnResize(EventArgs e)
         {
+			// WARNING: resizing the window invaladates all OpenCL command queues!
+
             base.OnResize(e);
 
-			_rtCamera.setClientBounds(ClientRectangle);
+			int halfWidth = ClientRectangle.Width / 2;
+
+			// Set the client bounds for the CL camera
+			Rectangle clDrawBounds = new Rectangle(0, 0, halfWidth, ClientRectangle.Height);
+			_clCamera.setClientBounds(clDrawBounds);
+			_clCamera.computeProjection();
+
+			// Set the viewport bounds for the RT camera
+			Rectangle rtDrawBounds = new Rectangle(0, halfWidth, halfWidth, ClientRectangle.Height);
+			_rtCamera.setClientBounds(rtDrawBounds);
 			_rtCamera.computeProjection();
 
-			GL.MatrixMode(MatrixMode.Projection);
-			GL.Viewport(0, 0, ClientRectangle.Width, ClientRectangle.Height);
 
 			// orthographic projection
+			GL.MatrixMode(MatrixMode.Projection);
 			GL.LoadIdentity();
 			GL.Ortho(0, ClientRectangle.Width, 0, ClientRectangle.Height, -1, 1);
         }
@@ -373,24 +391,25 @@ namespace Raytracing.Driver
         {
             base.OnRenderFrame(e);
 
-			int pixels = ClientSize.Height * ClientSize.Width;
-			String pixelString = String.Format("{0:n0}", pixels);
-
 			float fps = (float)(1.0 / e.Time);
 			updateTitle(fps);
 
 			// clear the screen
             GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
 
+			int halfWidth = ClientRectangle.Width / 2;
+
 			// Render the scene
 			if (_renderSoftwareRTCamera)
 			{
+				GL.Viewport(halfWidth, 0, halfWidth, ClientRectangle.Height);
 				_rtCamera.computeView();
 				_rtCamera.render(_scene);
 			}
 
 			if (_renderCLCamera)
 			{
+				GL.Viewport(0, 0, halfWidth, ClientRectangle.Height);
 				_clCamera.computeView();
 				_clCamera.render(_scene, (float)_totalTime);
 			}
@@ -402,6 +421,9 @@ namespace Raytracing.Driver
 		// Display the FPS in the title bar.
 		private void updateTitle(float fps)
 		{
+			int pixels = ClientSize.Height * ClientSize.Width;
+			String pixelString = String.Format("{0:n0}", pixels);
+
 			String fpsString = null;
 			if (fps >= 30)
 			{
