@@ -38,6 +38,14 @@
     <StartupObject>Raytracing.Driver.Game</StartupObject>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="OpenTK, Version=1.0.0.201, Culture=neutral, PublicKeyToken=bad199fe84eb3df4, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\OpenTK.dll</HintPath>
+    </Reference>
+    <Reference Include="OpenTK.GLControl, Version=1.0.0.201, Culture=neutral, PublicKeyToken=bad199fe84eb3df4, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\OpenTK.GLControl.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core">
     </Reference>
@@ -51,14 +59,6 @@
     </Reference>
     <Reference Include="Mono.Simd, Version=2.0.0.0, Culture=neutral, PublicKeyToken=0738eb9f132ed756">
       <HintPath>..\..\..\..\..\..\..\Program Files %28x86%29\Mono-2.6.7\lib\mono\2.0\Mono.Simd.dll</HintPath>
-    </Reference>
-    <Reference Include="OpenTK, Version=1.0.0.201, Culture=neutral, PublicKeyToken=bad199fe84eb3df4">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\..\..\Downloads\Development\OpenTK\1.0 - Updated\Binaries\OpenTK\Release\OpenTK.dll</HintPath>
-    </Reference>
-    <Reference Include="OpenTK.GLControl, Version=1.0.0.201, Culture=neutral, PublicKeyToken=bad199fe84eb3df4">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\..\..\..\Downloads\Development\OpenTK\1.0 - Updated\Binaries\OpenTK\Release\OpenTK.GLControl.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
