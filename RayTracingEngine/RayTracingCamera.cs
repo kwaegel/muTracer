@@ -327,25 +327,22 @@ namespace Raytracing
 						foreach (PointLight pl in lights)
 						{
 							Vector3 lightDirection = pl.Position - intersectionPoint;
+							lightDirection.Normalize();
 							float shade = Vector3.Dot(surfaceNormal, lightDirection);
 
 							Ray shadowRay = new Ray(collisionPoint, lightDirection);
 							shadowRay.Position += surfaceNormal * 0.001f;
 
-							if (shade > 0 && _gridScene.getNearestIntersection(ref shadowRay, ref collisionPoint, ref surfaceNormal, ref mat) > 0)
+							if (shade > 0 && _gridScene.getNearestIntersection(ref shadowRay, ref collisionPoint, ref surfaceNormal, ref mat) < 0)
 							{
-								color.R += (mat.color.R * pl.Color.R) * shade;
-								color.G += (mat.color.G * pl.Color.B) * shade;
-								color.B += (mat.color.B * pl.Color.G) * shade;
-							}
-							else
-							{
-								color = Color4.Black;
-							}
+								color.R += (mat.color.R + pl.Color.R) * shade;
+								color.G += (mat.color.G + pl.Color.G) * shade;
+								color.B += (mat.color.B + pl.Color.B) * shade;
 
-							
-
-							
+								//color.R += mat.color.R * shade;
+								//color.G += mat.color.G * shade;
+								//color.B += mat.color.B * shade;
+							}
 						}
 
 						_pixelBuffer[pixelFlatIndex] = color;
