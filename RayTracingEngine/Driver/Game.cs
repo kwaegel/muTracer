@@ -5,8 +5,6 @@ using System.Drawing;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 
-using Mono.Simd;
-
 using OpenTK;
 using OpenTK.Graphics;
 using OpenTK.Graphics.OpenGL;
@@ -89,26 +87,7 @@ namespace Raytracing.Driver
             : base(800, 400, GraphicsMode.Default, "Raytracing tester")
         {
             VSync = VSyncMode.On;
-
-			detectSimdSupport();
         }
-
-		private void detectSimdSupport()
-		{
-			bool basic_support;
-			bool enhanced_support;
-
-			basic_support = SimdRuntime.IsMethodAccelerated (typeof (Vector4f), "op_Addition") &&
-				   SimdRuntime.IsMethodAccelerated (typeof (Vector4f), "op_Multiply") &&
-				   SimdRuntime.IsMethodAccelerated (typeof (VectorOperations), "Shuffle", typeof (Vector4f), typeof (ShuffleSel));
-		
-			enhanced_support = SimdRuntime.IsMethodAccelerated (typeof (VectorOperations), "HorizontalAdd", typeof (Vector4f), typeof (Vector4f)) &&
-				   SimdRuntime.IsMethodAccelerated (typeof (Vector4f), "op_Multiply");
-
-			System.Console.WriteLine("basic SIMD support = " + basic_support);
-			System.Console.WriteLine("enhanced SIMD support = " + enhanced_support);
-
-		}
 
 		#region onLoad
 
