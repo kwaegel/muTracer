@@ -54,6 +54,8 @@ namespace Raytracing.Driver
 
 		private bool _cameraSelectionPressed = false;
 
+		private bool _moveLight = false;
+
 		#endregion
 
 		#region OpenCL-OpenGL properties
@@ -127,9 +129,9 @@ namespace Raytracing.Driver
 			_scene = new GridScene(16, 1);
 			_scene.BackgroundColor = Color4.Black;
 			Timer.start();
-			//buildBlockScene(_scene);
+			buildBlockScene(_scene);
 			Timer.stop();
-			buildXYZScene(_scene);
+			//buildXYZScene(_scene);
 
 			_scene.BackgroundColor = Color4.DarkBlue;
         }
@@ -160,20 +162,29 @@ namespace Raytracing.Driver
 
 		private void buildXYZScene(Scene scene)
 		{
-			_light = new PointLight(Vector3.Zero, 1.0f, Color4.White);
-			scene.add(_light);
+			_moveLight = false;
 
 			// XYZ => RGB
-			scene.add(new Sphere(Vector3.Zero, 1.0f, new Material(Color4.White)));
+			scene.add(new Sphere(Vector3.Zero, 0.75f, new Material(Color4.White)));
 			scene.add(new Sphere(Vector3.UnitX*2, 0.5f, new Material(Color4.Red)));
 			scene.add(new Sphere(Vector3.UnitY*2, 0.5f, new Material(Color4.Green)));
 			scene.add(new Sphere(Vector3.UnitZ*2, 0.5f, new Material(Color4.Blue)));
+
+			// add light at fourth corner of the 2x2x2 cube
+			Vector3 lightPosition = new Vector3(0, 4, 0);
+			_light = new PointLight(lightPosition, 1.0f, Color4.White);
+			scene.add(_light);
 		}
 
 		private void buildBlockScene(Scene scene)
 		{
-			int low = -7;
-			int high = 7;
+			_moveLight = true;
+
+			//int low = -7;
+			//int high = 7;
+
+			int low = -1;
+			int high = 1;
 
 			for (int x = low; x <= high; x++)
 			{
@@ -222,6 +233,7 @@ namespace Raytracing.Driver
         protected override void OnResize(EventArgs e)
         {
 			// WARNING: resizing the window invaladates all OpenCL command queues!
+			// This has not been accouted for yet.
 
             base.OnResize(e);
 
@@ -260,14 +272,21 @@ namespace Raytracing.Driver
 				base.Exit();
 			}
 
+			if (_moveLight)
+			{
+				float x = (float)System.Math.Cos(_totalTime / 1f);
+				float y = (float)System.Math.Cos(_totalTime / 1f);
+				float z = (float)System.Math.Sin(_totalTime / 1f);
 
-			float x = (float)System.Math.Cos(_totalTime);
-			//float y = (float)System.Math.Sin(_totalTime);
-			//float z = (float)System.Math.Cos(_totalTime);
+				_light.Position.X = 4f * x;
+				//_light.Position.Y = 0.15f * y;
+				_light.Position.Z = 4f * z;
+			}
 
-			_light.Position.X = 2 * x;
-			//_light.Position.Y = 5 * y;
-			//_light.Position.Z = 5 * z;
+			if (Keyboard[Key.Space])
+			{
+				System.Diagnostics.Trace.WriteLine("Breakpoint hit");
+			}
 
 			// Allows the game to exit
 			if (Keyboard[Key.Escape])
