@@ -70,12 +70,12 @@ render (				const		float4			cameraPosition,
 	float2 screenPoint2d = (float2)(2.0f, 2.0f) * convert_float2(coord) / convert_float2(size) - (float2)(1.0f, 1.0f);
 
 	// unproject screen point to world
-	float4 screenPoint = (float4)(screenPoint2d.x, screenPoint2d.y, 0.0f, 0.0f);	// Why does Z need to equal 0??
+	float4 screenPoint = (float4)(screenPoint2d.x, screenPoint2d.y, -1.0f, 1.0f);	
 	float4 rayOrigin = transformVector(unprojectionMatrix, screenPoint);
 	float4 rayDirection = fast_normalize(rayOrigin - cameraPosition);
 
 	// create test light
-	float4 lightPosition = (float4)(0.0f, 5.0f, 0.0f, 1.0f);
+	float4 lightPosition = (float4)(5.0f, 10.0f, 5.0f, 1.0f);
 
 	// set the default background color
 	float4 color = backgroundColor;
@@ -85,6 +85,8 @@ render (				const		float4			cameraPosition,
 	for (int i=0; i<sphereCount; i++)
 	{
 		SphereStruct sphere = sphereArray[i];
+
+		// Unpack center and radius.
 		float4 center = sphere.CenterAndRadius;
 		float radius = center.w;
 		center.w=1;
@@ -108,7 +110,7 @@ render (				const		float4			cameraPosition,
 			color = sphere.Color;
 			color *= shadeFactor;
 
-			color = (float4)(shadeFactor,shadeFactor,shadeFactor,0.0f);
+			//color = (float4)(shadeFactor,shadeFactor,shadeFactor,0.0f);
 		}
 	}
 
