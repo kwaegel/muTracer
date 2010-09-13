@@ -39,8 +39,10 @@ namespace Raytracing.Driver
 		public static readonly Vector3 Up = Vector3.UnitY;
 		public static readonly Vector3 Down = -Vector3.UnitY;
 
-		private static float CameraMovementSpeed = 0.3f;	// in units
-		private static float CameraRotationSpeed = 5f;	// in degrees
+		private static float CameraMovementSpeed = 0.1f;	// in units
+		private static float CameraRotationSpeed = 1f;	// in degrees
+
+		public static readonly Color4 DefaultBackgroundColor = Color4.DarkBlue;
 
 		#endregion
 
@@ -64,7 +66,7 @@ namespace Raytracing.Driver
 		[DllImport("opengl32.dll")]
 		extern static IntPtr wglGetCurrentDC();
 
-		ComputeContext _context;
+		//ComputeContext _context;
 		IGraphicsContextInternal _glContext;
 		ComputeContext _computeContext;
 		ComputeCommandQueue _commandQueue;
@@ -81,6 +83,8 @@ namespace Raytracing.Driver
 		#region Scene structures
 		Scene _scene;
 		PointLight _light;
+
+		CLSphereBuffer _clSphereBuffer;
 
 		#endregion
 
@@ -108,33 +112,44 @@ namespace Raytracing.Driver
 
 			// create the camera
 			// looking down the Z-axis into the scene
-			Vector3 cameraPosition = new Vector3(0, 0, 8f);
+			Vector3 cameraPosition = new Vector3(0, 0, 5f);
 			Quaternion cameraRotation = Quaternion.Identity;
 
 			int halfWidth = ClientRectangle.Width / 2;
 
 			Rectangle rtDrawBounds = new Rectangle(halfWidth, 0, halfWidth, ClientRectangle.Height);
 			_rtCamera = new RayTracingCamera(rtDrawBounds, (-Vector3.UnitZ), Vector3.UnitY, cameraPosition);
-			_rtCamera.VerticalFieldOfView = 70.0f;
+			_rtCamera.VerticalFieldOfView = 45.0f;
 			_rtCamera.computeProjection();
-			_rtCamera.setRotation(cameraRotation);
 
 			Rectangle clDrawBounds = new Rectangle(0, 0, halfWidth, ClientRectangle.Height);
 			_clCamera = new CLCamera(clDrawBounds, _commandQueue, -Vector3.UnitZ, Vector3.UnitY, cameraPosition);
-			_clCamera.VerticalFieldOfView = 70.0f;
+			_clCamera.VerticalFieldOfView = 45.0f;
 			_clCamera.computeProjection();
-			_clCamera.Transform4 = _rtCamera.Transform4;
 
 			// create the scene
 			_scene = new GridScene(16, 1);
+			_clSphereBuffer = new CLSphereBuffer(_commandQueue, 1024);
 			_scene.BackgroundColor = Color4.Black;
-			Timer.start();
-			buildBlockScene(_scene);
-			Timer.stop();
+			//buildBlockScene(_scene);
 			//buildXYZScene(_scene);
+			buildUnitScene(_scene, _clSphereBuffer);
 
-			_scene.BackgroundColor = Color4.DarkBlue;
+			_scene.BackgroundColor = DefaultBackgroundColor;
         }
+
+		// build a simple scene with one sphere
+		private void buildUnitScene(Scene scene, CLSphereBuffer buffer)
+		{
+			scene.add(new PointLight(Vector3.UnitY * 5, 1.0f, Color4.White));
+
+			scene.add(new Sphere(Vector3.Zero, 1.0f, new Material(Color4.Green)));
+			
+
+			buffer.addSphere(new SphereStruct(Vector3.Zero, 1.0f, Color4.Green));
+			buffer.addSphere(new SphereStruct(Vector3.UnitX, 0.6f, Color4.Red));
+			buffer.sendDataToDevice();
+		}
 
 		// Create a sharde context between OpenGL and OpenCL. 
 		private void openCLSharedInit()
@@ -219,7 +234,7 @@ namespace Raytracing.Driver
 			float percentY = (float)(y - start) / (float)(end - start);
 			float percentZ = (float)(z - start) / (float)(end - start);
 
-			return new Color4(percentX, percentY, percentZ,0);
+			return new Color4(percentX, percentY, percentZ, 0);
 		}
 
 		#endregion
@@ -387,14 +402,14 @@ namespace Raytracing.Driver
         /// </summary>
         /// <param name="e">Contains timing information.</param>
         protected override void OnRenderFrame(FrameEventArgs e)
-        {
-            base.OnRenderFrame(e);
+		{
+			base.OnRenderFrame(e);
 
 			float fps = (float)(1.0 / e.Time);
 			updateTitle(fps);
 
 			// clear the screen
-            GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
+			GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
 
 			int halfWidth = ClientRectangle.Width / 2;
 
@@ -410,12 +425,17 @@ namespace Raytracing.Driver
 			{
 				GL.Viewport(0, 0, halfWidth, ClientRectangle.Height);
 				_clCamera.computeView();
-				_clCamera.render(_scene, (float)_totalTime);
+				_clCamera.render(_clSphereBuffer, (float)_totalTime);
 			}
 
+			Matrix4 rtMatrix = _rtCamera.getScreenToWorldMatrix();
+			Matrix4 clMatrix = _clCamera.getScreenToWorldMatrix();
+
+
+
 			// display the new frame
-            SwapBuffers();
-        }
+			SwapBuffers();
+		}
 
 		// Display the FPS in the title bar.
 		private void updateTitle(float fps)
@@ -441,6 +461,8 @@ namespace Raytracing.Driver
         /// </summary>
         static void Main()
         {
+			System.Diagnostics.Trace.WriteLine("\nRun at " + DateTime.Now + "\n");
+
             // The 'using' idiom guarantees proper resource cleanup.
             // We request 30 UpdateFrame events per second, and unlimited
             // RenderFrame events (as fast as the computer can handle).

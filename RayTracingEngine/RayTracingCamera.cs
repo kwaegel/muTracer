@@ -127,6 +127,11 @@ namespace Raytracing
 			_screenToWorldMatrix = Matrix4.Invert(vp);
 		}
 
+		public Matrix4 getScreenToWorldMatrix()
+		{
+			return _screenToWorldMatrix;
+		}
+
 		private void calculateScreenPoints()
 		{
 			int rows = ClientBounds.Height;

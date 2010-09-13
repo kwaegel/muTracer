@@ -1,4 +1,11 @@
-﻿float4 
+﻿
+typedef struct
+{
+	float4 CenterAndRadius;	// packed into a float4 to maintain alignment.
+	float4 Color;
+} SphereStruct;
+
+float4
 transformVector(	const	float16		transform, 
 					const	float4		vector)
 {
@@ -34,16 +41,27 @@ raySphereIntersect(	private float4	origin,
 	float tPos = -b + sqrtBC;
 	float tNeg = -b - sqrtBC;
 
-	float minT = min(tPos, tNeg);
+	if (tPos < tNeg && tPos >= 0)
+	{
+		return tPos;
+	}
+	else if (tNeg < tPos && tNeg >= 0)
+	{
+		return tNeg;
+	}
 
-	return minT;
+	// Return the minimum positive value of T.
+	return min(max(0.0001f, tPos), max(0.0001f, tNeg));
 }
 
 kernel
 void
-render (	const		float4		cameraPosition,
-			const		float16		unprojectionMatrix,
-			write_only	image2d_t	outputImage)
+render (				const		float4			cameraPosition,
+						const		float16			unprojectionMatrix,
+						const		float4			backgroundColor,
+						write_only	image2d_t		outputImage,
+			__global	const		SphereStruct*	sphereArray,
+						const		int				sphereCount)
 {
 	int2 coord = (int2)(get_global_id(0), get_global_id(1));
 	int2 size = get_image_dim(outputImage);
@@ -52,35 +70,46 @@ render (	const		float4		cameraPosition,
 	float2 screenPoint2d = (float2)(2.0f, 2.0f) * convert_float2(coord) / convert_float2(size) - (float2)(1.0f, 1.0f);
 
 	// unproject screen point to world
-	float4 screenPoint = (float4)(screenPoint2d.x, screenPoint2d.y, 0.0f, 1.0f);
+	float4 screenPoint = (float4)(screenPoint2d.x, screenPoint2d.y, 0.0f, 0.0f);	// Why does Z need to equal 0??
 	float4 rayOrigin = transformVector(unprojectionMatrix, screenPoint);
 	float4 rayDirection = fast_normalize(rayOrigin - cameraPosition);
 
-	// create test sphere
-	float radius = 1;
-	float4 spherePosition = (float4)(0.0f, 0.0f, 0.0f, 1.0f);
-
 	// create test light
-	float4 lightPosition = (float4)(0.0f, 5.0f, -1.0f, 1.0f);
+	float4 lightPosition = (float4)(0.0f, 5.0f, 0.0f, 1.0f);
 
 	// set the default background color
-	float4 color = (float4)(0.0f, 0.0f, 0.2f, 0.0f);
+	float4 color = backgroundColor;
 
-	// cast ray and check for collisions
-	float t = raySphereIntersect(rayOrigin, rayDirection, spherePosition, radius);
+	float nearestIntersection = INFINITY;
 
-	if (t > 0)
+	for (int i=0; i<sphereCount; i++)
 	{
-		float4 collisionPoint = rayOrigin + t * rayDirection;
-		float4 surfaceNormal = collisionPoint - spherePosition;
-		surfaceNormal = normalize(surfaceNormal);
+		SphereStruct sphere = sphereArray[i];
+		float4 center = sphere.CenterAndRadius;
+		float radius = center.w;
+		center.w=1;
 
-		// get shading
-		float4 lightDirection = lightPosition - collisionPoint;
-		float shadeFactor = dot(surfaceNormal, lightDirection);
+		// cast ray and check for collisions
+		float t = raySphereIntersect(rayOrigin, rayDirection, center, radius);
+
+		if (t > 0 && t < nearestIntersection)
+		{
+			nearestIntersection = t;
+
+			float4 collisionPoint = rayOrigin + t * rayDirection;
+			float4 surfaceNormal = collisionPoint - center;
+			surfaceNormal = normalize(surfaceNormal);
+
+			// get shading
+			float4 lightDirection = lightPosition - collisionPoint;
+			lightDirection = normalize(lightDirection);
+			float shadeFactor = dot(surfaceNormal, lightDirection);
 		
-		color = (float4)(0.0f, 0.5f, 0.0f, 0.0f);
-		color *= shadeFactor;
+			color = sphere.Color;
+			color *= shadeFactor;
+
+			color = (float4)(shadeFactor,shadeFactor,shadeFactor,0.0f);
+		}
 	}
 
 	write_imagef(outputImage, coord, color);

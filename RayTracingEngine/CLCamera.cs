@@ -37,7 +37,7 @@ namespace Raytracing
 
 		ComputeProgram _clProgram;
 		ComputeKernel _renderKernel;
-		ComputeKernel _testKernel;
+		//ComputeKernel _testKernel;
 
 		#endregion
 
@@ -197,31 +197,41 @@ namespace Raytracing
 		}
 
 
-		public void render(Scene scene, float time)
+		public Matrix4 getScreenToWorldMatrix()
+		{
+			return _screenToWorldMatrix;
+		}
+
+		public void render(CLSphereBuffer sphereBuffer, float time)
 		{
 			// Raytrace the scene and render to a texture
-			renderSceneToTexture(time);
+			renderSceneToTexture(sphereBuffer, time);
 
 			// Draw the texture to the screen.
 			drawTextureToScreen();
 		}
 
-		private void renderSceneToTexture(float time)
+		private void renderSceneToTexture(CLSphereBuffer sphereBuffer, float time)
 		{
-			// aquire openGL objects
+			// Aquire lock on OpenGL objects.
 			GL.Finish();
 			_commandQueue.AcquireGLObjects(_sharedObjects, null);
 
 			// Convert the camera position to homogeneous coordinates.
 			Vector4 homogeneousPosition = new Vector4(Position, 1);
 
+			// Set kernel arguments.
 			_renderKernel.SetValueArgument<Vector4>(0, homogeneousPosition);
 			_renderKernel.SetValueArgument<Matrix4>(1, _screenToWorldMatrix);
-			_renderKernel.SetMemoryArgument(2, _renderTarget);
+			_renderKernel.SetValueArgument<Color4>(2, Color4.DarkBlue);
+			_renderKernel.SetMemoryArgument(3, _renderTarget);
+			_renderKernel.SetMemoryArgument(4, sphereBuffer.getBuffer());
+			_renderKernel.SetValueArgument<int>(5, sphereBuffer.getCount());
 			
+			// Add render task to the device queue.
 			_commandQueue.Execute(_renderKernel, null, new long[] { ClientBounds.Width, ClientBounds.Height }, null, null);
 
-			// release openGL objects
+			// Release OpenGL objects.
 			_commandQueue.ReleaseGLObjects(_sharedObjects, null);
 			_commandQueue.Finish();
 		}

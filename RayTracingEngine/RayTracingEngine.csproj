@@ -34,6 +34,7 @@
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup>
     <StartupObject>Raytracing.Driver.Game</StartupObject>
@@ -63,9 +64,14 @@
     <Compile Include="BoundingVolumes\AxisAlignedBoundingBox.cs" />
     <Compile Include="CLCamera.cs" />
     <Compile Include="DebugUtils.cs" />
+    <Compile Include="Primitives\PrimitiveStructs.cs" />
+    <Compile Include="SceneStructures\CLSphereBuffer.cs" />
     <Compile Include="Timer.cs" />
     <None Include="BoundingVolumes\Frustum.cs" />
     <Compile Include="Driver\Game.cs" />
+    <None Include="clCameraCode.cl">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Include="CycleColors.cl">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
@@ -87,9 +93,6 @@
     <None Include="MuxEngineGL\Movables\SimpleModel.cs" />
     <None Include="MuxEngineGL\Movables\SingleMeshModel.cs" />
     <None Include="MuxEngineGL\Movables\ThirdPersonCamera.cs" />
-    <None Include="clCameraCode.cl">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
     <None Include="Primitives\Box.cs" />
     <None Include="Primitives\Plane.cs" />
     <Compile Include="Primitives\AbstractPrimitive.cs" />
