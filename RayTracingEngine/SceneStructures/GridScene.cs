@@ -82,8 +82,8 @@ namespace Raytracing.SceneStructures
 				}
 			}
 
-			System.Console.Write("created grid with " + _grid.Length +" cells. Grid size= " + _gridWidth.X);
-			System.Console.WriteLine(". Cell width= " + _cellSize);
+			//System.Console.Write("created grid with " + _grid.Length +" cells. Grid size= " + _gridWidth.X);
+			//System.Console.WriteLine(". Cell width= " + _cellSize);
 		}
 		#endregion
 
