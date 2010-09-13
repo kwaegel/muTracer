@@ -103,8 +103,6 @@ namespace Raytracing.Driver
         {
             base.OnLoad(e);
 
-			// ignore multiple events
-
 			GL.ClearColor(Color4.Black);
             GL.Enable(EnableCap.DepthTest);
 
@@ -119,12 +117,12 @@ namespace Raytracing.Driver
 
 			Rectangle rtDrawBounds = new Rectangle(halfWidth, 0, halfWidth, ClientRectangle.Height);
 			_rtCamera = new RayTracingCamera(rtDrawBounds, (-Vector3.UnitZ), Vector3.UnitY, cameraPosition);
-			_rtCamera.VerticalFieldOfView = 45.0f;
+			_rtCamera.VerticalFieldOfView = 60.0f;
 			_rtCamera.computeProjection();
 
 			Rectangle clDrawBounds = new Rectangle(0, 0, halfWidth, ClientRectangle.Height);
 			_clCamera = new CLCamera(clDrawBounds, _commandQueue, -Vector3.UnitZ, Vector3.UnitY, cameraPosition);
-			_clCamera.VerticalFieldOfView = 45.0f;
+			_clCamera.VerticalFieldOfView = 60.0f;
 			_clCamera.computeProjection();
 
 			// create the scene
@@ -146,8 +144,10 @@ namespace Raytracing.Driver
 			scene.add(new Sphere(Vector3.Zero, 1.0f, new Material(Color4.Green)));
 			
 
-			buffer.addSphere(new SphereStruct(Vector3.Zero, 1.0f, Color4.Green));
-			buffer.addSphere(new SphereStruct(Vector3.UnitX, 0.6f, Color4.Red));
+			buffer.addSphere(new SphereStruct(Vector3.Zero, 1.0f, Color4.White));
+			buffer.addSphere(new SphereStruct(Vector3.UnitX, 0.5f, Color4.Red));
+			buffer.addSphere(new SphereStruct(Vector3.UnitY, 0.5f, Color4.Green));
+			buffer.addSphere(new SphereStruct(Vector3.UnitZ, 0.5f, Color4.Blue));
 			buffer.sendDataToDevice();
 		}
 
