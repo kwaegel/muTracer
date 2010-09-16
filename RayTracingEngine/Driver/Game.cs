@@ -40,7 +40,7 @@ namespace Raytracing.Driver
 		public static readonly Vector3 Down = -Vector3.UnitY;
 
 		private static float CameraMovementSpeed = 0.1f;	// in units
-		private static float CameraRotationSpeed = 1f;	// in degrees
+		private static float CameraRotationSpeed = 2.0f;	// in degrees
 
 		public static readonly Color4 DefaultBackgroundColor = Color4.DarkBlue;
 
@@ -129,27 +129,11 @@ namespace Raytracing.Driver
 			_scene = new GridScene(16, 1);
 			_clSphereBuffer = new CLSphereBuffer(_commandQueue, 1024);
 			_scene.BackgroundColor = Color4.Black;
-			//buildBlockScene(_scene);
-			//buildXYZScene(_scene);
-			buildUnitScene(_scene, _clSphereBuffer);
+			//buildBlockScene(_scene, _clSphereBuffer);
+			buildAxisScene(_scene, _clSphereBuffer);
 
 			_scene.BackgroundColor = DefaultBackgroundColor;
         }
-
-		// build a simple scene with one sphere
-		private void buildUnitScene(Scene scene, CLSphereBuffer buffer)
-		{
-			scene.add(new PointLight(Vector3.UnitY * 5, 1.0f, Color4.White));
-
-			scene.add(new Sphere(Vector3.Zero, 1.0f, new Material(Color4.Green)));
-			
-
-			buffer.addSphere(new SphereStruct(Vector3.Zero, 1.0f, Color4.White));
-			buffer.addSphere(new SphereStruct(Vector3.UnitX, 0.5f, Color4.Red));
-			buffer.addSphere(new SphereStruct(Vector3.UnitY, 0.5f, Color4.Green));
-			buffer.addSphere(new SphereStruct(Vector3.UnitZ, 0.5f, Color4.Blue));
-			buffer.sendDataToDevice();
-		}
 
 		// Create a sharde context between OpenGL and OpenCL. 
 		private void openCLSharedInit()
@@ -175,23 +159,24 @@ namespace Raytracing.Driver
 			_commandQueue = new ComputeCommandQueue(_computeContext, device, ComputeCommandQueueFlags.None);
 		}
 
-		private void buildXYZScene(Scene scene)
+		// build a simple scene with one sphere
+		private void buildAxisScene(Scene scene, CLSphereBuffer buffer)
 		{
-			_moveLight = false;
+			scene.add(new PointLight(new Vector3(5, 10, 5), 1.0f, Color4.White));
 
-			// XYZ => RGB
-			scene.add(new Sphere(Vector3.Zero, 0.75f, new Material(Color4.White)));
-			scene.add(new Sphere(Vector3.UnitX*2, 0.5f, new Material(Color4.Red)));
-			scene.add(new Sphere(Vector3.UnitY*2, 0.5f, new Material(Color4.Green)));
-			scene.add(new Sphere(Vector3.UnitZ*2, 0.5f, new Material(Color4.Blue)));
+			scene.add(new Sphere(Vector3.Zero, 1.0f, new Material(Color4.White)));
+			scene.add(new Sphere(Vector3.UnitX, 0.5f, new Material(Color4.Red)));
+			scene.add(new Sphere(Vector3.UnitY, 0.5f, new Material(Color4.Green)));
+			scene.add(new Sphere(Vector3.UnitZ, 0.5f, new Material(Color4.Blue)));
 
-			// add light at fourth corner of the 2x2x2 cube
-			Vector3 lightPosition = new Vector3(0, 4, 0);
-			_light = new PointLight(lightPosition, 1.0f, Color4.White);
-			scene.add(_light);
+			buffer.addSphere(new SphereStruct(Vector3.Zero, 1.0f, Color4.White));
+			buffer.addSphere(new SphereStruct(Vector3.UnitX, 0.5f, Color4.Red));
+			buffer.addSphere(new SphereStruct(Vector3.UnitY, 0.5f, Color4.Green));
+			buffer.addSphere(new SphereStruct(Vector3.UnitZ, 0.5f, Color4.Blue));
+			buffer.sendDataToDevice();
 		}
 
-		private void buildBlockScene(Scene scene)
+		private void buildBlockScene(Scene scene, CLSphereBuffer buffer)
 		{
 			_moveLight = true;
 
@@ -209,10 +194,13 @@ namespace Raytracing.Driver
 					{
 						if (x != 0 || y != 0 || z != 0)
 						{
-							Color4 c = getColor(low, high, x, y, z);
-							Material mat = new Material(c, 0);
-							Sphere s = new Sphere(new Vector3(x, y, z), 0.25f, mat);
+							Color4 color = getColor(low, high, x, y, z);
+							Material mat = new Material(color, 0);
+							Vector3 position = new Vector3(x, y, z);
+							Sphere s = new Sphere(position, 0.25f, mat);
 							scene.add(s);
+
+							buffer.addSphere(new SphereStruct(position, 0.25f, color));
 						}
 						else
 						{
@@ -222,6 +210,8 @@ namespace Raytracing.Driver
 					}
 				}
 			}
+
+			buffer.sendDataToDevice();
 
 			int width = high - low;
 			int objects = (int)System.Math.Pow(width, 3);
@@ -346,16 +336,16 @@ namespace Raytracing.Driver
 			{
 				currentCamera.moveLocal(Left, CameraMovementSpeed);
 			}
-			else if (Keyboard[Key.E])
+			else if (Keyboard[Key.E] || Keyboard[Key.D])
 			{
 				currentCamera.moveLocal(Right, CameraMovementSpeed);
 			}
 
-			if (Keyboard[Key.Comma])
+			if (Keyboard[Key.Comma] || Keyboard[Key.W])
 			{
 				currentCamera.moveLocal(Forward, CameraMovementSpeed);
 			}
-			else if (Keyboard[Key.O])
+			else if (Keyboard[Key.O] || Keyboard[Key.S])
 			{
 				currentCamera.moveLocal(Backward, CameraMovementSpeed);
 			}
@@ -423,6 +413,8 @@ namespace Raytracing.Driver
 
 			if (_renderCLCamera)
 			{
+				_clSphereBuffer.sendDataToDevice();
+
 				GL.Viewport(0, 0, halfWidth, ClientRectangle.Height);
 				_clCamera.computeView();
 				_clCamera.render(_clSphereBuffer, (float)_totalTime);
