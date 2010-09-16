@@ -109,8 +109,6 @@ render (				const		float4			cameraPosition,
 		
 			color = sphere.Color;
 			color *= shadeFactor;
-
-			//color = (float4)(shadeFactor,shadeFactor,shadeFactor,0.0f);
 		}
 	}
 
