@@ -17,6 +17,8 @@ namespace Raytracing.SceneStructures
 
 		ComputeBuffer<SphereStruct> _sphereBuffer;
 
+		private bool _geometryChanged = false;
+
 		public CLSphereBuffer(ComputeCommandQueue commandQueue, int maxItems)
 		{
 			_commandQueue = commandQueue;
@@ -30,15 +32,21 @@ namespace Raytracing.SceneStructures
 			if (_sphereList.Count < _sphereList.Capacity)
 			{
 				_sphereList.Add(newSphere);
+				_geometryChanged = true;
 			}
 		}
 
 		/// <summary>
-		/// Not working yet.
+		/// Not working correctly yet. Has to create a new buffer every time.
 		/// </summary>
 		unsafe public void sendDataToDevice()
 		{
-			fillBuffer(_sphereList.ToArray());
+			// Only send data to the device if the local geometry list has changed.
+			if (_geometryChanged)
+			{
+				fillBuffer(_sphereList.ToArray());
+				_geometryChanged = false;
+			}
 
 			// Modifying an existing buffer is not working yet. Access violation exception.
 			// Send data to device and block until finished.
@@ -51,6 +59,7 @@ namespace Raytracing.SceneStructures
 		{
 			_sphereList.Clear();
 			_sphereList.AddRange(spheres);
+			_sphereBuffer.Dispose();
 			_sphereBuffer = new ComputeBuffer<SphereStruct>(_commandQueue.Context, ComputeMemoryFlags.CopyHostPointer, spheres);
 			_commandQueue.AddBarrier();
 		}
