@@ -1,5 +1,4 @@
-﻿
-typedef struct
+﻿typedef struct
 {
 	float4 CenterAndRadius;	// packed into a float4 to maintain alignment.
 	float4 Color;
@@ -31,12 +30,12 @@ raySphereIntersect(	private float4	origin,
 	float b = dot(direction, originSubCenter);
 	float c = dot(originSubCenter, originSubCenter) - radius * radius;
 	
-	float bSqrSubC = b * b - c;
+	float bSqrSubC = fma(b,b,-c);	// bSqrSUbC = b * b - c;
 	// if (b*b-c) < 0, ray misses sphere
 	if (bSqrSubC < 0)
 		return -1;
 
-	float sqrtBC = native_sqrt(b * b - c);
+	float sqrtBC = native_sqrt(bSqrSubC);
 
 	float tPos = -b + sqrtBC;
 	float tNeg = -b - sqrtBC;
@@ -82,8 +81,20 @@ render (				const		float4			cameraPosition,
 
 	float nearestIntersection = INFINITY;
 
+	// copy sphere data to local memory for fast access
+	//event_t emptyEvent;
+	//event_t finishedBufferCopy = async_work_group_copy(tempBuffer, sphereArray, (size_t)sphereCount, emptyEvent);
+	//wait_group_events(1, &finishedBufferCopy);
+
 	for (int i=0; i<sphereCount; i++)
 	{
+		// unpack a float8 into a sphere structure
+		//float8 sphereData = tempBuffer[i];
+		//float8 sphereData = sphereArray[i];
+		//SphereStruct sphere;
+		//sphere.CenterAndRadius = sphereData.s0123;
+		//sphere.Color = sphereData.s4567;
+
 		SphereStruct sphere = sphereArray[i];
 
 		// Unpack center and radius.

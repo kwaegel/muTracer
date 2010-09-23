@@ -51,8 +51,8 @@ namespace Raytracing.SceneStructures
 			// Modifying an existing buffer is not working yet. Access violation exception.
 			// Send data to device and block until finished.
 			//SphereStruct[] spheres = _sphereList.ToArray();
-			//_commandQueue.WriteToBuffer<SphereStruct>(_sphereList.ToArray(), _sphereBuffer, true, null);
-			//_commandQueue.AddBarrier();
+			//CommandQueue.WriteToBuffer<SphereStruct>(_sphereList.ToArray(), _sphereBuffer, true, null);
+			//CommandQueue.AddBarrier();
 		}
 
 		private void fillBuffer(SphereStruct[] spheres)

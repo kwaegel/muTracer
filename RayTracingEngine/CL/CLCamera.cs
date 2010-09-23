@@ -21,23 +21,22 @@ namespace Raytracing
 		#region Fields
 
 		Matrix4 _oldView;
-		Matrix4 _screenToWorldMatrix;
+		protected Matrix4 _screenToWorldMatrix;
 
 		// list of shared objects. Needed for OpenCL, OpenGL interop.
-		List<ComputeMemory> _sharedObjects = new System.Collections.Generic.List<ComputeMemory>();
+		protected List<ComputeMemory> _sharedObjects = new System.Collections.Generic.List<ComputeMemory>();
 
 		// Queue for OpenCL commands
-		ComputeCommandQueue _commandQueue;
+		protected ComputeCommandQueue _commandQueue;
 
 		// OpenGL texture to render on
-		int _renderTextureID;		
+		protected int _renderTextureID;		
 
 		// OpenCL shared texture handle
-		ComputeImage2D _renderTarget;
+		protected ComputeImage2D _renderTarget;
 
-		ComputeProgram _clProgram;
-		ComputeKernel _renderKernel;
-		//ComputeKernel _testKernel;
+		protected ComputeProgram _renderProgram;
+		protected ComputeKernel _renderKernel;
 
 		#endregion
 
@@ -80,27 +79,26 @@ namespace Raytracing
 			_sharedObjects.Add(_renderTarget);
 		}
 
-		private void buildOpenCLProgram()
+		protected virtual void buildOpenCLProgram()
 		{
 			// Load the OpenCL clSource code
-			//StreamReader sourceReader = new StreamReader("CycleColors.cl");
-			StreamReader sourceReader = new StreamReader("clCameraCode.cl");
+			StreamReader sourceReader = new StreamReader("CL/clCameraCode.cl");
 			String clSource = sourceReader.ReadToEnd();
 
 			// Build and compile the OpenCL program
 			_renderKernel = null;
-			_clProgram = new ComputeProgram(_commandQueue.Context, clSource);
+			_renderProgram = new ComputeProgram(_commandQueue.Context, clSource);
 			try
 			{
 				// build the program
-				_clProgram.Build(null, null, null, IntPtr.Zero);
+				_renderProgram.Build(null, null, null, IntPtr.Zero);
 
 				// create a reference a kernel function
-				_renderKernel = _clProgram.CreateKernel("render");
+				_renderKernel = _renderProgram.CreateKernel("render");
 			}
 			catch (BuildProgramFailureComputeException)
 			{
-				String buildLog = _clProgram.GetBuildLog(_commandQueue.Device);
+				String buildLog = _renderProgram.GetBuildLog(_commandQueue.Device);
 				System.Diagnostics.Trace.WriteLine(buildLog);
 
 				// Unable to handle error. Terminate application.
@@ -108,7 +106,7 @@ namespace Raytracing
 			}
 			catch (InvalidBuildOptionsComputeException)
 			{
-				String buildLog = _clProgram.GetBuildLog(_commandQueue.Device);
+				String buildLog = _renderProgram.GetBuildLog(_commandQueue.Device);
 				System.Diagnostics.Trace.WriteLine(buildLog);
 
 				// Unable to handle error. Terminate application.
@@ -211,7 +209,7 @@ namespace Raytracing
 			drawTextureToScreen();
 		}
 
-		private void renderSceneToTexture(CLSphereBuffer sphereBuffer, float time)
+		protected virtual void renderSceneToTexture(CLSphereBuffer sphereBuffer, float time)
 		{
 			// Aquire lock on OpenGL objects.
 			GL.Finish();
