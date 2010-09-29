@@ -13,12 +13,12 @@ using OpenTK.Graphics.OpenGL;
 using Raytracing.Primitives;
 using Raytracing.SceneStructures;
 
-namespace Raytracing
+namespace Raytracing.CL
 {
 	class CLCamera : MuxEngine.Movables.Camera
 	{
 
-		#region Fields
+#region Fields
 
 		Matrix4 _oldView;
 		protected Matrix4 _screenToWorldMatrix;
@@ -38,9 +38,9 @@ namespace Raytracing
 		protected ComputeProgram _renderProgram;
 		protected ComputeKernel _renderKernel;
 
-		#endregion
+#endregion
 
-		#region Initialization
+#region Initialization
 
 		public CLCamera(Rectangle clientBounds, ComputeCommandQueue commandQueue)
 			: this(clientBounds, commandQueue, MuxEngine.LinearAlgebra.Matrix4.Identity)
@@ -138,7 +138,9 @@ namespace Raytracing
 			return textureID;
 		}
 
-		#endregion
+#endregion
+
+#region Render
 
 		private Vector2 computeWorldWindowSize(float verticalfieldOfView)
 		{
@@ -238,7 +240,7 @@ namespace Raytracing
 		/// Draw the texture that OpenCL renders into using a full-viewport quad. Drawn 
 		/// at z=1 so it is behind all other elements.
 		/// </summary>
-		private void drawTextureToScreen()
+		protected void drawTextureToScreen()
 		{
 			GL.Color4(Color4.Transparent);		// No blend Color.
 
@@ -274,5 +276,8 @@ namespace Raytracing
 			GL.MatrixMode(MatrixMode.Modelview);
 			GL.PopMatrix();
 		}
+
+#endregion
+
 	}
 }

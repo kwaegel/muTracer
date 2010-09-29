@@ -313,6 +313,8 @@ namespace Raytracing
 				Vector3 collisionPoint = new Vector3();
 				Vector3 surfaceNormal = new Vector3();
 				Raytracing.Primitives.Material mat = new Raytracing.Primitives.Material();
+
+				// For each pixel in the column
 				for (int x = 0; x < columns; x++)
 				{
 					Ray r = unprojectPointIntoWorld(_normilizedScreenPoints[x,y]);

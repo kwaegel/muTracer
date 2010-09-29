@@ -37,7 +37,7 @@ namespace Raytracing.CL
 		protected override void buildOpenCLProgram()
 		{
 			// Load the OpenCL clSource code
-			StreamReader sourceReader = new StreamReader("CL/clCameraCode.cl");
+			StreamReader sourceReader = new StreamReader("CL/VoxelTraversal.cl");
 			String clSource = sourceReader.ReadToEnd();
 
 			// Build and compile the OpenCL program
@@ -69,7 +69,16 @@ namespace Raytracing.CL
 			}
 		}
 
-		protected override void renderSceneToTexture(CLSphereBuffer sphereBuffer, float time)
+		public void render(VoxelGrid grid, float time)
+		{
+			// Raytrace the scene and render to a texture
+			renderSceneToTexture(grid, time);
+
+			// Draw the texture to the screen.
+			drawTextureToScreen();
+		}
+
+		private void renderSceneToTexture(VoxelGrid voxelGrid, float time)
 		{
 			// Aquire lock on OpenGL objects.
 			GL.Finish();
@@ -78,13 +87,15 @@ namespace Raytracing.CL
 			// Convert the camera position to homogeneous coordinates.
 			Vector4 homogeneousPosition = new Vector4(Position, 1);
 
+			float cellSize = voxelGrid.CellSize;
+
 			// Set kernel arguments.
 			_renderKernel.SetValueArgument<Vector4>(0, homogeneousPosition);
 			_renderKernel.SetValueArgument<Matrix4>(1, _screenToWorldMatrix);
-			_renderKernel.SetValueArgument<Color4>(2, Color4.DarkBlue);
+			_renderKernel.SetValueArgument<Color4>(2, Color4.Black);
 			_renderKernel.SetMemoryArgument(3, _renderTarget);
-			_renderKernel.SetMemoryArgument(4, sphereBuffer.getBuffer());
-			_renderKernel.SetValueArgument<int>(5, sphereBuffer.getCount());
+			_renderKernel.SetMemoryArgument(4, voxelGrid._voxelGrid, false);
+			_renderKernel.SetValueArgument<float>(5, cellSize);
 
 			// Add render task to the device queue.
 			_commandQueue.Execute(_renderKernel, null, new long[] { ClientBounds.Width, ClientBounds.Height }, null, null);

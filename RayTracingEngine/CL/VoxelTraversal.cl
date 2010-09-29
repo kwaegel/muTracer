@@ -55,7 +55,6 @@ render (	const		float4		cameraPosition,
 			const		float4		backgroundColor,
 			write_only	image2d_t	outputImage,
 			read_only	image3d_t	voxelGrid,
-			const		int			gridWidth,
 			const		float		cellSize)
 {
 	int2 coord = (int2)(get_global_id(0), get_global_id(1));
@@ -89,51 +88,78 @@ render (	const		float4		cameraPosition,
 	/**** Traverse the grid and find the nearest occupied cell ****/
 	// setup up traversel variables
 
+	// get grid size from the texture file
+	int gridWidth = get_image_width(voxelGrid);
+
 	// traversel values
 	int4 step;		// cell widths
 	float4 tMax;	// min distance to move before crossing a gird boundary
-	float tDelta;	// distance (in t) between cell boundaries
+	float4 tDelta;	// distance (in t) between cell boundaries
 	int4 index;		// index of the current voxel
 	int4 out;		// index of invalid first voxel index.
+	float totalT;	// the distance from ray start to the cell intersection
 
 	// convert the ray start position to grid space
 	float4 gridOrigin = (float4)(-4.0f, -4.0f, -4.0f, 1);
 	float4 gridSpaceCoordinates = rayOrigin - gridOrigin;
 
-	float4 frac = girdSpaceCoordinates % cellSize;
-	index = (int4)(gridSpaceCoordinates / cellSize); // space to gird coords
+	// get the current grid cell index and the distance to the next cell boundary
+	//float4 frac = gridSpaceCoordinates % (float)cellSize;
+	//index = (int4)(gridSpaceCoordinates / cellSize); // space to gird coords
+	float4 frac = remquo(gridSpaceCoordinates, (float4)cellSize, &index);
+	
 
-	out = (int4)(-1,-1,-1,-1);
-	step = (int4)(-1,-1,-1,-1);
+	out = -1;
+	step = -1;
 	if (rayDirection.x >= 0)
 	{
-		outX = gridWidth;
-		stepX = 1;
-		fracX = cellSize - frac.X;
+		out.x = gridWidth;
+		step.x = 1;
+		frac.x = cellSize - frac.x;
 	}
 	if (rayDirection.y >= 0)
 	{
-		outY = gridWidth;
-		stepY = 1;
-		fracY = cellSize - frac.Y;
+		out.y = gridWidth;
+		step.y = 1;
+		frac.y = cellSize - frac.y;
 	}
 	if (rayDirection.z >= 0)
 	{
-		outZ = gridWidth;
-		stepZ = 1;
-		fracZ = cellSize - frac.Z;
+		out.z = gridWidth;
+		step.z = 1;
+		frac.z = cellSize - frac.z;
 	}
 
 	tMax = frac / rayDirection;
 	tDelta = cellSize / rayDirection;// compute projections onto the coordinate axes
-	tDelta *= step;// multiply by step to ensure all deltas are positive.
+	tDelta = copysign(tDelta, (float4)1);
+	//tDelta *= step;// multiply by step to ensure all deltas are positive.
 
 	// begin grid traversel
+	totalT = 0.0f;
 	bool containsGeometry = false;
-	uint4 cellData;
+	float4 cellData;
 	do
 	{
-		if (tMax.x < tMax.x)
+/*
+		// Idea: use mask boolean values to aviod conditionals
+		int4 mask;
+		mask.x = (tMax.x < tMax.y) && (tMax.x < tMax.z);
+		mask.y = (tMax.y < tMax.x) && (tMax.y < tMax.z);
+		mask.z = (tMax.z < tMax.x) && (tMax.z < tMax.y);
+		mask &= 1;	// ensure mask entries are 0 positive 1.
+
+		// Stepping can be done vector-wise using the mask to select the index to increment.
+		index = step * mask;
+
+		// Check if the ray has exited the grid
+		if (index.x==out.x || index.y==out.y || index.z==out.z)
+			break;
+
+		totalT += 
+*/
+
+		if (tMax.x < tMax.y)
 		{
 			if (tMax.x < tMax.z)
 			{
@@ -141,6 +167,7 @@ render (	const		float4		cameraPosition,
 				if (index.x == out.x)	// outside grid
 					break; 
 				tMax.x = tMax.x + tDelta.x;	// increment max distence to next voxel
+				totalT += tMax.x;
 			}
 			else
 			{
@@ -148,6 +175,7 @@ render (	const		float4		cameraPosition,
 				if (index.z == out.z)
 					break;
 				tMax.z = tMax.z + tDelta.z;
+				totalT += tMax.z;
 			}
 		}
 		else
@@ -158,6 +186,7 @@ render (	const		float4		cameraPosition,
 				if (index.y == out.y)
 					break;
 				tMax.y = tMax.y + tDelta.y;
+				totalT += tMax.y;
 			}
 			else
 			{
@@ -165,20 +194,24 @@ render (	const		float4		cameraPosition,
 				if (index.z == out.z)
 					break;
 				tMax.z = tMax.z + tDelta.z;
+				totalT += tMax.z;
 			}
 		}
 
 		// get grid data at index
-		cellData = read_imageui(voxelGrid, smp, index);
+		cellData = read_imagef(voxelGrid, smp, index);
 		
 		containsGeometry = cellData.x > 0 || cellData.y > 0 || cellData.z > 0 || cellData.w > 0;
 
 	} while (!containsGeometry);
 
+	// compute intersection point
+	float4 collisionPoint = rayOrigin + (rayDirection * totalT);
+
 	/**** Write output to image ****/
 	if (containsGeometry)
 	{
-		color = (float4)(0.3f, 0.7f, 0.0f, 0.0f);
+		color = cellData;//(float4)(0.3f, 0.7f, 0.0f, 0.0f);
 	}
 
 	write_imagef(outputImage, coord, color);

@@ -16,6 +16,7 @@ using Cloo;
 
 using Raytracing.SceneStructures;
 using Raytracing.Primitives;
+using Raytracing.CL;
 
 namespace Raytracing.Driver
 {
@@ -52,9 +53,10 @@ namespace Raytracing.Driver
 		double _totalTime = 0;
 
 		private bool _renderCLCamera = true;
-		private bool _renderSoftwareRTCamera = true;
+		private bool _renderSoftwareRTCamera = false;
+		private bool _renderGridCamera = false;
 
-		private bool _cameraSelectionPressed = false;
+		private bool _cameraSelectionPressed = true;
 
 		private bool _moveLight = false;
 
@@ -76,7 +78,8 @@ namespace Raytracing.Driver
 		#region Cameras
 
 		RayTracingCamera _rtCamera;
-		CLCamera _clCamera;	// test camera using OpenCL
+		CLCamera _clCamera;		// test camera using OpenCL
+		GridCamera _gridCamera;	// Camera using voxel traversal
 
 		#endregion	
 
@@ -85,6 +88,8 @@ namespace Raytracing.Driver
 		PointLight _light;
 
 		CLSphereBuffer _clSphereBuffer;
+
+		VoxelGrid _voxelGrid;	// used for the grid camera;
 
 		#endregion
 
@@ -125,12 +130,19 @@ namespace Raytracing.Driver
 			_clCamera.VerticalFieldOfView = 60.0f;
 			_clCamera.computeProjection();
 
+			_gridCamera = new GridCamera(clDrawBounds, _commandQueue, -Vector3.UnitZ, Vector3.UnitY, cameraPosition);
+			_gridCamera.VerticalFieldOfView = 60.0f;
+			_gridCamera.computeProjection();
+
 			// create the scene
 			_scene = new GridScene(16, 1);
 			_clSphereBuffer = new CLSphereBuffer(_commandQueue, 1024);
 			_scene.BackgroundColor = Color4.Black;
-			//buildBlockScene(_scene, _clSphereBuffer);
-			buildAxisScene(_scene, _clSphereBuffer);
+			buildBlockScene(_scene, _clSphereBuffer);
+			//buildAxisScene(_scene, _clSphereBuffer);
+
+			// create a voxel grid for testing
+			_voxelGrid = createVoxelGrid(10, 10); 
 
 			_scene.BackgroundColor = DefaultBackgroundColor;
         }
@@ -157,6 +169,19 @@ namespace Raytracing.Driver
 
 			//Create the command queue from the context and device
 			_commandQueue = new ComputeCommandQueue(_computeContext, device, ComputeCommandQueueFlags.None);
+		}
+
+		/// <summary>
+		/// 
+		/// </summary>
+		/// <param name="gridWidth">How wide the grid is in world units.</param>
+		/// <param name="gridResolution">How many cells wide the grid is.</param>
+		/// <returns></returns>
+		private VoxelGrid createVoxelGrid(float gridWidth, int gridResolution)
+		{
+			VoxelGrid grid = new VoxelGrid(_commandQueue, 10, 10);
+
+			return grid;
 		}
 
 		// build a simple scene with one sphere
@@ -304,17 +329,27 @@ namespace Raytracing.Driver
 			{
 				if (Keyboard[Key.Number1])
 				{
-					_renderCLCamera = !_renderCLCamera;
+					//_renderCLCamera = !_renderCLCamera;
+					_renderCLCamera = true;
+					_renderGridCamera = false;
 					System.Console.WriteLine("CL camera enabled =" + _renderCLCamera);
 					_cameraSelectionPressed = true;
 				}
+				else if (Keyboard[Key.Number2])
+				{
+					_renderGridCamera = true;
+					_renderCLCamera = false;
+					System.Console.WriteLine("Grid camera enabled =" + _renderSoftwareRTCamera);
+					_cameraSelectionPressed = true;
+				}
 
-				if (Keyboard[Key.Number2])
+				if (Keyboard[Key.Number3])
 				{
 					_renderSoftwareRTCamera = !_renderSoftwareRTCamera;
 					System.Console.WriteLine("RT camera enabled =" + _renderSoftwareRTCamera);
 					_cameraSelectionPressed = true;
 				}
+				
 			}
 			else if (!Keyboard[Key.Number1] && !Keyboard[Key.Number2])
 			{
@@ -325,6 +360,7 @@ namespace Raytracing.Driver
 			// move both cameras
 			processCameraMovement(_rtCamera);
 			processCameraMovement(_clCamera);
+			processCameraMovement(_gridCamera);
 
             if (Keyboard[Key.Escape])
                 Exit();
@@ -418,6 +454,11 @@ namespace Raytracing.Driver
 				GL.Viewport(0, 0, halfWidth, ClientRectangle.Height);
 				_clCamera.computeView();
 				_clCamera.render(_clSphereBuffer, (float)_totalTime);
+			}
+
+			if (_renderGridCamera)
+			{
+				_gridCamera.render(_voxelGrid, (float)_totalTime);
 			}
 
 			Matrix4 rtMatrix = _rtCamera.getScreenToWorldMatrix();

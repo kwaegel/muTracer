@@ -62,17 +62,22 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="BoundingVolumes\AxisAlignedBoundingBox.cs" />
-    <Compile Include="CLCamera.cs" />
+    <Compile Include="CL\CLCamera.cs" />
+    <Compile Include="CL\VoxelGrid.cs" />
+    <Compile Include="CL\GridCamera.cs" />
     <Compile Include="DebugUtils.cs" />
     <Compile Include="Primitives\PrimitiveStructs.cs" />
-    <Compile Include="SceneStructures\CLSphereBuffer.cs" />
+    <Compile Include="CL\CLSphereBuffer.cs" />
     <Compile Include="Timer.cs" />
     <None Include="BoundingVolumes\Frustum.cs" />
     <Compile Include="Driver\Game.cs" />
-    <None Include="clCameraCode.cl">
+    <None Include="CL\clCameraCode.cl">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="CycleColors.cl">
+    <None Include="CL\CycleColors.cl">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="CL\VoxelTraversal.cl">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="Driver\Program.cs" />
