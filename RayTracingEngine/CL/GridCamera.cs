@@ -92,7 +92,7 @@ namespace Raytracing.CL
 			// Set kernel arguments.
 			_renderKernel.SetValueArgument<Vector4>(0, homogeneousPosition);
 			_renderKernel.SetValueArgument<Matrix4>(1, _screenToWorldMatrix);
-			_renderKernel.SetValueArgument<Color4>(2, Color4.Black);
+			_renderKernel.SetValueArgument<Color4>(2, Color4.CornflowerBlue);
 			_renderKernel.SetMemoryArgument(3, _renderTarget);
 			_renderKernel.SetMemoryArgument(4, voxelGrid._voxelGrid, false);
 			_renderKernel.SetValueArgument<float>(5, cellSize);

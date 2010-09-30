@@ -52,9 +52,9 @@ namespace Raytracing.Driver
 		private int _frames = 0;
 		double _totalTime = 0;
 
-		private bool _renderCLCamera = true;
+		private bool _renderCLCamera = false;
 		private bool _renderSoftwareRTCamera = false;
-		private bool _renderGridCamera = false;
+		private bool _renderGridCamera = true;
 
 		private bool _cameraSelectionPressed = true;
 
@@ -458,6 +458,8 @@ namespace Raytracing.Driver
 
 			if (_renderGridCamera)
 			{
+				GL.Viewport(0, 0, halfWidth, ClientRectangle.Height);
+				_gridCamera.computeView();
 				_gridCamera.render(_voxelGrid, (float)_totalTime);
 			}
 

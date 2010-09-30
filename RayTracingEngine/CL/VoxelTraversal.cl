@@ -78,7 +78,7 @@ render (	const		float4		cameraPosition,
 	/**** Create generic test data ****/
 
 	// create test light
-	float4 lightPosition = (float4)(50.0f, 100.0f, 50.0f, 1.0f);
+	float4 lightPosition = (float4)(10.0f, 20.0f, 10.0f, 1.0f);
 
 	// set the default background color
 	float4 color = backgroundColor;
@@ -150,14 +150,21 @@ render (	const		float4		cameraPosition,
 		mask &= 1;	// ensure mask entries are 0 positive 1.
 
 		// Stepping can be done vector-wise using the mask to select the index to increment.
-		index = step * mask;
-
+		//index += step * mask;
+		index += select(step, (int4)0, mask);
+		
 		// Check if the ray has exited the grid
 		if (index.x==out.x || index.y==out.y || index.z==out.z)
 			break;
 
-		totalT += 
+		//tMax += tDelta * mask;
+		float4 tInc = select(tDelta, (float4)0, mask);
+		tMax += tInc;
+		
+		// only one of x,y,z should be non-zero.
+		totalT += (tInc.x+tInc.y+tInc.z);
 */
+
 
 		if (tMax.x < tMax.y)
 		{
@@ -211,7 +218,11 @@ render (	const		float4		cameraPosition,
 	/**** Write output to image ****/
 	if (containsGeometry)
 	{
-		color = cellData;//(float4)(0.3f, 0.7f, 0.0f, 0.0f);
+		// do a simple distance weighting to add depth
+		float dist = fast_distance(collisionPoint, lightPosition);
+
+
+		color = cellData / (0.1f*dist);
 	}
 
 	write_imagef(outputImage, coord, color);
