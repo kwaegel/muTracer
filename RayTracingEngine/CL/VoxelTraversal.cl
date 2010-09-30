@@ -68,7 +68,7 @@ render (	const		float4		cameraPosition,
 	/**** Create a ray in world coordinates ****/
 
 	// convert to normilized device coordinates
-	float2 screenPoint2d = (float2)(2.0f, 2.0f) * convert_float2(coord) / convert_float2(size) - (float2)(1.0f, 1.0f);
+	float2 screenPoint2d = (float2)(2.0f) * convert_float2(coord) / convert_float2(size) - (float2)(1.0f);
 
 	// unproject screen point to world
 	float4 screenPoint = (float4)(screenPoint2d.x, screenPoint2d.y, -1.0f, 1.0f);	
@@ -89,6 +89,7 @@ render (	const		float4		cameraPosition,
 	// setup up traversel variables
 
 	// get grid size from the texture file
+	//int4 gridSize = (int4)(get_image_width(voxelGrid), get_image_height(voxelGrid), get_image_depth(voxelGrid), 0);
 	int gridWidth = get_image_width(voxelGrid);
 
 	// traversel values
@@ -100,7 +101,10 @@ render (	const		float4		cameraPosition,
 	float totalT;	// the distance from ray start to the cell intersection
 
 	// convert the ray start position to grid space
-	float4 gridOrigin = (float4)(-4.0f, -4.0f, -4.0f, 1);
+	float4 halfGridWidth = (gridWidth * cellSize) / 2.0f;
+	float4 gridOrigin = (float4)(-halfGridWidth);
+	gridOrigin.w = 1.0f;
+
 	float4 gridSpaceCoordinates = rayOrigin - gridOrigin;
 
 	// get the current grid cell index and the distance to the next cell boundary
@@ -133,21 +137,54 @@ render (	const		float4		cameraPosition,
 	tMax = frac / rayDirection;
 	tDelta = cellSize / rayDirection;// compute projections onto the coordinate axes
 	tDelta = copysign(tDelta, (float4)1);
-	//tDelta *= step;// multiply by step to ensure all deltas are positive.
 
 	// begin grid traversel
-	totalT = 0.0f;
+	//totalT = 0.0f;
 	bool containsGeometry = false;
 	float4 cellData;
 	do
 	{
+		if (tMax.x < tMax.y)
+		{
+			if (tMax.x < tMax.z)
+			{
+				index.x += step.x;	// step to next voxel along this axis
+				if (index.x == out.x)	// outside grid
+					break; 
+				tMax.x = tMax.x + tDelta.x;	// increment max distence to next voxel
+			}
+			else
+			{
+				index.z += step.z;
+				if (index.z == out.z)
+					break;
+				tMax.z = tMax.z + tDelta.z;
+			}
+		}
+		else
+		{
+			if (tMax.y < tMax.z)
+			{
+				index.y += step.y;
+				if (index.y == out.y)
+					break;
+				tMax.y = tMax.y + tDelta.y;
+			}
+			else
+			{
+				index.z += step.z;
+				if (index.z == out.z)
+					break;
+				tMax.z = tMax.z + tDelta.z;
+			}
+		}
+
 /*
 		// Idea: use mask boolean values to aviod conditionals
 		int4 mask;
 		mask.x = (tMax.x < tMax.y) && (tMax.x < tMax.z);
 		mask.y = (tMax.y < tMax.x) && (tMax.y < tMax.z);
 		mask.z = (tMax.z < tMax.x) && (tMax.z < tMax.y);
-		mask &= 1;	// ensure mask entries are 0 positive 1.
 
 		// Stepping can be done vector-wise using the mask to select the index to increment.
 		//index += step * mask;
@@ -165,46 +202,6 @@ render (	const		float4		cameraPosition,
 		totalT += (tInc.x+tInc.y+tInc.z);
 */
 
-
-		if (tMax.x < tMax.y)
-		{
-			if (tMax.x < tMax.z)
-			{
-				index.x += step.x;	// step to next voxel along this axis
-				if (index.x == out.x)	// outside grid
-					break; 
-				tMax.x = tMax.x + tDelta.x;	// increment max distence to next voxel
-				totalT += tMax.x;
-			}
-			else
-			{
-				index.z += step.z;
-				if (index.z == out.z)
-					break;
-				tMax.z = tMax.z + tDelta.z;
-				totalT += tMax.z;
-			}
-		}
-		else
-		{
-			if (tMax.y < tMax.z)
-			{
-				index.y += step.y;
-				if (index.y == out.y)
-					break;
-				tMax.y = tMax.y + tDelta.y;
-				totalT += tMax.y;
-			}
-			else
-			{
-				index.z += step.z;
-				if (index.z == out.z)
-					break;
-				tMax.z = tMax.z + tDelta.z;
-				totalT += tMax.z;
-			}
-		}
-
 		// get grid data at index
 		cellData = read_imagef(voxelGrid, smp, index);
 		
@@ -213,16 +210,12 @@ render (	const		float4		cameraPosition,
 	} while (!containsGeometry);
 
 	// compute intersection point
-	float4 collisionPoint = rayOrigin + (rayDirection * totalT);
+	//float4 collisionPoint = rayOrigin + (rayDirection * totalT);
 
 	/**** Write output to image ****/
 	if (containsGeometry)
 	{
-		// do a simple distance weighting to add depth
-		float dist = fast_distance(collisionPoint, lightPosition);
-
-
-		color = cellData / (0.1f*dist);
+		color = cellData;
 	}
 
 	write_imagef(outputImage, coord, color);
