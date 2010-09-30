@@ -26,16 +26,15 @@ namespace Raytracing.CL
 			// create test data. gridResolution^3 cells
 			int cellCount = gridResolution* gridResolution* gridResolution;
 			Color4[,,] colorArray = new Color4[gridResolution, gridResolution, gridResolution];
-			for (int x = 4; x < 6; x++)
-			{
-				for (int y = 04; y < 6; y++)
-				{
-					for (int z = 4; z < 6; z++)
-					{
-						colorArray[x, y, z] = Color4.Red;
-					}
-				}
-			}
+
+			colorArray[4, 4, 4] = Color4.Red;
+			colorArray[4, 4, 5] = Color4.Green;
+			colorArray[4, 5, 4] = Color4.Blue;
+			colorArray[4, 5, 5] = Color4.Yellow;
+			colorArray[5, 4, 4] = Color4.DarkRed;
+			colorArray[5, 4, 5] = Color4.DarkGreen;
+			colorArray[5, 5, 4] = Color4.DarkBlue;
+			colorArray[5, 5, 5] = Color4.DarkGoldenrod;
 
 			ComputeImageFormat cif = new ComputeImageFormat(ComputeImageChannelOrder.Rgba, ComputeImageChannelType.Float);
 
@@ -51,6 +50,11 @@ namespace Raytracing.CL
 						(IntPtr)gridData);
 				}
 			}
+		}
+
+		public void Dispose()
+		{
+			_voxelGrid.Dispose();
 		}
 
 	}
