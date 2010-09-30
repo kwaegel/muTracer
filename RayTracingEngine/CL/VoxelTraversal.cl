@@ -75,17 +75,17 @@ render (	const		float4		cameraPosition,
 	float4 rayOrigin = transformVector(unprojectionMatrix, screenPoint);
 	float4 rayDirection = fast_normalize(rayOrigin - cameraPosition);
 
-	/**** Create generic test data ****/
-
-	// create test light
+	// create a generic test light
 	float4 lightPosition = (float4)(10.0f, 20.0f, 10.0f, 1.0f);
 
 	// set the default background color
 	float4 color = backgroundColor;
 
-	float nearestIntersection = INFINITY;
+	
 
 	/**** Traverse the grid and find the nearest occupied cell ****/
+	float nearestIntersection = INFINITY;
+
 	// setup up traversel variables
 
 	// get grid size from the texture file
@@ -93,28 +93,24 @@ render (	const		float4		cameraPosition,
 	int gridWidth = get_image_width(voxelGrid);
 
 	// traversel values
-	int4 step;		// cell widths
-	float4 tMax;	// min distance to move before crossing a gird boundary
-	float4 tDelta;	// distance (in t) between cell boundaries
-	int4 index;		// index of the current voxel
-	int4 out;		// index of invalid first voxel index.
-	float totalT;	// the distance from ray start to the cell intersection
+	
 
-	// convert the ray start position to grid space
+
+	// Center the grid at 0,0,0
 	float4 halfGridWidth = (gridWidth * cellSize) / 2.0f;
 	float4 gridOrigin = (float4)(-halfGridWidth);
 	gridOrigin.w = 1.0f;
 
+	// convert the ray start position to grid space
 	float4 gridSpaceCoordinates = rayOrigin - gridOrigin;
 
 	// get the current grid cell index and the distance to the next cell boundary
-	//float4 frac = gridSpaceCoordinates % (float)cellSize;
-	//index = (int4)(gridSpaceCoordinates / cellSize); // space to gird coords
+	int4 index;	// index of the current voxel
 	float4 frac = remquo(gridSpaceCoordinates, (float4)cellSize, &index);
-	
 
-	out = -1;
-	step = -1;
+
+	int4 step = -1;		// cell direction to step in
+	int4 out = -1;		// index of the first positive invalid voxel index.
 	if (rayDirection.x >= 0)
 	{
 		out.x = gridWidth;
@@ -134,16 +130,19 @@ render (	const		float4		cameraPosition,
 		frac.z = cellSize - frac.z;
 	}
 
-	tMax = frac / rayDirection;
-	tDelta = cellSize / rayDirection;// compute projections onto the coordinate axes
-	tDelta = copysign(tDelta, (float4)1);
+	// tMax: min distance to move before crossing a gird boundary
+	float4 tMax = frac / rayDirection;
+
+	// tDelta: distance (in t) between cell boundaries
+	float4 tDelta = ((float4)cellSize) / rayDirection;// compute projections onto the coordinate axes
+	tDelta = copysign(tDelta, (float4)1.0f);	// must be positive
 
 	// begin grid traversel
-	//totalT = 0.0f;
 	bool containsGeometry = false;
 	float4 cellData;
 	do
 	{
+
 		if (tMax.x < tMax.y)
 		{
 			if (tMax.x < tMax.z)
@@ -181,6 +180,7 @@ render (	const		float4		cameraPosition,
 
 /*
 		// Idea: use mask boolean values to aviod conditionals
+		// problem: select only the MSB but bools are in the LSB.
 		int4 mask;
 		mask.x = (tMax.x < tMax.y) && (tMax.x < tMax.z);
 		mask.y = (tMax.y < tMax.x) && (tMax.y < tMax.z);
@@ -197,9 +197,6 @@ render (	const		float4		cameraPosition,
 		//tMax += tDelta * mask;
 		float4 tInc = select(tDelta, (float4)0, mask);
 		tMax += tInc;
-		
-		// only one of x,y,z should be non-zero.
-		totalT += (tInc.x+tInc.y+tInc.z);
 */
 
 		// get grid data at index
@@ -208,9 +205,6 @@ render (	const		float4		cameraPosition,
 		containsGeometry = cellData.x > 0 || cellData.y > 0 || cellData.z > 0 || cellData.w > 0;
 
 	} while (!containsGeometry);
-
-	// compute intersection point
-	//float4 collisionPoint = rayOrigin + (rayDirection * totalT);
 
 	/**** Write output to image ****/
 	if (containsGeometry)
