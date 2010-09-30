@@ -66,7 +66,7 @@ render (				const		float4			cameraPosition,
 	int2 size = get_image_dim(outputImage);
 
 	// convert to normilized device coordinates
-	float2 screenPoint2d = (float2)(2.0f, 2.0f) * convert_float2(coord) / convert_float2(size) - (float2)(1.0f, 1.0f);
+	float2 screenPoint2d = (float2)(2.0f) * convert_float2(coord) / convert_float2(size) - (float2)(1.0f);
 
 	// unproject screen point to world
 	float4 screenPoint = (float4)(screenPoint2d.x, screenPoint2d.y, -1.0f, 1.0f);	
