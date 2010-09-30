@@ -40,7 +40,7 @@ namespace Raytracing.Driver
 		public static readonly Vector3 Up = Vector3.UnitY;
 		public static readonly Vector3 Down = -Vector3.UnitY;
 
-		private static float CameraMovementSpeed = 0.1f;	// in units
+		private static float CameraMovementSpeed = 0.05f;	// in units
 		private static float CameraRotationSpeed = 2.0f;	// in degrees
 
 		public static readonly Color4 DefaultBackgroundColor = Color4.DarkBlue;
@@ -99,6 +99,20 @@ namespace Raytracing.Driver
         {
             VSync = VSyncMode.On;
         }
+
+		protected override void Dispose(bool manual)
+		{
+			_clSphereBuffer.Dispose();
+			_voxelGrid.Dispose();
+			
+			_clCamera.Dispose();
+			_gridCamera.Dispose();
+
+			_commandQueue.Finish();
+			_commandQueue.Dispose();
+			_computeContext.Dispose();
+			base.Dispose(manual);
+		}
 
 		#region onLoad
 
@@ -361,6 +375,7 @@ namespace Raytracing.Driver
 			processCameraMovement(_rtCamera);
 			processCameraMovement(_clCamera);
 			processCameraMovement(_gridCamera);
+			System.Console.WriteLine(_gridCamera.Position);
 
             if (Keyboard[Key.Escape])
                 Exit();

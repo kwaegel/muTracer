@@ -140,6 +140,13 @@ namespace Raytracing.CL
 
 #endregion
 
+		public void Dispose()
+		{
+			_renderTarget.Dispose();
+			_renderKernel.Dispose();
+			_renderProgram.Dispose();
+		}
+
 #region Render
 
 		private Vector2 computeWorldWindowSize(float verticalfieldOfView)

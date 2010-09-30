@@ -27,6 +27,12 @@ namespace Raytracing.SceneStructures
 			_sphereBuffer = new ComputeBuffer<SphereStruct>(commandQueue.Context, ComputeMemoryFlags.ReadWrite, _maxItems);
 		}
 
+		public void Dispose()
+		{
+			_commandQueue.Finish();
+			_sphereBuffer.Dispose();
+		}
+
 		public void addSphere(SphereStruct newSphere)
 		{
 			if (_sphereList.Count < _sphereList.Capacity)
