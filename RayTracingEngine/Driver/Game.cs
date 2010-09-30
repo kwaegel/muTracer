@@ -102,13 +102,13 @@ namespace Raytracing.Driver
 
 		protected override void Dispose(bool manual)
 		{
+			_commandQueue.Finish();
 			_clSphereBuffer.Dispose();
 			_voxelGrid.Dispose();
 			
 			_clCamera.Dispose();
 			_gridCamera.Dispose();
 
-			_commandQueue.Finish();
 			_commandQueue.Dispose();
 			_computeContext.Dispose();
 			base.Dispose(manual);
@@ -236,7 +236,7 @@ namespace Raytracing.Driver
 							Color4 color = getColor(low, high, x, y, z);
 							Material mat = new Material(color, 0);
 							Vector3 position = new Vector3(x, y, z);
-							Sphere s = new Sphere(position, 0.25f, mat);
+							Sphere s = new Sphere(position, 0.5f, mat);
 							scene.add(s);
 
 							buffer.addSphere(new SphereStruct(position, 0.25f, color));
