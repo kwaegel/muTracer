@@ -31,31 +31,36 @@ raySphereIntersect(	private float4	origin,
 	float c = dot(originSubCenter, originSubCenter) - radius * radius;
 	
 	float bSqrSubC = fma(b,b,-c);	// bSqrSUbC = b * b - c;
+
 	// if (b*b-c) < 0, ray misses sphere
 	if (bSqrSubC < 0)
-		return -1;
+	{
+		return INFINITY;
+	}
 
 	float sqrtBC = native_sqrt(bSqrSubC);
 
 	float tPos = -b + sqrtBC;
 	float tNeg = -b - sqrtBC;
-
-	if (tPos < tNeg && tPos >= 0)
+	
+	if (tPos < tNeg && tPos > 0)
 	{
 		return tPos;
 	}
-	else if (tNeg < tPos && tNeg >= 0)
+	else if (tNeg < tPos && tNeg > 0)
 	{
 		return tNeg;
 	}
-
-	// Return the minimum positive value of T.
-	return min(max(0.0001f, tPos), max(0.0001f, tNeg));
+	else
+	{
+		return INFINITY;
+	}
 }
 
 kernel
 void
-render (				const		float4			cameraPosition,
+render (				const		float			time,
+						const		float4			cameraPosition,
 						const		float16			unprojectionMatrix,
 						const		float4			backgroundColor,
 						write_only	image2d_t		outputImage,
@@ -74,27 +79,17 @@ render (				const		float4			cameraPosition,
 	float4 rayDirection = fast_normalize(rayOrigin - cameraPosition);
 
 	// create test light
-	float4 lightPosition = (float4)(5.0f, 10.0f, 5.0f, 1.0f);
+	float4 lightPosition = (float4)(0.0f, 0.0f, 0.0f, 1.0f);
+	lightPosition.x = 5.0f * native_cos(time / 1.0f);
+	lightPosition.z = 5.0f * native_sin(time / 1.0f);
 
 	// set the default background color
 	float4 color = backgroundColor;
 
 	float nearestIntersection = INFINITY;
 
-	// copy sphere data to local memory for fast access
-	//event_t emptyEvent;
-	//event_t finishedBufferCopy = async_work_group_copy(tempBuffer, sphereArray, (size_t)sphereCount, emptyEvent);
-	//wait_group_events(1, &finishedBufferCopy);
-
 	for (int i=0; i<sphereCount; i++)
 	{
-		// unpack a float8 into a sphere structure
-		//float8 sphereData = tempBuffer[i];
-		//float8 sphereData = sphereArray[i];
-		//SphereStruct sphere;
-		//sphere.CenterAndRadius = sphereData.s0123;
-		//sphere.Color = sphereData.s4567;
-
 		SphereStruct sphere = sphereArray[i];
 
 		// Unpack center and radius.
@@ -105,7 +100,7 @@ render (				const		float4			cameraPosition,
 		// cast ray and check for collisions
 		float t = raySphereIntersect(rayOrigin, rayDirection, center, radius);
 
-		if (t > 0 && t < nearestIntersection)
+		if (t > 0 && t < INFINITY && t < nearestIntersection)
 		{
 			nearestIntersection = t;
 
@@ -125,3 +120,5 @@ render (				const		float4			cameraPosition,
 
 	write_imagef(outputImage, coord, color);
 }
+
+

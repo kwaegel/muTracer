@@ -3,7 +3,6 @@ using System.Drawing;
 using System.IO;
 using System.Collections.Generic;
 
-
 using Cloo;
 
 using OpenTK;
@@ -112,6 +111,14 @@ namespace Raytracing.CL
 				// Unable to handle error. Terminate application.
 				Environment.Exit(-1);
 			}
+            catch (InvalidBinaryComputeException)
+            {
+                String buildLog = _renderProgram.GetBuildLog(_commandQueue.Device);
+                System.Diagnostics.Trace.WriteLine(buildLog);
+
+                // Unable to handle error. Terminate application.
+                Environment.Exit(-1);
+            }
 		}
 
 
@@ -228,12 +235,13 @@ namespace Raytracing.CL
 			Vector4 homogeneousPosition = new Vector4(Position, 1);
 
 			// Set kernel arguments.
-			_renderKernel.SetValueArgument<Vector4>(0, homogeneousPosition);
-			_renderKernel.SetValueArgument<Matrix4>(1, _screenToWorldMatrix);
-			_renderKernel.SetValueArgument<Color4>(2, Color4.DarkBlue);
-			_renderKernel.SetMemoryArgument(3, _renderTarget);
-			_renderKernel.SetMemoryArgument(4, sphereBuffer.getBuffer());
-			_renderKernel.SetValueArgument<int>(5, sphereBuffer.getCount());
+            _renderKernel.SetValueArgument<float>(0, time);
+			_renderKernel.SetValueArgument<Vector4>(1, homogeneousPosition);
+			_renderKernel.SetValueArgument<Matrix4>(2, _screenToWorldMatrix);
+			_renderKernel.SetValueArgument<Color4>(3, Color4.DarkBlue);
+			_renderKernel.SetMemoryArgument(4, _renderTarget);
+			_renderKernel.SetMemoryArgument(5, sphereBuffer.getBuffer());
+			_renderKernel.SetValueArgument<int>(6, sphereBuffer.getCount());
 			
 			// Add render task to the device queue.
 			_commandQueue.Execute(_renderKernel, null, new long[] { ClientBounds.Width, ClientBounds.Height }, null, null);
