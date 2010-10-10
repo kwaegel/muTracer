@@ -52,9 +52,9 @@ namespace Raytracing.Driver
 		private int _frames = 0;
 		double _totalTime = 0;
 
-		private bool _renderCLCamera = false;
+		private bool _renderCLCamera = true;
 		private bool _renderSoftwareRTCamera = false;
-		private bool _renderGridCamera = true;
+		private bool _renderGridCamera = false;
 
 		private bool _cameraSelectionPressed = true;
 
@@ -139,20 +139,22 @@ namespace Raytracing.Driver
 			_rtCamera.VerticalFieldOfView = 60.0f;
 			_rtCamera.computeProjection();
 
-			Rectangle clDrawBounds = new Rectangle(0, 0, halfWidth, ClientRectangle.Height);
-			_clCamera = new CLCamera(clDrawBounds, _commandQueue, -Vector3.UnitZ, Vector3.UnitY, cameraPosition);
-			_clCamera.VerticalFieldOfView = 60.0f;
-			_clCamera.computeProjection();
+            Rectangle clDrawBounds = new Rectangle(0, 0, halfWidth, ClientRectangle.Height);
+            _clCamera = new CLCamera(clDrawBounds, _commandQueue, -Vector3.UnitZ, Vector3.UnitY, cameraPosition);
+            _clCamera.VerticalFieldOfView = 60.0f;
+            _clCamera.computeProjection();
 
 			_gridCamera = new GridCamera(clDrawBounds, _commandQueue, -Vector3.UnitZ, Vector3.UnitY, cameraPosition);
 			_gridCamera.VerticalFieldOfView = 60.0f;
 			_gridCamera.computeProjection();
 
 			// create the scene
-			_scene = new GridScene(16, 1);
+			//_scene = new GridScene(16, 1);
+			_scene = new LinearScene(Color4.CornflowerBlue);
 			_clSphereBuffer = new CLSphereBuffer(_commandQueue, 1024);
 			_scene.BackgroundColor = Color4.Black;
-			buildBlockScene(_scene, _clSphereBuffer);
+			//buildBlockScene(_scene, _clSphereBuffer);
+			buildEdgeScene(_scene, _clSphereBuffer);
 			//buildAxisScene(_scene, _clSphereBuffer);
 
 			// create a voxel grid for testing
@@ -215,15 +217,50 @@ namespace Raytracing.Driver
 			buffer.sendDataToDevice();
 		}
 
+		private void buildEdgeScene(Scene scene, CLSphereBuffer buffer)
+		{
+			_moveLight = true;
+
+			int low = -5;
+			int high = 5;
+
+			List<int> cornerList = new List<int>(2);
+			cornerList.Add(-5);
+			cornerList.Add(5);
+
+			foreach (int x in cornerList)
+			{
+				foreach (int y in cornerList)
+				{
+					foreach (int z in cornerList)
+					{
+							Color4 color = getColor(low, high, x, y, z);
+							Material mat = new Material(color, 0);
+							Vector3 position = new Vector3(x, y, z);
+							Sphere s = new Sphere(position, 0.5f, mat);
+							scene.add(s);
+
+							buffer.addSphere(new SphereStruct(position, 0.5f, color));
+					}
+				}
+			}
+
+
+			_light = new PointLight(Vector3.Zero, 1.0f, Color4.White);
+			scene.add(_light);
+
+			buffer.sendDataToDevice();
+		}
+
 		private void buildBlockScene(Scene scene, CLSphereBuffer buffer)
 		{
 			_moveLight = true;
 
-			//int low = -7;
-			//int high = 7;
+			int low = -5;
+			int high = 5;
 
-			int low = -1;
-			int high = 1;
+			//int low = -1;
+			//int high = 1;
 
 			for (int x = low; x <= high; x++)
 			{
@@ -231,7 +268,7 @@ namespace Raytracing.Driver
 				{
 					for (int z = low; z <= high; z++)
 					{
-						if (x != 0 || y != 0 || z != 0)
+						if (x != 0 && y != 0 && z != 0)
 						{
 							Color4 color = getColor(low, high, x, y, z);
 							Material mat = new Material(color, 0);
@@ -241,7 +278,7 @@ namespace Raytracing.Driver
 
 							buffer.addSphere(new SphereStruct(position, 0.25f, color));
 						}
-						else
+					    else
 						{
 							_light = new PointLight(Vector3.Zero, 1.0f, Color4.DarkKhaki);
 							scene.add(_light);
@@ -363,6 +400,12 @@ namespace Raytracing.Driver
 					System.Console.WriteLine("RT camera enabled =" + _renderSoftwareRTCamera);
 					_cameraSelectionPressed = true;
 				}
+				else if (Keyboard[Key.Number4])
+				{
+					_renderSoftwareRTCamera = false;
+					System.Console.WriteLine("RT camera disabled");
+					_cameraSelectionPressed = true;
+				}
 				
 			}
 			else if (!Keyboard[Key.Number1] && !Keyboard[Key.Number2])
@@ -375,7 +418,7 @@ namespace Raytracing.Driver
 			processCameraMovement(_rtCamera);
 			processCameraMovement(_clCamera);
 			processCameraMovement(_gridCamera);
-			System.Console.WriteLine(_gridCamera.Position);
+			System.Console.WriteLine(_rtCamera.Position);
 
             if (Keyboard[Key.Escape])
                 Exit();
