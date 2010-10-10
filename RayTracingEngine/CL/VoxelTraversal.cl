@@ -43,9 +43,6 @@ raySphereIntersect(	private float4	origin,
 	{
 		return tNeg;
 	}
-
-	// Return the minimum positive value of T.
-	return min(max(0.0001f, tPos), max(0.0001f, tNeg));
 }
 
 kernel
@@ -98,8 +95,7 @@ render (	const		float4		cameraPosition,
 
 	// Center the grid at 0,0,0
 	float4 halfGridWidth = (gridWidth * cellSize) / 2.0f;
-	float4 gridOrigin = (float4)(-halfGridWidth);
-	gridOrigin.w = 1.0f;
+	float4 gridOrigin = -halfGridWidth;
 
 	// convert the ray start position to grid space
 	float4 gridSpaceCoordinates = rayOrigin - gridOrigin;
