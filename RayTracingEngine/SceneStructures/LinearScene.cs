@@ -8,7 +8,7 @@ using OpenTK.Graphics;
 
 using Raytracing.Primitives;
 
-namespace Raytracing
+namespace Raytracing.SceneStructures
 {
 	/// <summary>
 	/// Searches the scene space using a simple linear search. Very slow for complex scenes.
@@ -41,6 +41,11 @@ namespace Raytracing
 		public override void add(PointLight light)
 		{
 			_lightList.Add(light);
+		}
+
+		public override List<PointLight> getLights()
+		{
+			return _lightList;
 		}
 
 

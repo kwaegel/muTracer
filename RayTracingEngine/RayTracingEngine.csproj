@@ -109,7 +109,7 @@
     <None Include="RayCastingUtils.cs" />
     <Compile Include="RayTracingCamera.cs" />
     <Compile Include="SceneStructures\GridScene.cs" />
-    <None Include="SceneStructures\LinearScene.cs" />
+    <Compile Include="SceneStructures\LinearScene.cs" />
     <None Include="SceneStructures\OctreeScene.cs" />
     <Compile Include="SceneStructures\Scene.cs" />
     <None Include="SceneStructures\SimpleScene.cs" />
