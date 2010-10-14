@@ -51,7 +51,7 @@ namespace Raytracing.CL
 			ColorArray[7, 7, 8] = Color4.Blue;
 
 			ColorArray[8, 8, 7] = Color4.Yellow;
-			ColorArray[7, 7, 8] = Color4.Magenta;
+			ColorArray[8, 7, 8] = Color4.Magenta;
 			ColorArray[7, 8, 8] = Color4.Cyan;
 
 			ColorArray[8, 8, 8] = Color4.White;
