@@ -62,6 +62,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="BoundingVolumes\AxisAlignedBoundingBox.cs" />
+    <Compile Include="ClCameraInCS.cs" />
     <Compile Include="CL\CLCamera.cs" />
     <Compile Include="CL\VoxelGrid.cs" />
     <Compile Include="CL\GridCamera.cs" />
@@ -110,9 +111,7 @@
     <Compile Include="RayTracingCamera.cs" />
     <Compile Include="SceneStructures\GridScene.cs" />
     <Compile Include="SceneStructures\LinearScene.cs" />
-    <None Include="SceneStructures\OctreeScene.cs" />
     <Compile Include="SceneStructures\Scene.cs" />
-    <None Include="SceneStructures\SimpleScene.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />

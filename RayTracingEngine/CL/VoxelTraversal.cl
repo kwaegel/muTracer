@@ -103,6 +103,7 @@ render (	const		float4		cameraPosition,
 	// get the current grid cell index and the distance to the next cell boundary
 	int4 index;	// index of the current voxel
 	float4 frac = remquo(gridSpaceCoordinates, (float4)cellSize, &index);
+	
 
 
 	int4 step = -1;		// cell direction to step in

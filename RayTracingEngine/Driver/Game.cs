@@ -52,9 +52,11 @@ namespace Raytracing.Driver
 		private int _frames = 0;
 		double _totalTime = 0;
 
-		private bool _renderCLCamera = true;
-		private bool _renderSoftwareRTCamera = false;
-		private bool _renderGridCamera = false;
+		private bool _renderCLCamera			= false;
+		private bool _renderSoftwareRTCamera	= false;
+
+		private bool _renderGridCamera			= true;
+		private bool _renderSoftwareGridCamera	= true;
 
 		private bool _cameraSelectionPressed = true;
 
@@ -78,6 +80,7 @@ namespace Raytracing.Driver
 		#region Cameras
 
 		RayTracingCamera _rtCamera;
+		ClCameraInCS _softwareGridCamera;
 		CLCamera _clCamera;		// test camera using OpenCL
 		GridCamera _gridCamera;	// Camera using voxel traversal
 
@@ -129,7 +132,7 @@ namespace Raytracing.Driver
 
 			// create the camera
 			// looking down the Z-axis into the scene
-			Vector3 cameraPosition = new Vector3(0, 0, 5f);
+			Vector3 cameraPosition = new Vector3(0, 0, 1.0f);
 			Quaternion cameraRotation = Quaternion.Identity;
 
 			int halfWidth = ClientRectangle.Width / 2;
@@ -148,9 +151,13 @@ namespace Raytracing.Driver
 			_gridCamera.VerticalFieldOfView = 60.0f;
 			_gridCamera.computeProjection();
 
+			_softwareGridCamera = new ClCameraInCS(rtDrawBounds, (-Vector3.UnitZ), Vector3.UnitY, cameraPosition);
+			_softwareGridCamera.VerticalFieldOfView = 60.0f;
+			_softwareGridCamera.computeProjection();
+
 			// create the scene
-			//_scene = new GridScene(16, 1);
-			_scene = new LinearScene(Color4.CornflowerBlue);
+			_scene = new GridScene(16, 1);
+			//_scene = new LinearScene(Color4.CornflowerBlue);
 			_clSphereBuffer = new CLSphereBuffer(_commandQueue, 1024);
 			_scene.BackgroundColor = Color4.Black;
 			//buildBlockScene(_scene, _clSphereBuffer);
@@ -158,7 +165,7 @@ namespace Raytracing.Driver
 			//buildAxisScene(_scene, _clSphereBuffer);
 
 			// create a voxel grid for testing
-			_voxelGrid = createVoxelGrid(10, 10); 
+			_voxelGrid = createVoxelGrid(16, 10); 
 
 			_scene.BackgroundColor = DefaultBackgroundColor;
         }
@@ -195,7 +202,7 @@ namespace Raytracing.Driver
 		/// <returns></returns>
 		private VoxelGrid createVoxelGrid(float gridWidth, int gridResolution)
 		{
-			VoxelGrid grid = new VoxelGrid(_commandQueue, 10, 10);
+			VoxelGrid grid = new VoxelGrid(_commandQueue, 16, 16);
 
 			return grid;
 		}
@@ -397,12 +404,20 @@ namespace Raytracing.Driver
 				if (Keyboard[Key.Number3])
 				{
 					_renderSoftwareRTCamera = !_renderSoftwareRTCamera;
+					_renderSoftwareGridCamera = false;
 					System.Console.WriteLine("RT camera enabled =" + _renderSoftwareRTCamera);
 					_cameraSelectionPressed = true;
 				}
 				else if (Keyboard[Key.Number4])
 				{
+					_renderSoftwareGridCamera = true;
 					_renderSoftwareRTCamera = false;
+					_cameraSelectionPressed = true;
+				}
+				else if (Keyboard[Key.Number5])
+				{
+					_renderSoftwareRTCamera = false;
+					_renderSoftwareGridCamera = false;
 					System.Console.WriteLine("RT camera disabled");
 					_cameraSelectionPressed = true;
 				}
@@ -418,7 +433,9 @@ namespace Raytracing.Driver
 			processCameraMovement(_rtCamera);
 			processCameraMovement(_clCamera);
 			processCameraMovement(_gridCamera);
-			System.Console.WriteLine(_rtCamera.Position);
+			_softwareGridCamera.Rotation = _rtCamera.Rotation;
+			_softwareGridCamera.Position = _rtCamera.Position;
+			//System.Console.WriteLine(_rtCamera.Position);
 
             if (Keyboard[Key.Escape])
                 Exit();
@@ -505,6 +522,14 @@ namespace Raytracing.Driver
 				_rtCamera.render(_scene);
 			}
 
+			if (_renderSoftwareGridCamera)
+			{
+				GL.Viewport(halfWidth, 0, halfWidth, ClientRectangle.Height);
+				_softwareGridCamera.computeView();
+				_softwareGridCamera.setVoxelGrid(_voxelGrid);
+				_softwareGridCamera.render(_scene);
+			}
+
 			if (_renderCLCamera)
 			{
 				_clSphereBuffer.sendDataToDevice();
@@ -561,7 +586,7 @@ namespace Raytracing.Driver
             // RenderFrame events (as fast as the computer can handle).
             using (Game game = new Game())
             {
-                //game.Run(30.0);	// this causes two updates per draw call
+				//game.Run(30.0);	// this causes two updates per draw call
 				game.Run();
             }
         }

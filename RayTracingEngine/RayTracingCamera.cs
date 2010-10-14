@@ -15,9 +15,9 @@ namespace Raytracing
 	{
 		//public static readonly Vector3 Forward = -Vector3.UnitZ;
 
-		Vector2[,] _normilizedScreenPoints;
-		Color4[] _pixelBuffer;
-		Color4[,] _pixelBufferRec;
+		protected Vector2[,] _normilizedScreenPoints;
+		protected Color4[] _pixelBuffer;
+		protected Color4[,] _pixelBufferRec;
 
 		Matrix4 _oldView;
 
@@ -29,11 +29,11 @@ namespace Raytracing
 #endif
 
 		// worker syncronisation.
-		int _nextRowToProcess;
-		private static Mutex _rayToProcessLock = new Mutex();
+		protected int _nextRowToProcess;
+		protected static Mutex _rayToProcessLock = new Mutex();
 
 		// synchronize between worker thread
-		ManualResetEvent[] _resetEvents;
+		protected ManualResetEvent[] _resetEvents;
 
 		//SimpleScene _scene;
 		Scene _gridScene;
@@ -62,7 +62,7 @@ namespace Raytracing
 			rayTracingInit();
 		}
 
-		private void rayTracingInit()
+		protected void rayTracingInit()
 		{
 			_renderTextureID = GL.GenTexture();
 			_oldView = new Matrix4();
@@ -163,7 +163,7 @@ namespace Raytracing
 
 		}
 
-		private Ray unprojectPointIntoWorld(Vector2 point)
+		protected Ray unprojectPointIntoWorld(Vector2 point)
 		{
 			Vector3 screenPoint = new Vector3(point);
 			screenPoint.Z = -1;
@@ -285,7 +285,7 @@ namespace Raytracing
 
 
 		// process rays by row
-		private void gridWorker(Object o)
+		protected virtual void gridWorker(Object o)
 		{
 			int workerIndex = (int)o;
 
