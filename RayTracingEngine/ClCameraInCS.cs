@@ -122,16 +122,15 @@ namespace Raytracing
 			// convert the ray start position to grid space
 			Vector3 gridSpaceCoordinates = rayOrigin - gridOrigin;
 
-			// get the current grid cell index and the distance to the next cell boundary
-			//float4 frac = remquo(gridSpaceCoordinates, (float4)cellSize, &index);
-			float fracX = gridSpaceCoordinates.X % cellSize;
-			float fracY = gridSpaceCoordinates.Y % cellSize;
-			float fracZ = gridSpaceCoordinates.Z % cellSize;
-
+			// Get the index of the voxel the ray starts in
 			int indexX = (int)(gridSpaceCoordinates.X / cellSize);	// int4 index;	// index of the current voxel
 			int indexY = (int)(gridSpaceCoordinates.Y / cellSize);
 			int indexZ = (int)(gridSpaceCoordinates.Z / cellSize);
 
+			// Get the distance to the next voxel boundary
+			float fracX = gridSpaceCoordinates.X % cellSize;
+			float fracY = gridSpaceCoordinates.Y % cellSize;
+			float fracZ = gridSpaceCoordinates.Z % cellSize;
 
 			int stepX = -1;
 			int stepY = -1;
@@ -145,11 +144,19 @@ namespace Raytracing
 				stepX = 1;
 				fracX = cellSize - fracX;
 			}
+			else
+			{
+				fracX = -fracX;
+			}
 			if (rayDirection.Y >= 0)
 			{
 				outIndexY = gridWidth;
 				stepY = 1;
 				fracY = cellSize - fracY;
+			}
+			else
+			{
+				fracY = -fracY;
 			}
 			if (rayDirection.Z >= 0)
 			{
@@ -157,12 +164,16 @@ namespace Raytracing
 				stepZ = 1;
 				fracZ = cellSize - fracZ;
 			}
+			else
+			{
+				fracZ = -fracZ;
+			}
 
 			// tMax: min distance to move before crossing a gird boundary
-			//Vector4 tMax = frac / rayDirection;
-			float tMaxX = System.Math.Abs(fracX / rayDirection.X);
-			float tMaxY = System.Math.Abs(fracY / rayDirection.Y);
-			float tMaxZ = System.Math.Abs(fracZ / rayDirection.X);
+			// This should be positive, but that is not happaning...
+			float tMaxX = fracX / rayDirection.X;
+			float tMaxY = fracY / rayDirection.Y;
+			float tMaxZ = fracZ / rayDirection.Z;
 
 			// tDelta: distance (in t) between cell boundaries
 			//float4 tDelta = ((float4)cellSize) / rayDirection;// compute projections onto the coordinate axes
