@@ -70,7 +70,7 @@ render (	const		float4		cameraPosition,
 	// unproject screen point to world
 	float4 screenPoint = (float4)(screenPoint2d.x, screenPoint2d.y, -1.0f, 1.0f);	
 	float4 rayOrigin = transformVector(unprojectionMatrix, screenPoint);
-	float4 rayDirection = fast_normalize(rayOrigin - cameraPosition);
+	float4 rayDirection = normalize(rayOrigin - cameraPosition);
 
 	// create a generic test light
 	float4 lightPosition = (float4)(10.0f, 20.0f, 10.0f, 1.0f);
@@ -90,8 +90,6 @@ render (	const		float4		cameraPosition,
 	int gridWidth = get_image_width(voxelGrid);
 
 	// traversel values
-	
-
 
 	// Center the grid at 0,0,0
 	float4 halfGridWidth = (gridWidth * cellSize) / 2.0f;
@@ -101,9 +99,10 @@ render (	const		float4		cameraPosition,
 	float4 gridSpaceCoordinates = rayOrigin - gridOrigin;
 
 	// get the current grid cell index and the distance to the next cell boundary
+	// index = gridCoords / cellSize (integer division).
+	//  frac = gridCoords % cellSize
 	int4 index;	// index of the current voxel
 	float4 frac = remquo(gridSpaceCoordinates, (float4)cellSize, &index);
-	
 
 
 	int4 step = -1;		// cell direction to step in
@@ -114,17 +113,29 @@ render (	const		float4		cameraPosition,
 		step.x = 1;
 		frac.x = cellSize - frac.x;
 	}
+	else
+	{
+		frac.x = -frac.x;
+	}
 	if (rayDirection.y >= 0)
 	{
 		out.y = gridWidth;
 		step.y = 1;
 		frac.y = cellSize - frac.y;
 	}
+	else
+	{
+		frac.y = -frac.y;
+	}
 	if (rayDirection.z >= 0)
 	{
 		out.z = gridWidth;
 		step.z = 1;
 		frac.z = cellSize - frac.z;
+	}
+	else
+	{
+		frac.z = -frac.z;
 	}
 
 	// tMax: min distance to move before crossing a gird boundary
