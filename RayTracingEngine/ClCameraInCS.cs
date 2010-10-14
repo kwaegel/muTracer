@@ -108,24 +108,31 @@ namespace Raytracing
 			// setup up traversel variables
 
 			// get grid size from the texture file
-			//int4 gridSize = (int4)(get_image_width(voxelGrid), get_image_height(voxelGrid), get_image_depth(voxelGrid), 0);
-			int gridWidth = grid.GridResolution;	//int gridWidth = get_image_width(voxelGrid);
+			int gridWidth = grid.GridResolution;
 
 			// traversel values
 
 
 			// Center the grid at 0,0,0
 			float halfWidth = (gridWidth * cellSize) / 2.0f;
-			Vector3 halfGridWidth = new Vector3(halfWidth, halfWidth, halfWidth);	//float4 halfGridWidth = (gridWidth * cellSize) / 2.0f;
-			Vector3 gridOrigin = -halfGridWidth;	//float4 gridOrigin = -halfGridWidth;
+			Vector3 halfGridWidth = new Vector3(halfWidth, halfWidth, halfWidth);
+			Vector3 gridOrigin = -halfGridWidth;
 
 			// convert the ray start position to grid space
 			Vector3 gridSpaceCoordinates = rayOrigin - gridOrigin;
 
 			// Get the index of the voxel the ray starts in
-			int indexX = (int)(gridSpaceCoordinates.X / cellSize);	// int4 index;	// index of the current voxel
+			int indexX = (int)(gridSpaceCoordinates.X / cellSize);
 			int indexY = (int)(gridSpaceCoordinates.Y / cellSize);
 			int indexZ = (int)(gridSpaceCoordinates.Z / cellSize);
+
+			// Don't draw anything if the camera is outside the grid.
+			if (indexX < 0 || indexX > gridWidth ||
+				indexY < 0 || indexY > gridWidth ||
+				indexZ < 0 || indexZ > gridWidth)
+			{
+				return color;
+			}
 
 			// Get the distance to the next voxel boundary
 			float fracX = gridSpaceCoordinates.X % cellSize;
@@ -176,8 +183,7 @@ namespace Raytracing
 			float tMaxZ = fracZ / rayDirection.Z;
 
 			// tDelta: distance (in t) between cell boundaries
-			//float4 tDelta = ((float4)cellSize) / rayDirection;// compute projections onto the coordinate axes
-			//tDelta = copysign(tDelta, (float4)1.0f);	// must be positive
+			// Must be positive
 			float tDeltaX = System.Math.Abs(cellSize / rayDirection.X);
 			float tDeltaY = System.Math.Abs(cellSize / rayDirection.Y);
 			float tDeltaZ = System.Math.Abs(cellSize / rayDirection.Z);

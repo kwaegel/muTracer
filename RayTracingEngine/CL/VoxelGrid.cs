@@ -44,17 +44,17 @@ namespace Raytracing.CL
 			ColorArray[gridMax, gridMax, gridMax] = Color4.White;
 
 			// Center block
-			ColorArray[7, 7, 7] = Color4.Black;
+			//ColorArray[7, 7, 7] = Color4.Black;
 
 			ColorArray[8, 7, 7] = Color4.Red;
 			ColorArray[7, 8, 7] = Color4.Green;
 			ColorArray[7, 7, 8] = Color4.Blue;
 
-			ColorArray[8, 8, 7] = Color4.Yellow;
-			ColorArray[8, 7, 8] = Color4.Magenta;
-			ColorArray[7, 8, 8] = Color4.Cyan;
+			//ColorArray[8, 8, 7] = Color4.Yellow;
+			//ColorArray[8, 7, 8] = Color4.Magenta;
+			//ColorArray[7, 8, 8] = Color4.Cyan;
 
-			ColorArray[8, 8, 8] = Color4.White;
+			//ColorArray[8, 8, 8] = Color4.White;
 
 
 			ComputeImageFormat cif = new ComputeImageFormat(ComputeImageChannelOrder.Rgba, ComputeImageChannelType.Float);

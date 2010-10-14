@@ -132,7 +132,7 @@ namespace Raytracing.Driver
 
 			// create the camera
 			// looking down the Z-axis into the scene
-			Vector3 cameraPosition = new Vector3(0, 0, 1.0f);
+			Vector3 cameraPosition = new Vector3(0, 0, 1.5f);
 			Quaternion cameraRotation = Quaternion.Identity;
 
 			int halfWidth = ClientRectangle.Width / 2;
@@ -435,7 +435,7 @@ namespace Raytracing.Driver
 			processCameraMovement(_gridCamera);
 			_softwareGridCamera.Rotation = _rtCamera.Rotation;
 			_softwareGridCamera.Position = _rtCamera.Position;
-			//System.Console.WriteLine(_rtCamera.Position);
+			System.Console.WriteLine(_rtCamera.Position);
 
             if (Keyboard[Key.Escape])
                 Exit();
