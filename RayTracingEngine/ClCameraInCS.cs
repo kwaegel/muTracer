@@ -127,17 +127,18 @@ namespace Raytracing
 			int indexZ = (int)(gridSpaceCoordinates.Z / cellSize);
 
 			// Don't draw anything if the camera is outside the grid.
-			if (indexX < 0 || indexX > gridWidth ||
-				indexY < 0 || indexY > gridWidth ||
-				indexZ < 0 || indexZ > gridWidth)
+			// This prevents indexOutOfBounds exceptions during testing.
+			if (indexX < 0 || indexX >= gridWidth ||
+				indexY < 0 || indexY >= gridWidth ||
+				indexZ < 0 || indexZ >= gridWidth)
 			{
 				return color;
 			}
 
 			// Get the distance to the next voxel boundary
-			float fracX = gridSpaceCoordinates.X % cellSize;
-			float fracY = gridSpaceCoordinates.Y % cellSize;
-			float fracZ = gridSpaceCoordinates.Z % cellSize;
+			float fracX = -(gridSpaceCoordinates.X % cellSize);
+			float fracY = -(gridSpaceCoordinates.Y % cellSize);
+			float fracZ = -(gridSpaceCoordinates.Z % cellSize);
 
 			int stepX = -1;
 			int stepY = -1;
@@ -149,31 +150,19 @@ namespace Raytracing
 			{
 				outIndexX = gridWidth;
 				stepX = 1;
-				fracX = cellSize - fracX;
-			}
-			else
-			{
-				fracX = -fracX;
+				fracX = cellSize + fracX;	// frac is negative
 			}
 			if (rayDirection.Y >= 0)
 			{
 				outIndexY = gridWidth;
 				stepY = 1;
-				fracY = cellSize - fracY;
-			}
-			else
-			{
-				fracY = -fracY;
+				fracY = cellSize + fracY;	// frac is negative
 			}
 			if (rayDirection.Z >= 0)
 			{
 				outIndexZ = gridWidth;
 				stepZ = 1;
-				fracZ = cellSize - fracZ;
-			}
-			else
-			{
-				fracZ = -fracZ;
+				fracZ = cellSize + fracZ;	// frac is negative
 			}
 
 			// tMax: min distance to move before crossing a gird boundary
@@ -190,16 +179,25 @@ namespace Raytracing
 
 
 			// begin grid traversel
+			/*
+			 * Might want to change this to a while() loop to test the current voxel first,
+			 * before moving to the next one. I am not sure why this seems to be working in
+			 * the C# version.
+			 * */
 			bool containsGeometry = false;
-			Color4 cellData = Color4.Black;	//float4 cellData;
-			do
-			{
+			Color4 cellData;
 
+			// Check grid data at origional index
+			cellData = grid[indexX, indexY, indexZ];
+			containsGeometry = (cellData.R > 0 || cellData.G > 0 || cellData.B > 0 || cellData.A > 0);
+
+			while (!containsGeometry)
+			{
 				if (tMaxX < tMaxY)
 				{
 					if (tMaxX < tMaxZ)
 					{
-						indexX += stepX;	// step to next voxel along this axis
+						indexX += stepX;			// step to next voxel along this axis
 						if (indexX == outIndexX)	// outside grid
 							break;
 						tMaxX = tMaxX + tDeltaX;	// increment max distence to next voxel
@@ -231,19 +229,15 @@ namespace Raytracing
 				}
 
 				// get grid data at index
-				//cellData = read_imagef(voxelGrid, smp, index);
-				cellData = grid.ColorArray[indexX, indexY, indexZ];
-
-				containsGeometry = (cellData.R > 0 || cellData.G > 0 || cellData.B > 0);
-
-			} while (!containsGeometry);
+				cellData = grid[indexX, indexY, indexZ];
+				containsGeometry = (cellData.R > 0 || cellData.G > 0 || cellData.B > 0 || cellData.A > 0);
+			}
 
 			/**** Write output to image ****/
 			if (containsGeometry)
 			{
 				color = cellData;
 			}
-
 
 			return color;	//write_imagef(outputImage, coord, color);
 		}
