@@ -156,8 +156,7 @@ namespace Raytracing
 					float x = 2.0f * col / columns - 1.0f;
 					float y = 2.0f * row / rows - 1.0f;
 
-					// why did I need to transpose the x and y coordinates here?
-					_normilizedScreenPoints[col, row] = new Vector2(x,y);
+					_normilizedScreenPoints[col, row] = new Vector2(x, y);
 				}
 			}
 

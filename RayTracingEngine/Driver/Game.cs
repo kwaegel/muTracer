@@ -132,27 +132,28 @@ namespace Raytracing.Driver
 
 			// create the camera
 			// looking down the Z-axis into the scene
-			Vector3 cameraPosition = new Vector3(0, 0, 1.5f);
+			Vector3 cameraPosition = new Vector3(0, 0, 5.5f);
 			Quaternion cameraRotation = Quaternion.Identity;
+			float vFOV = 75.0f;
 
 			int halfWidth = ClientRectangle.Width / 2;
 
 			Rectangle rtDrawBounds = new Rectangle(halfWidth, 0, halfWidth, ClientRectangle.Height);
 			_rtCamera = new RayTracingCamera(rtDrawBounds, (-Vector3.UnitZ), Vector3.UnitY, cameraPosition);
-			_rtCamera.VerticalFieldOfView = 60.0f;
+			_rtCamera.VerticalFieldOfView = vFOV;
 			_rtCamera.computeProjection();
 
             Rectangle clDrawBounds = new Rectangle(0, 0, halfWidth, ClientRectangle.Height);
             _clCamera = new CLCamera(clDrawBounds, _commandQueue, -Vector3.UnitZ, Vector3.UnitY, cameraPosition);
-            _clCamera.VerticalFieldOfView = 60.0f;
+			_clCamera.VerticalFieldOfView = vFOV;
             _clCamera.computeProjection();
 
 			_gridCamera = new GridCamera(clDrawBounds, _commandQueue, -Vector3.UnitZ, Vector3.UnitY, cameraPosition);
-			_gridCamera.VerticalFieldOfView = 60.0f;
+			_gridCamera.VerticalFieldOfView = vFOV;
 			_gridCamera.computeProjection();
 
 			_softwareGridCamera = new ClCameraInCS(rtDrawBounds, (-Vector3.UnitZ), Vector3.UnitY, cameraPosition);
-			_softwareGridCamera.VerticalFieldOfView = 60.0f;
+			_softwareGridCamera.VerticalFieldOfView = vFOV;
 			_softwareGridCamera.computeProjection();
 
 			// create the scene
@@ -430,71 +431,91 @@ namespace Raytracing.Driver
 
 
 			// move both cameras
-			processCameraMovement(_rtCamera);
-			processCameraMovement(_clCamera);
-			processCameraMovement(_gridCamera);
+			processCameraMovement(_rtCamera, (float)e.Time, false);
+
+			// copy position and rotation to other cameras
+			_gridCamera.Position = _rtCamera.Position;
+			_gridCamera.Rotation = _rtCamera.Rotation;
+
+			_clCamera.Position = _rtCamera.Position;
+			_clCamera.Rotation = _rtCamera.Rotation;
+
 			_softwareGridCamera.Rotation = _rtCamera.Rotation;
 			_softwareGridCamera.Position = _rtCamera.Position;
+
+			// DEBUG: print the camera location
 			System.Console.WriteLine(_rtCamera.Position);
 
             if (Keyboard[Key.Escape])
                 Exit();
         }
 
-		private void processCameraMovement(MuxEngine.Movables.Camera currentCamera)
+		private void processCameraMovement(MuxEngine.Movables.Camera currentCamera, float time, bool scaleSpeed)
 		{
+			
+			// adjust movement speed relative to the time between frames
+			float adjustedMovementSpeed = CameraMovementSpeed;
+			float adjustedRotationSpeed = CameraRotationSpeed;
+			if (scaleSpeed)
+			{
+				float fps = 1.0f / time;
+				float scale = 40 / fps;
+				adjustedMovementSpeed *= scale;
+				adjustedRotationSpeed *= scale;
+			}
+
 			if (Keyboard[Key.A])
 			{
-				currentCamera.moveLocal(Left, CameraMovementSpeed);
+				currentCamera.moveLocal(Left, adjustedMovementSpeed);
 			}
 			else if (Keyboard[Key.E] || Keyboard[Key.D])
 			{
-				currentCamera.moveLocal(Right, CameraMovementSpeed);
+				currentCamera.moveLocal(Right, adjustedMovementSpeed);
 			}
 
 			if (Keyboard[Key.Comma] || Keyboard[Key.W])
 			{
-				currentCamera.moveLocal(Forward, CameraMovementSpeed);
+				currentCamera.moveLocal(Forward, adjustedMovementSpeed);
 			}
 			else if (Keyboard[Key.O] || Keyboard[Key.S])
 			{
-				currentCamera.moveLocal(Backward, CameraMovementSpeed);
+				currentCamera.moveLocal(Backward, adjustedMovementSpeed);
 			}
 
 			if (Keyboard[Key.Period])
 			{
-				currentCamera.moveLocal(Up, CameraMovementSpeed);
+				currentCamera.moveLocal(Up, adjustedMovementSpeed);
 			}
 			else if (Keyboard[Key.J])
 			{
-				currentCamera.moveLocal(Down, CameraMovementSpeed);
+				currentCamera.moveLocal(Down, adjustedMovementSpeed);
 			}
 
 			if (Keyboard[Key.Keypad4])
 			{
-				currentCamera.yaw(CameraRotationSpeed);
+				currentCamera.yaw(adjustedRotationSpeed);
 			}
 			else if (Keyboard[Key.Keypad6])
 			{
-				currentCamera.yaw(-CameraRotationSpeed);
+				currentCamera.yaw(-adjustedRotationSpeed);
 			}
 
 			if (Keyboard[Key.Keypad8])
 			{
-				currentCamera.pitch(CameraRotationSpeed);
+				currentCamera.pitch(adjustedRotationSpeed);
 			}
 			else if (Keyboard[Key.Keypad2])
 			{
-				currentCamera.pitch(-CameraRotationSpeed);
+				currentCamera.pitch(-adjustedRotationSpeed);
 			}
 
 			if (Keyboard[Key.Keypad7])
 			{
-				currentCamera.roll(-CameraRotationSpeed);
+				currentCamera.roll(-adjustedRotationSpeed);
 			}
 			else if (Keyboard[Key.Keypad9])
 			{
-				currentCamera.roll(CameraRotationSpeed);
+				currentCamera.roll(adjustedRotationSpeed);
 			}
 		}
 

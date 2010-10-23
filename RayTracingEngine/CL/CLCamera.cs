@@ -2,6 +2,7 @@
 using System.Drawing;
 using System.IO;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 
 using Cloo;
 
@@ -12,8 +13,22 @@ using OpenTK.Graphics.OpenGL;
 using Raytracing.Primitives;
 using Raytracing.SceneStructures;
 
+using float4 = OpenTK.Vector4;
+
 namespace Raytracing.CL
 {
+	[StructLayout(LayoutKind.Sequential, Pack = 16)]
+	unsafe public struct DebugStruct
+	{
+		public float4 rayOrigin;
+		public float4 rayDirection;
+		public float4 gridSpaceCoordinates;
+		public float4 frac;
+		public float4 tMax;
+		public float4 tDelta;
+		public Color4 cellData;
+	}
+
 	class CLCamera : MuxEngine.Movables.Camera
 	{
 
@@ -36,6 +51,10 @@ namespace Raytracing.CL
 
 		protected ComputeProgram _renderProgram;
 		protected ComputeKernel _renderKernel;
+
+		// Debugging buffers. Used to get data out of the kernel.
+		protected float4[] _debugValues;
+		protected ComputeBuffer<float4> _debugBuffer;
 
 #endregion
 
@@ -62,6 +81,9 @@ namespace Raytracing.CL
 		private void rayTracingInit(ComputeCommandQueue commandQueue)
 		{
 			_commandQueue = commandQueue;
+
+			_debugValues = new float4[2*8];
+			_debugBuffer = new ComputeBuffer<float4>(commandQueue.Context, ComputeMemoryFlags.ReadWrite | ComputeMemoryFlags.CopyHostPointer, _debugValues);
 
 			createSharedTexture();
 
