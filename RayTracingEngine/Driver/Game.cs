@@ -98,9 +98,9 @@ namespace Raytracing.Driver
 
 		/// <summary>Creates a window with the specified title.</summary>
         public Game()
-            : base(800, 400, GraphicsMode.Default, "Raytracing tester")
+            : base(1200, 600, GraphicsMode.Default, "Raytracing tester")
         {
-            VSync = VSyncMode.On;
+            VSync = VSyncMode.Off;
         }
 
 		protected override void Dispose(bool manual)
@@ -171,7 +171,7 @@ namespace Raytracing.Driver
 			_scene.BackgroundColor = DefaultBackgroundColor;
         }
 
-		// Create a sharde context between OpenGL and OpenCL. 
+		// Create a shared context between OpenGL and OpenCL. 
 		private void openCLSharedInit()
 		{
 			// select OpenCL device and platform
@@ -191,7 +191,7 @@ namespace Raytracing.Driver
 
 			_computeContext = new ComputeContext(ComputeDeviceTypes.Gpu, Properties, null, IntPtr.Zero);
 
-			//Create the command queue from the context and device
+			// Create the command queue from the context and device.
 			_commandQueue = new ComputeCommandQueue(_computeContext, device, ComputeCommandQueueFlags.None);
 		}
 
@@ -317,11 +317,14 @@ namespace Raytracing.Driver
         /// Called when your window is resized. Set your viewport here. It is also
         /// a good place to set up your projection matrix (which probably changes
         /// along when the aspect ratio of your window).
+		/// 
+		/// WARNING: resizing the window may invaladate OpenCL command queues!
+		/// This has not been accouted for yet.
         /// </summary>
         /// <param name="e">Not used.</param>
         protected override void OnResize(EventArgs e)
         {
-			// WARNING: resizing the window invaladates all OpenCL command queues!
+			// WARNING: resizing the window may invaladate OpenCL command queues!
 			// This has not been accouted for yet.
 
             base.OnResize(e);
@@ -334,10 +337,9 @@ namespace Raytracing.Driver
 			_clCamera.computeProjection();
 
 			// Set the viewport bounds for the RT camera
-			Rectangle rtDrawBounds = new Rectangle(0, halfWidth, halfWidth, ClientRectangle.Height);
+			Rectangle rtDrawBounds = new Rectangle(halfWidth, 0, halfWidth, ClientRectangle.Height);
 			_rtCamera.setClientBounds(rtDrawBounds);
 			_rtCamera.computeProjection();
-
 
 			// orthographic projection
 			GL.MatrixMode(MatrixMode.Projection);
@@ -444,7 +446,7 @@ namespace Raytracing.Driver
 			_softwareGridCamera.Position = _rtCamera.Position;
 
 			// DEBUG: print the camera location
-			System.Console.WriteLine(_rtCamera.Position);
+			//System.Console.WriteLine(_rtCamera.Position);
 
             if (Keyboard[Key.Escape])
                 Exit();
@@ -533,20 +535,14 @@ namespace Raytracing.Driver
 			// clear the screen
 			GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
 
-			int halfWidth = ClientRectangle.Width / 2;
-
-			// Render the scene
+			// Render the scene with which ever cameras are selected.
 			if (_renderSoftwareRTCamera)
 			{
-				GL.Viewport(halfWidth, 0, halfWidth, ClientRectangle.Height);
-				_rtCamera.computeView();
 				_rtCamera.render(_scene);
 			}
 
 			if (_renderSoftwareGridCamera)
 			{
-				GL.Viewport(halfWidth, 0, halfWidth, ClientRectangle.Height);
-				_softwareGridCamera.computeView();
 				_softwareGridCamera.setVoxelGrid(_voxelGrid);
 				_softwareGridCamera.render(_scene);
 			}
@@ -554,29 +550,19 @@ namespace Raytracing.Driver
 			if (_renderCLCamera)
 			{
 				_clSphereBuffer.sendDataToDevice();
-
-				GL.Viewport(0, 0, halfWidth, ClientRectangle.Height);
-				_clCamera.computeView();
 				_clCamera.render(_clSphereBuffer, (float)_totalTime);
 			}
 
 			if (_renderGridCamera)
 			{
-				GL.Viewport(0, 0, halfWidth, ClientRectangle.Height);
-				_gridCamera.computeView();
 				_gridCamera.render(_voxelGrid, (float)_totalTime);
 			}
 
-			Matrix4 rtMatrix = _rtCamera.getScreenToWorldMatrix();
-			Matrix4 clMatrix = _clCamera.getScreenToWorldMatrix();
-
-
-
-			// display the new frame
+			// Display the frame that was just rendered.
 			SwapBuffers();
 		}
 
-		// Display the FPS in the title bar.
+		// Display the FPS and ray count in the title bar.
 		private void updateTitle(float fps)
 		{
 			int pixels = ClientSize.Height * ClientSize.Width;
@@ -607,8 +593,7 @@ namespace Raytracing.Driver
             // RenderFrame events (as fast as the computer can handle).
             using (Game game = new Game())
             {
-				//game.Run(30.0);	// this causes two updates per draw call
-				game.Run();
+				game.Run(30.0);	// this causes two updates per draw call when draw is slow.
             }
         }
     }

@@ -99,10 +99,6 @@ namespace Raytracing
 			_resetEvents[workerIndex].Set();
 		}
 
-
-
-
-
 		private Color4 getPixelColor(Vector3 rayOrigin, Vector3 rayDirection, VoxelGrid grid, Color4 backgroundColor, bool debug)
 		{
 			Color4 color = backgroundColor;

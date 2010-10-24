@@ -186,6 +186,12 @@ namespace Raytracing
 		/// <param name="scene"></param>
 		public void render(Scene scene)
 		{
+			// Switch viewport to camera client bounds
+			GL.Viewport(ClientBounds);
+
+			// Compute the new view matrix.
+			computeView();
+
 			// hold reference to the scene
 			_gridScene = scene;
 

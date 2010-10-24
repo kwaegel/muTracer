@@ -106,6 +106,9 @@ namespace Raytracing.CL
 
 		public void render(VoxelGrid grid, float time)
 		{
+			// Compute new view matrix.
+			computeView();
+
 			// Raytrace the scene and render to a texture
 			renderSceneToTexture(grid, time);
 
@@ -115,6 +118,9 @@ namespace Raytracing.CL
 
 		private void renderSceneToTexture(VoxelGrid voxelGrid, float time)
 		{
+			// Switch viewport to camera client bounds
+			GL.Viewport(ClientBounds);
+
 			// Aquire lock on OpenGL objects.
 			GL.Finish();
 			_commandQueue.AcquireGLObjects(_sharedObjects, null);
@@ -143,9 +149,8 @@ namespace Raytracing.CL
 			_commandQueue.Finish();
 
 			// Print debug information from kernel call.
-			_commandQueue.ReadFromBuffer<float4>(_debugBuffer, ref _debugValues, true, null);
+			//_commandQueue.ReadFromBuffer<float4>(_debugBuffer, ref _debugValues, true, null);
 			//unpackDebugValues(_debugValues);
-
 			//System.Diagnostics.Trace.WriteLine("");
 		}
 

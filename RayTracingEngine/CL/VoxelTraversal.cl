@@ -61,12 +61,8 @@ float4
 myRemquo(float4 x, float4 y, int4* quo)
 {
 	float4 n = floor(x/y);
-
 	(*quo) = convert_int4(n);
-
 	return (x - n * y);
-
-	
 }
 
 kernel
@@ -131,9 +127,9 @@ render (	const		float4		cameraPosition,
 	// index = gridCoords / cellSize (integer division).
 	//  frac = gridCoords % cellSize
 	int4 index;	// index of the current voxel
-	float4 frac = myRemquo(gridSpaceCoordinates, (float4)cellSize, &index);
+	float4 frac = -myRemquo(gridSpaceCoordinates, (float4)cellSize, &index);
 
-
+/*
 	// Output debugging info
 	if (debugPixel && debugIndex <= debugSetCount)
 	{
@@ -144,8 +140,7 @@ render (	const		float4		cameraPosition,
 
 		debugIndex++;
 	}
-
-	frac = -frac;
+*/
 	
 	// Don't draw anything if the camera is outside the grid.
 	// This prevents indexOutOfBounds exceptions during testing.
@@ -199,6 +194,7 @@ render (	const		float4		cameraPosition,
 
 	while (!containsGeometry)
 	{
+/*
 		// Output debugging info
 		if (debugPixel && debugIndex <= debugSetCount)
 		{
@@ -215,7 +211,7 @@ render (	const		float4		cameraPosition,
 
 			debugIndex++;
 		}
-
+*/
 
 		if (tMax.x < tMax.y)
 		{
@@ -264,6 +260,7 @@ render (	const		float4		cameraPosition,
 		color = cellData;
 	}
 
+/*
 	// Output debugging info
 	if (debugPixel && debugIndex <= debugSetCount)
 	{
@@ -281,10 +278,12 @@ render (	const		float4		cameraPosition,
 		debugIndex++;
 	}
 
+
 	if (debugPixel)
 	{
 		color = (float4)(1.0f);
 	}
+*/
 
 	write_imagef(outputImage, coord, color);
 }

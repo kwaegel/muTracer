@@ -197,13 +197,7 @@ namespace Raytracing.CL
 		{
 			base.computeView();
 
-			// only calculate new rays if the view has changed
-			if (_oldView == null || !_oldView.Equals(View))
-			{
-				_oldView = View;
-
-				calculateScreenToWorldMatrix();
-			}
+			calculateScreenToWorldMatrix();
 		}
 
 
@@ -219,8 +213,8 @@ namespace Raytracing.CL
 		// this recalculates the screen to world matrix required for creating viweing rays.
 		private void calculateScreenToWorldMatrix()
 		{
-			// calculace the matrix needed to unproject pixels
-			// view matrix will change for every camera movement
+			// Calculace the matrix needed to unproject pixels.
+			// View matrix will change for every camera movement.
 			Matrix4 vp = View * Projection;
 			_screenToWorldMatrix = Matrix4.Invert(vp);
 		}
@@ -233,6 +227,8 @@ namespace Raytracing.CL
 
 		public void render(CLSphereBuffer sphereBuffer, float time)
 		{
+			this.computeView();
+
 			// Raytrace the scene and render to a texture
 			renderSceneToTexture(sphereBuffer, time);
 
@@ -242,6 +238,9 @@ namespace Raytracing.CL
 
 		protected virtual void renderSceneToTexture(CLSphereBuffer sphereBuffer, float time)
 		{
+			// Switch viewport to camera client bounds
+			GL.Viewport(ClientBounds);
+
 			// Aquire lock on OpenGL objects.
 			GL.Finish();
 			_commandQueue.AcquireGLObjects(_sharedObjects, null);
