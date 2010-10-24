@@ -8,6 +8,7 @@ typedef struct {
 	float4 tDelta;
 	float4 cellData;
 	float4 index;
+	float4 step;
 } debugStruct;
 
 float4
@@ -54,6 +55,18 @@ raySphereIntersect(	private float4	origin,
 	{
 		return tNeg;
 	}
+}
+
+float4
+myRemquo(float4 x, float4 y, int4* quo)
+{
+	float4 n = floor(x/y);
+
+	(*quo) = convert_int4(n);
+
+	return (x - n * y);
+
+	
 }
 
 kernel
@@ -118,7 +131,21 @@ render (	const		float4		cameraPosition,
 	// index = gridCoords / cellSize (integer division).
 	//  frac = gridCoords % cellSize
 	int4 index;	// index of the current voxel
-	float4 frac = -remquo(gridSpaceCoordinates, (float4)cellSize, &index);
+	float4 frac = myRemquo(gridSpaceCoordinates, (float4)cellSize, &index);
+
+
+	// Output debugging info
+	if (debugPixel && debugIndex <= debugSetCount)
+	{
+		debug[debugIndex].rayOrigin = rayOrigin;
+		debug[debugIndex].rayDirection = rayDirection;
+		debug[debugIndex].gridSpaceCoordinates = gridSpaceCoordinates;
+		debug[debugIndex].frac = frac;
+
+		debugIndex++;
+	}
+
+	frac = -frac;
 	
 	// Don't draw anything if the camera is outside the grid.
 	// This prevents indexOutOfBounds exceptions during testing.
@@ -184,6 +211,7 @@ render (	const		float4		cameraPosition,
 			debug[debugIndex].tDelta = tDelta;
 			debug[debugIndex].cellData = cellData;
 			debug[debugIndex].index = convert_float4(index);
+			debug[debugIndex].step = convert_float4(step);
 
 			debugIndex++;
 		}
@@ -248,6 +276,7 @@ render (	const		float4		cameraPosition,
 		debug[debugIndex].tDelta = tDelta;
 		debug[debugIndex].cellData = cellData;
 		debug[debugIndex].index = convert_float4(index);
+		debug[debugIndex].step = convert_float4(step);
 
 		debugIndex++;
 	}
