@@ -62,27 +62,20 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="BoundingVolumes\AxisAlignedBoundingBox.cs" />
+    <Compile Include="BoundingVolumes\Frustum.cs" />
     <Compile Include="ClCameraInCS.cs" />
     <Compile Include="CL\CLCamera.cs" />
     <Compile Include="CL\VoxelGrid.cs" />
     <Compile Include="CL\GridCamera.cs" />
-    <Compile Include="DebugUtils.cs" />
     <Compile Include="Primitives\PrimitiveStructs.cs" />
     <Compile Include="CL\CLSphereBuffer.cs" />
-    <Compile Include="Timer.cs" />
-    <None Include="BoundingVolumes\Frustum.cs" />
     <Compile Include="Driver\Game.cs" />
     <None Include="CL\clCameraCode.cl">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Include="CL\CycleColors.cl">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="CL\VoxelTraversal.cl">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="Driver\Program.cs" />
-    <None Include="Driver\RayTracingDriver.cs" />
     <Compile Include="Math\Vector3i.cs" />
     <None Include="MuxEngineGL\Movables\Bone.cs" />
     <None Include="MuxEngineGL\LinearAlgebra\EulerAngles.cs" />
@@ -99,15 +92,12 @@
     <None Include="MuxEngineGL\Movables\SimpleModel.cs" />
     <None Include="MuxEngineGL\Movables\SingleMeshModel.cs" />
     <None Include="MuxEngineGL\Movables\ThirdPersonCamera.cs" />
-    <None Include="Primitives\Box.cs" />
-    <None Include="Primitives\Plane.cs" />
     <Compile Include="Primitives\AbstractPrimitive.cs" />
     <Compile Include="Primitives\Ray.cs" />
     <Compile Include="Primitives\SceneObjects.cs" />
     <Compile Include="Primitives\Sphere.cs" />
     <None Include="Primitives\Triangle.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <None Include="RayCastingUtils.cs" />
     <Compile Include="RayTracingCamera.cs" />
     <Compile Include="SceneStructures\GridScene.cs" />
     <Compile Include="SceneStructures\LinearScene.cs" />
