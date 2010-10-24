@@ -77,8 +77,14 @@ namespace Raytracing
 				{
 					Ray r = unprojectPointIntoWorld(_normilizedScreenPoints[x, y]);
 
+					bool debug = false;
+					if (x == 201 && y == 190)
+					{
+						debug = true;
+					}
+
 					int pixelFlatIndex = y * columns + x;
-					_pixelBuffer[pixelFlatIndex] = getPixelColor(r.Position, r.Direction, _grid, Color4.CornflowerBlue);
+					_pixelBuffer[pixelFlatIndex] = getPixelColor(r.Position, r.Direction, _grid, Color4.CornflowerBlue, debug);
 
 				}
 
@@ -97,7 +103,7 @@ namespace Raytracing
 
 
 
-		private Color4 getPixelColor(Vector3 rayOrigin, Vector3 rayDirection, VoxelGrid grid, Color4 backgroundColor)
+		private Color4 getPixelColor(Vector3 rayOrigin, Vector3 rayDirection, VoxelGrid grid, Color4 backgroundColor, bool debug)
 		{
 			Color4 color = backgroundColor;
 
@@ -136,9 +142,18 @@ namespace Raytracing
 			}
 
 			// Get the distance to the next voxel boundary
-			float fracX = -(gridSpaceCoordinates.X % cellSize);
-			float fracY = -(gridSpaceCoordinates.Y % cellSize);
-			float fracZ = -(gridSpaceCoordinates.Z % cellSize);
+			float fracX = (gridSpaceCoordinates.X % cellSize);
+			float fracY = (gridSpaceCoordinates.Y % cellSize);
+			float fracZ = (gridSpaceCoordinates.Z % cellSize);
+
+			if (debug)
+			{
+				bool stop = true;
+			}
+
+			fracX = -fracX;
+			fracY = -fracY;
+			fracZ = -fracZ;
 
 			int stepX = -1;
 			int stepY = -1;
@@ -177,6 +192,10 @@ namespace Raytracing
 			float tDeltaY = System.Math.Abs(cellSize / rayDirection.Y);
 			float tDeltaZ = System.Math.Abs(cellSize / rayDirection.Z);
 
+			if (debug)
+			{
+				bool stop = true;
+			}
 
 			// begin grid traversel
 			/*

@@ -37,7 +37,7 @@ namespace Raytracing.CL
 
 		// Debugging buffers. Used to get data out of the kernel.
 		private static Pixel _debugPixel = new Pixel(201, 190);
-		private static readonly int _debugSetLength = 8;
+		private static readonly int _debugSetLength = 9;
 		private static readonly int _debugSetCount = 10;
 		private float4[] _debugValues;
 		private ComputeBuffer<float4> _debugBuffer;
@@ -164,17 +164,18 @@ namespace Raytracing.CL
 			int debugSets = debugValues.Length % _debugSetLength;
 
 			System.Diagnostics.Trace.WriteLine("Constant data");
-			System.Diagnostics.Trace.WriteLine("\tRay Origin: " + debugValues[0]);
-			System.Diagnostics.Trace.WriteLine("\tRay Direction: " + debugValues[1]);
+			System.Diagnostics.Trace.WriteLine("\tray origin: " + debugValues[0]);
+			System.Diagnostics.Trace.WriteLine("\tray direction: " + debugValues[1]);
 			System.Diagnostics.Trace.WriteLine("\tGridSpace coords: " + debugValues[2]);
-			System.Diagnostics.Trace.WriteLine("\tfrac: " + debugValues[3]);
 			System.Diagnostics.Trace.WriteLine("\ttDelta: " + debugValues[5]);
-			
+			System.Diagnostics.Trace.WriteLine("\tstep direction: " + debugValues[8]);
+			System.Diagnostics.Trace.WriteLine("");
 
 			for (int setBase = 0; setBase < debugValues.Length; setBase += _debugSetLength)
 			{
 				int debugSetIndex = setBase / _debugSetLength;
 				System.Diagnostics.Trace.WriteLine("Debug step " + debugSetIndex);
+				System.Diagnostics.Trace.WriteLine("\tfrac: " + debugValues[3]);
 				System.Diagnostics.Trace.WriteLine("\ttMax: " + debugValues[4]);
 				System.Diagnostics.Trace.WriteLine("\tcellData: " + debugValues[setBase + 6]);
 				System.Diagnostics.Trace.WriteLine("\tindex: " + debugValues[setBase + 7]);

@@ -132,7 +132,7 @@ namespace Raytracing.Driver
 
 			// create the camera
 			// looking down the Z-axis into the scene
-			Vector3 cameraPosition = new Vector3(-0.51f, 0, 5.5f);
+			Vector3 cameraPosition = new Vector3(-0.50f, 0, 5.5f);
 			Quaternion cameraRotation = Quaternion.Identity;
 			float vFOV = 75.0f;
 
