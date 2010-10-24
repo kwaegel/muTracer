@@ -17,22 +17,56 @@ using float4 = OpenTK.Vector4;
 
 namespace Raytracing.CL
 {
+
 	class GridCamera : CLCamera
 	{
+
+		[StructLayout(LayoutKind.Sequential)]
+		public struct Pixel
+		{
+			public int x;
+			public int y;
+
+			public Pixel(int x, int y)
+			{
+				this.x = x;
+				this.y = y;
+			}
+		}
+
+
+		// Debugging buffers. Used to get data out of the kernel.
+		private static Pixel _debugPixel = new Pixel(201, 190);
+		private static readonly int _debugSetLength = 8;
+		private static readonly int _debugSetCount = 10;
+		private float4[] _debugValues;
+		private ComputeBuffer<float4> _debugBuffer;
+
+
+
 		public GridCamera(Rectangle clientBounds, ComputeCommandQueue commandQueue)
 			: base(clientBounds, commandQueue, MuxEngine.LinearAlgebra.Matrix4.Identity)
 		{
+			debugInit(commandQueue);
 		}
 
 		public GridCamera(Rectangle clientBounds, ComputeCommandQueue commandQueue, MuxEngine.LinearAlgebra.Matrix4 transform)
 			: base(clientBounds, commandQueue, transform)
 		{
+			debugInit(commandQueue);
 		}
 
 		public GridCamera(Rectangle clientBounds, ComputeCommandQueue commandQueue, 
 			Vector3 forward, Vector3 up, Vector3 position)
 			: base (clientBounds, commandQueue, forward, up, position)
 		{
+			debugInit(commandQueue);
+		}
+
+		private void debugInit(ComputeCommandQueue commandQueue)
+		{
+			_debugValues = new float4[_debugSetLength * _debugSetLength];
+			_debugBuffer = new ComputeBuffer<float4>(commandQueue.Context, ComputeMemoryFlags.ReadWrite | ComputeMemoryFlags.CopyHostPointer, _debugValues);
 		}
 
 		protected override void buildOpenCLProgram()
@@ -93,23 +127,26 @@ namespace Raytracing.CL
 			// Set kernel arguments.
 			_renderKernel.SetValueArgument<Vector4>(0, homogeneousPosition);
 			_renderKernel.SetValueArgument<Matrix4>(1, _screenToWorldMatrix);
-			_renderKernel.SetValueArgument<Color4>(2, Color4.White);
+			_renderKernel.SetValueArgument<Color4>(2, Color4.CornflowerBlue);
 			_renderKernel.SetMemoryArgument(3, _renderTarget);
 			_renderKernel.SetMemoryArgument(4, voxelGrid._voxelGrid, false);
 			_renderKernel.SetValueArgument<float>(5, cellSize);
 			_renderKernel.SetMemoryArgument(6, _debugBuffer, false);
-
-			// Print debug information from kernel call.
-			_commandQueue.ReadFromBuffer<float4>(_debugBuffer, ref _debugValues, true, null);
-			unpackDebugValues(_debugValues);
-
+			_renderKernel.SetValueArgument<int>(7, _debugSetCount);
+			_renderKernel.SetValueArgument<Pixel>(8, _debugPixel);
 
 			// Add render task to the device queue.
 			_commandQueue.Execute(_renderKernel, null, new long[] { ClientBounds.Width, ClientBounds.Height }, null, null);
 
-			// Release OpenGL objects.
+			// Release OpenGL objects and block until calls are finished.
 			_commandQueue.ReleaseGLObjects(_sharedObjects, null);
 			_commandQueue.Finish();
+
+			// Print debug information from kernel call.
+			_commandQueue.ReadFromBuffer<float4>(_debugBuffer, ref _debugValues, true, null);
+			//unpackDebugValues(_debugValues);
+
+			//System.Diagnostics.Trace.WriteLine("");
 		}
 
 		/// <summary>
@@ -124,37 +161,29 @@ namespace Raytracing.CL
 		/// <param name="debugValues"></param>
 		private void unpackDebugValues(float4[] debugValues)
 		{
-			int valuesPerSet = 8;
-			int debugSets = debugValues.Length % valuesPerSet;
+			int debugSets = debugValues.Length % _debugSetLength;
 
-			for (int setBase = 0; setBase < debugValues.Length; setBase += valuesPerSet)
+			System.Diagnostics.Trace.WriteLine("Constant data");
+			System.Diagnostics.Trace.WriteLine("\tRay Origin: " + debugValues[0]);
+			System.Diagnostics.Trace.WriteLine("\tRay Direction: " + debugValues[1]);
+			System.Diagnostics.Trace.WriteLine("\tGridSpace coords: " + debugValues[2]);
+			System.Diagnostics.Trace.WriteLine("\tfrac: " + debugValues[3]);
+			System.Diagnostics.Trace.WriteLine("\ttDelta: " + debugValues[5]);
+			
+
+			for (int setBase = 0; setBase < debugValues.Length; setBase += _debugSetLength)
 			{
-				int debugSet = setBase / valuesPerSet;
-				System.Diagnostics.Trace.WriteLine("Debug set " + debugSet);
-				System.Diagnostics.Trace.WriteLine("\tRay Origin: " + debugValues[setBase + 0]);
-				System.Diagnostics.Trace.WriteLine("\tRay Direction: " + debugValues[setBase + 1]);
-				System.Diagnostics.Trace.WriteLine("\tGridSpace coords: " + debugValues[setBase + 2]);
-				System.Diagnostics.Trace.WriteLine("\tfrac: " + debugValues[setBase + 3]);
-				System.Diagnostics.Trace.WriteLine("\ttMax: " + debugValues[setBase + 4]);
-				System.Diagnostics.Trace.WriteLine("\ttDelta: " + debugValues[setBase + 5]);
+				int debugSetIndex = setBase / _debugSetLength;
+				System.Diagnostics.Trace.WriteLine("Debug step " + debugSetIndex);
+				System.Diagnostics.Trace.WriteLine("\ttMax: " + debugValues[4]);
 				System.Diagnostics.Trace.WriteLine("\tcellData: " + debugValues[setBase + 6]);
 				System.Diagnostics.Trace.WriteLine("\tindex: " + debugValues[setBase + 7]);
-			}
-			System.Diagnostics.Trace.WriteLine("");
-		}
-
-		private void unpackDebugValues(DebugStruct[] debugValues)
-		{
-			foreach (DebugStruct ds in debugValues)
-			{
-				System.Diagnostics.Trace.WriteLine("Ray Origin: " + ds.rayOrigin);
-				System.Diagnostics.Trace.WriteLine("Ray Direction: " + ds.rayDirection);
-				System.Diagnostics.Trace.WriteLine("GridSpace coords: " + ds.gridSpaceCoordinates);
-				System.Diagnostics.Trace.WriteLine("frac: " + ds.frac);
-				System.Diagnostics.Trace.WriteLine("tMax: " + ds.tMax);
-				System.Diagnostics.Trace.WriteLine("tDelta: " + ds.tDelta);
-				System.Diagnostics.Trace.WriteLine("cellData: " + ds.cellData);
 				System.Diagnostics.Trace.WriteLine("");
+
+				if (debugValues[setBase + 6] != Vector4.Zero)
+				{
+					break;	// assume the ray terminated and there is no more data to print.
+				}
 			}
 			System.Diagnostics.Trace.WriteLine("");
 		}

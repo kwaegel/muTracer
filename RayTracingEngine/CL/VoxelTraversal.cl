@@ -64,12 +64,15 @@ render (	const		float4		cameraPosition,
 			write_only	image2d_t	outputImage,
 			read_only	image3d_t	voxelGrid,
 			const		float		cellSize,
-			__global write_only		debugStruct * debug)
+			__global write_only		debugStruct * debug,
+			const		int			debugSetCount,
+			const		int2		debugPixelLocation)
 {
 	int2 coord = (int2)(get_global_id(0), get_global_id(1));
 	int2 size = get_image_dim(outputImage);
 
-	bool debugPixel = coord.x == 189 && coord.y == 189;
+	bool debugPixel = coord.x == debugPixelLocation.x && coord.y == debugPixelLocation.y;
+	int debugIndex = 0;
 
 	const sampler_t smp = 
 		CLK_NORMALIZED_COORDS_FALSE | //Natural coordinates
@@ -167,21 +170,25 @@ render (	const		float4		cameraPosition,
 	cellData = read_imagef(voxelGrid, smp, index);
 	containsGeometry = cellData.x > 0.5f || cellData.y > 0.5f || cellData.z > 0.5f || cellData.w > 0;
 
-	if (debugPixel)
-	{
-		int debugIndex = 0;
-		debug[debugIndex].rayOrigin = rayOrigin;
-		debug[debugIndex].rayDirection = rayDirection;
-		debug[debugIndex].gridSpaceCoordinates = gridSpaceCoordinates;
-		debug[debugIndex].frac = frac;
-		debug[debugIndex].tMax = tMax;
-		debug[debugIndex].tDelta = tDelta;
-		debug[debugIndex].cellData = cellData;
-		debug[debugIndex].index = convert_float4(index);
-	}
-
 	while (!containsGeometry)
 	{
+		// Output debugging info
+		if (debugPixel && debugIndex <= debugSetCount)
+		{
+		
+			debug[debugIndex].rayOrigin = rayOrigin;
+			debug[debugIndex].rayDirection = rayDirection;
+			debug[debugIndex].gridSpaceCoordinates = gridSpaceCoordinates;
+			debug[debugIndex].frac = frac;
+			debug[debugIndex].tMax = tMax;
+			debug[debugIndex].tDelta = tDelta;
+			debug[debugIndex].cellData = cellData;
+			debug[debugIndex].index = convert_float4(index);
+
+			debugIndex++;
+		}
+
+
 		if (tMax.x < tMax.y)
 		{
 			if (tMax.x < tMax.z)
@@ -229,9 +236,10 @@ render (	const		float4		cameraPosition,
 		color = cellData;
 	}
 
-	if (debugPixel)
+	// Output debugging info
+	if (debugPixel && debugIndex <= debugSetCount)
 	{
-		int debugIndex = 1;
+		
 		debug[debugIndex].rayOrigin = rayOrigin;
 		debug[debugIndex].rayDirection = rayDirection;
 		debug[debugIndex].gridSpaceCoordinates = gridSpaceCoordinates;
@@ -240,6 +248,13 @@ render (	const		float4		cameraPosition,
 		debug[debugIndex].tDelta = tDelta;
 		debug[debugIndex].cellData = cellData;
 		debug[debugIndex].index = convert_float4(index);
+
+		debugIndex++;
+	}
+
+	if (debugPixel)
+	{
+		color = (float4)(1.0f);
 	}
 
 	write_imagef(outputImage, coord, color);

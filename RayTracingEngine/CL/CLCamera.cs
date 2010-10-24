@@ -52,10 +52,6 @@ namespace Raytracing.CL
 		protected ComputeProgram _renderProgram;
 		protected ComputeKernel _renderKernel;
 
-		// Debugging buffers. Used to get data out of the kernel.
-		protected float4[] _debugValues;
-		protected ComputeBuffer<float4> _debugBuffer;
-
 #endregion
 
 #region Initialization
@@ -81,9 +77,6 @@ namespace Raytracing.CL
 		private void rayTracingInit(ComputeCommandQueue commandQueue)
 		{
 			_commandQueue = commandQueue;
-
-			_debugValues = new float4[2*8];
-			_debugBuffer = new ComputeBuffer<float4>(commandQueue.Context, ComputeMemoryFlags.ReadWrite | ComputeMemoryFlags.CopyHostPointer, _debugValues);
 
 			createSharedTexture();
 

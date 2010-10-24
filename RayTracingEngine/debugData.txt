@@ -1,0 +1,87 @@
+﻿Run at 10/23/2010 8:04:58 PM
+Camera at Vector3(-0.5f, 0, 5.5f);
+
+Constant data
+	Ray Origin: (-0.4961634, -0.03836636, 4.5, 1)
+	Ray Direction: (0.003833783, -0.03833787, -0.9992575, 0)
+	GridSpace coords: (7.503837, 7.961634, 12.5, 9)
+	frac: (1.496163, 0.03836632, -0.5, 0)
+	tDelta: (260.839, 26.08387, 1.000743, Infinity)
+
+Debug step 0
+	tMax: (390.2577, -1.000742, 0.5003715, NaN)
+	cellData: (0, 0, 0, 0)
+	index: (8, 8, 12, 9)
+
+Debug step 1
+	tMax: (390.2577, -1.000742, 0.5003715, NaN)
+	cellData: (0, 0, 0, 0)
+	index: (8, 7, 12, 9)
+
+Debug step 2
+	tMax: (390.2577, -1.000742, 0.5003715, NaN)
+	cellData: (0, 0, 0, 0)
+	index: (8, 7, 11, 9)
+
+Debug step 3
+	tMax: (390.2577, -1.000742, 0.5003715, NaN)
+	cellData: (0, 0, 0, 0)
+	index: (8, 7, 10, 9)
+
+Debug step 4
+	tMax: (390.2577, -1.000742, 0.5003715, NaN)
+	cellData: (0, 0, 0, 0)
+	index: (8, 7, 9, 9)
+
+Debug step 5
+	tMax: (390.2577, -1.000742, 0.5003715, NaN)
+	cellData: (0, 0, 0, 0)
+	index: (8, 7, 8, 9)
+
+Debug step 6
+	tMax: (390.2577, -1.000742, 0.5003715, NaN)
+	cellData: (1, 0, 0, 1)
+	index: (8, 7, 7, 9)
+
+
+
+
+Run at 10/23/2010 8:09:48 PM
+Vector3(-0.51f, 0, 5.5f);
+
+Constant data
+	Ray Origin: (-0.5061634, -0.03836636, 4.5, 1)
+	Ray Direction: (0.003833783, -0.03833787, -0.9992575, 0)
+	GridSpace coords: (7.493836, 7.961634, 12.5, 9)
+	frac: (0.5061636, 0.03836632, -0.5, 0)
+	tDelta: (260.839, 26.08387, 1.000743, Infinity)
+
+Debug step 0
+	tMax: (132.0272, -1.000742, 0.5003715, NaN)
+	cellData: (0, 0, 0, 0)
+	index: (7, 8, 12, 9)
+
+Debug step 1
+	tMax: (132.0272, -1.000742, 0.5003715, NaN)
+	cellData: (0, 0, 0, 0)
+	index: (7, 7, 12, 9)
+
+Debug step 2
+	tMax: (132.0272, -1.000742, 0.5003715, NaN)
+	cellData: (0, 0, 0, 0)
+	index: (7, 7, 11, 9)
+
+Debug step 3
+	tMax: (132.0272, -1.000742, 0.5003715, NaN)
+	cellData: (0, 0, 0, 0)
+	index: (7, 7, 10, 9)
+
+Debug step 4
+	tMax: (132.0272, -1.000742, 0.5003715, NaN)
+	cellData: (0, 0, 0, 0)
+	index: (7, 7, 9, 9)
+
+Debug step 5
+	tMax: (132.0272, -1.000742, 0.5003715, NaN)
+	cellData: (0, 0, 1, 1)
+	index: (7, 7, 8, 9)
