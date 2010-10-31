@@ -194,11 +194,6 @@ namespace Raytracing
 			}
 
 			// begin grid traversel
-			/*
-			 * Might want to change this to a while() loop to test the current voxel first,
-			 * before moving to the next one. I am not sure why this seems to be working in
-			 * the C# version.
-			 * */
 			bool containsGeometry = false;
 			Color4 cellData;
 
