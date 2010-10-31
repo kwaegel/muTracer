@@ -55,6 +55,9 @@ raySphereIntersect(	private float4	origin,
 	{
 		return tNeg;
 	}
+
+	// Ray misses sphere.
+	return -1;
 }
 
 float4
@@ -73,9 +76,12 @@ render (	const		float4		cameraPosition,
 			write_only	image2d_t	outputImage,
 			read_only	image3d_t	voxelGrid,
 			const		float		cellSize,
+			global		read_only	float4 * geometryArray,
+			const		int			vectorsPerVoxel,
 			__global write_only		debugStruct * debug,
 			const		int			debugSetCount,
-			const		int2		debugPixelLocation)
+			const		int2		debugPixelLocation
+			)
 {
 	int2 coord = (int2)(get_global_id(0), get_global_id(1));
 	int2 size = get_image_dim(outputImage);
@@ -257,7 +263,21 @@ render (	const		float4		cameraPosition,
 	/**** Write output to image ****/
 	if (containsGeometry)
 	{
-		color = cellData;
+		// check for intersection with geometry
+		int geometryIndex = (index.x * gridWidth*gridWidth + index.y * gridWidth + index.z) * vectorsPerVoxel;
+		float4 sphere = geometryArray[geometryIndex];
+
+		// Unpack sphere data.
+		float4 center = sphere;
+		center.w=1;
+		float radius = sphere.w;
+
+		float distence = raySphereIntersect(rayOrigin, rayDirection, center, radius);
+
+		if (distence > 0)
+		{
+			color = cellData;
+		}
 	}
 
 /*

@@ -137,9 +137,12 @@ namespace Raytracing.CL
 			_renderKernel.SetMemoryArgument(3, _renderTarget);
 			_renderKernel.SetMemoryArgument(4, voxelGrid._voxelGrid, false);
 			_renderKernel.SetValueArgument<float>(5, cellSize);
-			_renderKernel.SetMemoryArgument(6, _debugBuffer, false);
-			_renderKernel.SetValueArgument<int>(7, _debugSetCount);
-			_renderKernel.SetValueArgument<Pixel>(8, _debugPixel);
+			_renderKernel.SetMemoryArgument(6, voxelGrid.Geometry);
+			_renderKernel.SetValueArgument<int>(7, voxelGrid.VectorsPerVoxel);
+
+			_renderKernel.SetMemoryArgument(8, _debugBuffer, false);
+			_renderKernel.SetValueArgument<int>(9, _debugSetCount);
+			_renderKernel.SetValueArgument<Pixel>(10, _debugPixel);
 
 			// Add render task to the device queue.
 			_commandQueue.Execute(_renderKernel, null, new long[] { ClientBounds.Width, ClientBounds.Height }, null, null);
@@ -151,7 +154,7 @@ namespace Raytracing.CL
 			// Print debug information from kernel call.
 			//_commandQueue.ReadFromBuffer<float4>(_debugBuffer, ref _debugValues, true, null);
 			//unpackDebugValues(_debugValues);
-			//System.Diagnostics.Trace.WriteLine("");
+			System.Diagnostics.Trace.WriteLine("");
 		}
 
 		/// <summary>

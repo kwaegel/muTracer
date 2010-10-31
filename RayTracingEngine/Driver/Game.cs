@@ -205,6 +205,12 @@ namespace Raytracing.Driver
 		{
 			VoxelGrid grid = new VoxelGrid(_commandQueue, 16, 16);
 
+			// Add test data.
+			grid.addSphere(new Vector3(0, 0, 0), 0.25f, Color4.Black);
+			grid.addSphere(new Vector3(1f, 0, 0), 0.25f, Color4.Red);
+			grid.addSphere(new Vector3(0, 1f, 0), 0.25f, Color4.Green);
+			grid.addSphere(new Vector3(0, 0, 1f), 0.25f, Color4.Blue);
+
 			return grid;
 		}
 
@@ -555,6 +561,7 @@ namespace Raytracing.Driver
 
 			if (_renderGridCamera)
 			{
+				_voxelGrid.syncBuffers();
 				_gridCamera.render(_voxelGrid, (float)_totalTime);
 			}
 
