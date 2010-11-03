@@ -60,6 +60,41 @@ raySphereIntersect(	private float4	origin,
 	return -1;
 }
 
+/*
+	Find the nearest intersection with geometry in a voxel. Returns HUGE_VALF if
+	no intersection is found.
+*/
+float
+intersectCellContents(			float4		rayOrigin, 
+								float4		rayDirection,
+					const		int			vectorsPerVoxel,
+								int			geometryIndex,
+		global		read_only	float4 *	geometryArray)
+{
+	float maxDistence = HUGE_VALF;
+	for (int i=0; i<vectorsPerVoxel; i++)
+	{
+
+		float4 sphere = geometryArray[geometryIndex+i];
+
+		// Unpack sphere data.
+		float4 center = sphere;
+		center.w=1;
+		float radius = sphere.w;
+
+		// calculate intersection distance
+		float distence = raySphereIntersect(rayOrigin, rayDirection, center, radius);
+
+		if (distence > 0 && distence < maxDistence)
+		{
+			// debugging: use sphere position as color
+			maxDistence = distence;
+		}
+	}
+
+	return maxDistence;
+}
+
 float4
 myRemquo(float4 x, float4 y, int4* quo)
 {
@@ -192,14 +227,9 @@ render (	const		float4		cameraPosition,
 	 * the C# version.
 	* */
 	bool containsGeometry = false;
+	bool rayHalted = false;
 	float4 cellData;
 
-	// Check grid data at origional index
-	cellData = read_imagef(voxelGrid, smp, index);
-	containsGeometry = cellData.x > 0.5f || cellData.y > 0.5f || cellData.z > 0.5f || cellData.w > 0;
-
-	while (!containsGeometry)
-	{
 /*
 		// Output debugging info
 		if (debugPixel && debugIndex <= debugSetCount)
@@ -219,6 +249,13 @@ render (	const		float4		cameraPosition,
 		}
 */
 
+	// Check grid data at origional index
+	cellData = read_imagef(voxelGrid, smp, index);
+	containsGeometry = cellData.x > 0.5f || cellData.y > 0.5f || cellData.z > 0.5f || cellData.w > 0;
+
+	//while (!containsGeometry)
+	while (!rayHalted)
+	{
 		if (tMax.x < tMax.y)
 		{
 			if (tMax.x < tMax.z)
@@ -256,49 +293,28 @@ render (	const		float4		cameraPosition,
 
 		// get grid data at index
 		cellData = read_imagef(voxelGrid, smp, index);
-		containsGeometry = cellData.x > 0.5f || cellData.y > 0.5f || cellData.z > 0.5f || cellData.w > 0;
-	}
+		containsGeometry = cellData.x > 0.0f || cellData.y > 0.0f || cellData.z > 0.0f || cellData.w > 0;
 
+		// Check ray intersection with all geometry in the current voxel.
 
-	/**** Write output to image ****/
-	if (containsGeometry)
-	{
-		// check for intersection with geometry
-		int geometryIndex = (index.x * gridWidth*gridWidth + index.y * gridWidth + index.z) * vectorsPerVoxel;
-		float4 sphere = geometryArray[geometryIndex];
-
-		// Unpack sphere data.
-		float4 center = sphere;
-		center.w=1;
-		float radius = sphere.w;
-
-		float distence = raySphereIntersect(rayOrigin, rayDirection, center, radius);
-
-		if (distence > 0)
+		if (containsGeometry)
 		{
-			color = cellData;
-		}
-	}
+			// check for intersection with geometry in the current cell
+			int geometryIndex = (index.x * gridWidth*gridWidth + index.y * gridWidth + index.z) * vectorsPerVoxel;
+
+			float distence = intersectCellContents(rayOrigin, rayDirection, vectorsPerVoxel, geometryIndex, geometryArray);
+
+			if (distence > 0 && distence < HUGE_VALF)
+			{
+				rayHalted = true;
+				color = cellData;	// For testing: use sphere position as color
+			}
+
+		} // End checking geometry.
+
+	} // End voxel traversel loop
 
 /*
-	// Output debugging info
-	if (debugPixel && debugIndex <= debugSetCount)
-	{
-		
-		debug[debugIndex].rayOrigin = rayOrigin;
-		debug[debugIndex].rayDirection = rayDirection;
-		debug[debugIndex].gridSpaceCoordinates = gridSpaceCoordinates;
-		debug[debugIndex].frac = frac;
-		debug[debugIndex].tMax = tMax;
-		debug[debugIndex].tDelta = tDelta;
-		debug[debugIndex].cellData = cellData;
-		debug[debugIndex].index = convert_float4(index);
-		debug[debugIndex].step = convert_float4(step);
-
-		debugIndex++;
-	}
-
-
 	if (debugPixel)
 	{
 		color = (float4)(1.0f);
