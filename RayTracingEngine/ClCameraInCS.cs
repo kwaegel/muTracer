@@ -195,11 +195,11 @@ namespace Raytracing
 
 			// begin grid traversel
 			bool containsGeometry = false;
-			Color4 cellData;
+			Voxel cellData;
 
 			// Check grid data at origional index
 			cellData = grid[indexX, indexY, indexZ];
-			containsGeometry = (cellData.R > 0 || cellData.G > 0 || cellData.B > 0 || cellData.A > 0);
+			containsGeometry = (cellData.PrimitiveCount > 0);
 
 			while (!containsGeometry)
 			{
@@ -240,13 +240,13 @@ namespace Raytracing
 
 				// get grid data at index
 				cellData = grid[indexX, indexY, indexZ];
-				containsGeometry = (cellData.R > 0 || cellData.G > 0 || cellData.B > 0 || cellData.A > 0);
+				containsGeometry = (cellData.PrimitiveCount > 0);
 			}
 
 			/**** Write output to image ****/
 			if (containsGeometry)
 			{
-				color = cellData;
+				color = new Color4(0.5f, 0.1f, 0.2f, 0.0f);
 			}
 
 			return color;	//write_imagef(outputImage, coord, color);

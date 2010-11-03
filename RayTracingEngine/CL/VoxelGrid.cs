@@ -6,8 +6,17 @@ using OpenTK.Graphics;
 
 using Cloo;
 
+using Raytracing.Math;
+
 namespace Raytracing.CL
 {
+	public struct Voxel
+	{
+		public uint PrimitiveCount;
+		public uint y;
+		public uint z;
+		public uint w;
+	}
 
 	class VoxelGrid
 	{
@@ -15,8 +24,8 @@ namespace Raytracing.CL
 		ComputeCommandQueue _commandQueue;
 
 		// Grid buffer.
-		private ComputeImageFormat _imageFormat = new ComputeImageFormat(ComputeImageChannelOrder.Rgba, ComputeImageChannelType.Float);
-		private Color4[] _voxelArray;
+		private ComputeImageFormat _imageFormat = new ComputeImageFormat(ComputeImageChannelOrder.Rgba, ComputeImageChannelType.UnsignedInt32);
+		private Voxel[] _voxelArray;
 		internal ComputeImage3D _voxelGrid;
 
 		// Primitive buffer
@@ -47,7 +56,7 @@ namespace Raytracing.CL
 			private set;
 		}
 
-		public Color4 this[int x, int y, int z]
+		public Voxel this[int x, int y, int z]
 		{
 			get
 			{
@@ -74,7 +83,7 @@ namespace Raytracing.CL
 
 			// create test data. gridResolution^3 cells
 			int cellCount = gridResolution * gridResolution * gridResolution;
-			_voxelArray = new Color4[cellCount];
+			_voxelArray = new Voxel[cellCount];
 
 			VectorsPerVoxel = 16;	// Test value;
 			_geometryArray = new Vector4[cellCount * VectorsPerVoxel];
@@ -83,29 +92,6 @@ namespace Raytracing.CL
 
 			syncBuffers();
 		}
-
-		//private void setTestData()
-		//{
-		//    int gridMax = GridResolution - 1;
-
-		//    // Corners
-		//    this[0, 0, 0] = Color4.Black;
-
-		//    this[gridMax, 0, 0] = Color4.Red;
-		//    this[0, gridMax, 0] = Color4.Green;
-		//    this[0, 0, gridMax] = Color4.Blue;
-
-		//    this[gridMax, gridMax, 0] = Color4.Yellow;
-		//    this[gridMax, 0, gridMax] = Color4.Magenta;
-		//    this[0, gridMax, gridMax] = Color4.Cyan;
-
-		//    this[gridMax, gridMax, gridMax] = Color4.White;
-
-		//    this[7, 7, 7] = Color4.White;
-		//    this[8, 7, 7] = Color4.Red;
-		//    this[7, 8, 7] = Color4.Green;
-		//    this[7, 7, 8] = Color4.Blue;
-		//}
 
 		public void Dispose()
 		{
@@ -140,9 +126,13 @@ namespace Raytracing.CL
 				{
 					for (int z = minZ; z <= maxZ; z += 1)
 					{
+						Voxel voxelData = this[x, y, z];
+
 						int geometryIndex = (x * GridResolution * GridResolution + y * GridResolution + z) * VectorsPerVoxel;
-						_geometryArray[geometryIndex] = packedSphere;
-						this[x, y, z] = color;
+						_geometryArray[geometryIndex + voxelData.PrimitiveCount] = packedSphere;
+
+						voxelData.PrimitiveCount += 1;
+						this[x, y, z] = voxelData;
 						cellCount++;
 					}
 				}
@@ -154,7 +144,7 @@ namespace Raytracing.CL
 			// copy voxel texture
 			unsafe
 			{
-				fixed (Color4* gridData = _voxelArray)
+				fixed (Voxel* gridData = _voxelArray)
 				{
 					_voxelGrid = new ComputeImage3D(_commandQueue.Context,
 						ComputeMemoryFlags.CopyHostPointer | ComputeMemoryFlags.ReadOnly,

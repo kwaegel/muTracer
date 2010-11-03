@@ -228,7 +228,7 @@ render (	const		float4		cameraPosition,
 	* */
 	bool containsGeometry = false;
 	bool rayHalted = false;
-	float4 cellData;
+	int4 cellData;
 
 /*
 		// Output debugging info
@@ -250,7 +250,7 @@ render (	const		float4		cameraPosition,
 */
 
 	// Check grid data at origional index
-	cellData = read_imagef(voxelGrid, smp, index);
+	cellData = read_imagei(voxelGrid, smp, index);
 	containsGeometry = cellData.x > 0.5f || cellData.y > 0.5f || cellData.z > 0.5f || cellData.w > 0;
 
 	//while (!containsGeometry)
@@ -292,8 +292,8 @@ render (	const		float4		cameraPosition,
 		}
 
 		// get grid data at index
-		cellData = read_imagef(voxelGrid, smp, index);
-		containsGeometry = cellData.x > 0.0f || cellData.y > 0.0f || cellData.z > 0.0f || cellData.w > 0;
+		cellData = read_imagei(voxelGrid, smp, index);
+		containsGeometry = cellData.x > 0 || cellData.y > 0 || cellData.z > 0 || cellData.w > 0;
 
 		// Check ray intersection with all geometry in the current voxel.
 
@@ -302,12 +302,12 @@ render (	const		float4		cameraPosition,
 			// check for intersection with geometry in the current cell
 			int geometryIndex = (index.x * gridWidth*gridWidth + index.y * gridWidth + index.z) * vectorsPerVoxel;
 
-			float distence = intersectCellContents(rayOrigin, rayDirection, vectorsPerVoxel, geometryIndex, geometryArray);
+			float distence = intersectCellContents(rayOrigin, rayDirection, cellData.x, geometryIndex, geometryArray);
 
 			if (distence > 0 && distence < HUGE_VALF)
 			{
 				rayHalted = true;
-				color = cellData;	// For testing: use sphere position as color
+				color = (float4)(0.5f, 0.1f, 0.2f, 0.0f);	// For testing: use sphere position as color
 			}
 
 		} // End checking geometry.
