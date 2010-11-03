@@ -119,7 +119,7 @@ namespace Raytracing.CL
 
 			int cellCount = 0;
 
-			// add a reference to model to every cell the bounding box intesects
+			// Add a reference to model to every cell the bounding box intesects
 			for (int x = minX; x <= maxX; x += 1)
 			{
 				for (int y = minY; y <= maxY; y += 1)

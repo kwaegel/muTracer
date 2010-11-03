@@ -67,9 +67,9 @@ raySphereIntersect(	private float4	origin,
 float
 intersectCellContents(			float4		rayOrigin, 
 								float4		rayDirection,
-					const		int			vectorsPerVoxel,
+						const	int			vectorsPerVoxel,
 								int			geometryIndex,
-		global		read_only	float4 *	geometryArray)
+		__global	read_only	float4 *	geometryArray)
 {
 	float maxDistence = HUGE_VALF;
 	for (int i=0; i<vectorsPerVoxel; i++)
@@ -111,7 +111,7 @@ render (	const		float4		cameraPosition,
 			write_only	image2d_t	outputImage,
 			read_only	image3d_t	voxelGrid,
 			const		float		cellSize,
-			global		read_only	float4 * geometryArray,
+			__global	read_only	float4 * geometryArray,
 			const		int			vectorsPerVoxel,
 			__global write_only		debugStruct * debug,
 			const		int			debugSetCount,
@@ -300,19 +300,20 @@ render (	const		float4		cameraPosition,
 		if (containsGeometry)
 		{
 			// check for intersection with geometry in the current cell
-			int geometryIndex = (index.x * gridWidth*gridWidth + index.y * gridWidth + index.z) * vectorsPerVoxel;
+			int geometryIndex = (index.x * gridWidth * gridWidth + index.y * gridWidth + index.z) * vectorsPerVoxel;
 
 			float distence = intersectCellContents(rayOrigin, rayDirection, cellData.x, geometryIndex, geometryArray);
 
 			if (distence > 0 && distence < HUGE_VALF)
 			{
 				rayHalted = true;
-				color = (float4)(0.5f, 0.1f, 0.2f, 0.0f);	// For testing: use sphere position as color
+				color = (float4)(0.5f, 0.0f, 0.0f, 0.0f);	// For testing: use sphere position as color
 			}
 
 		} // End checking geometry.
 
 	} // End voxel traversel loop
+
 
 /*
 	if (debugPixel)
@@ -321,5 +322,6 @@ render (	const		float4		cameraPosition,
 	}
 */
 
+	// Write the resulting color to the camera texture.
 	write_imagef(outputImage, coord, color);
 }

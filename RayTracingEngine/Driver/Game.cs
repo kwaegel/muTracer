@@ -206,10 +206,38 @@ namespace Raytracing.Driver
 			VoxelGrid grid = new VoxelGrid(_commandQueue, 16, 16);
 
 			// Add test data.
-			grid.addSphere(new Vector3(0, 0, 0), 0.25f, Color4.Black);
+
+			// Create sphere that crosses voxel bounderies
+			grid.addSphere(new Vector3(-3f, 0, 0), 1.0f, Color4.Black);
+
+			// Create multiple spheres in the same voxel
+			grid.addSphere(new Vector3(0.2f, 0.2f, 0.2f), 0.05f, Color4.Black);
+			grid.addSphere(new Vector3(0.2f, 0.2f, -0.2f), 0.05f, Color4.Black);
+			grid.addSphere(new Vector3(0.2f, -0.2f, 0.2f), 0.05f, Color4.Black);
+			grid.addSphere(new Vector3(0.2f, -0.2f, -0.2f), 0.05f, Color4.Black);
+			grid.addSphere(new Vector3(-0.2f, 0.2f, 0.2f), 0.05f, Color4.Black);
+			grid.addSphere(new Vector3(-0.2f, 0.2f, -0.2f), 0.05f, Color4.Black);
+			grid.addSphere(new Vector3(-0.2f, -0.2f, 0.2f), 0.05f, Color4.Black);
+			grid.addSphere(new Vector3(-0.2f, -0.2f, -0.2f), 0.05f, Color4.Black);
+
+			// Create spheres along the major axies.
 			grid.addSphere(new Vector3(1f, 0, 0), 0.25f, Color4.Red);
 			grid.addSphere(new Vector3(0, 1f, 0), 0.25f, Color4.Green);
 			grid.addSphere(new Vector3(0, 0, 1f), 0.25f, Color4.Blue);
+
+			// Create a large number of spheres to stress the memory system.
+			int min = 2;
+			int max = 3;
+			for (int x = min; x <= max; x++)
+			{
+				for (int y = min; y <= max; y++)
+				{
+					for (int z = min; z <= max; z++)
+					{
+						grid.addSphere(new Vector3(x,y,z), 0.1f, Color4.Blue);
+					}
+				}
+			}
 
 			return grid;
 		}
