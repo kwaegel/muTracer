@@ -18,6 +18,12 @@ namespace Raytracing.CL
 		public uint w;
 	}
 
+	public struct SimplePointLight
+	{
+		public Vector3 position;
+		public float intensity;
+	}
+
 	class VoxelGrid
 	{
 		// Compute queue
@@ -42,6 +48,18 @@ namespace Raytracing.CL
 			{
 				// Only a getter.
 			}
+		}
+
+		// Light buffer
+		private static int InitialPointLightArraySize = 4;
+		public int PointLightCount { get; private set; }
+		private SimplePointLight[] _pointLightArray;
+		private ComputeBuffer<SimplePointLight> _pointLightBuffer;
+		private GCHandle _pointLightHandle;
+		internal ComputeBuffer<SimplePointLight> PointLights
+		{
+			get { return _pointLightBuffer; }
+			private set { }
 		}
 
 		// Grid description.
@@ -81,14 +99,22 @@ namespace Raytracing.CL
 			Vector3 halfGridWidth = new Vector3(gridWidth/2.0f, gridWidth/2.0f, gridWidth/2.0f);
 			_gridOrigin = -halfGridWidth;
 
-			// create test data. gridResolution^3 cells
+			// Create voxel grid. gridResolution^3 cells
 			int cellCount = gridResolution * gridResolution * gridResolution;
 			_voxelArray = new Voxel[cellCount];
 
-			VectorsPerVoxel = 16;	// Test value;
+			// Create array to hold primitives.
+			VectorsPerVoxel = 16;	// Low value for testing;
 			_geometryArray = new Vector4[cellCount * VectorsPerVoxel];
+			// Array needs to be pinned during copy data to device memory.
 			_geometryHandle = GCHandle.Alloc(_geometryArray, GCHandleType.Pinned);
 			_geometryBuffer = new ComputeBuffer<Vector4>(_commandQueue.Context, ComputeMemoryFlags.ReadWrite | ComputeMemoryFlags.UseHostPointer, _geometryArray.LongLength, _geometryHandle.AddrOfPinnedObject());
+
+			// Create array for lights
+			_pointLightArray = new SimplePointLight[InitialPointLightArraySize];
+			PointLightCount = 0;
+			_pointLightHandle = GCHandle.Alloc(_pointLightArray, GCHandleType.Pinned);
+			_pointLightBuffer = new ComputeBuffer<SimplePointLight>(_commandQueue.Context, ComputeMemoryFlags.ReadOnly | ComputeMemoryFlags.UseHostPointer, _pointLightArray.LongLength, _pointLightHandle.AddrOfPinnedObject());
 
 			syncBuffers();
 		}
@@ -139,6 +165,18 @@ namespace Raytracing.CL
 			}
 		}
 
+
+		public void addPointLight(Vector3 position, float intensity)
+		{
+			if (PointLightCount < _pointLightArray.Length - 1)
+			{
+				_pointLightArray[PointLightCount].position = position;
+				_pointLightArray[PointLightCount].intensity = intensity;
+				PointLightCount++;
+			}
+		}
+
+
 		public void syncBuffers()
 		{
 			// copy voxel texture
@@ -153,11 +191,17 @@ namespace Raytracing.CL
 						0, 0,
 						(IntPtr)gridData);
 				}
+
+				
 			}
 
-			// Copy geometry data to device.
-			// TODO: Only write section of buffer that has changed.
+			// TODO: Only write sections of buffers that have changed.
+
+			// Copy pinned geometry data to device memory.
 			_commandQueue.WriteToBuffer<Vector4>(_geometryArray, _geometryBuffer, true, null);
+
+			// Copy pinned light data to device memory.
+			_commandQueue.WriteToBuffer<SimplePointLight>(_pointLightArray, _pointLightBuffer, true, null);
 		}
 
 		private void clampToGrid(ref int x, ref int y, ref int z)

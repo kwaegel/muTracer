@@ -30,7 +30,9 @@ float
 raySphereIntersect(	private float4	origin, 
 					private float4	direction, 
 					private float4	center, 
-					private float	radius)
+					private float	radius,
+					private float4*	collisionPoint,
+					private float4* surfaceNormal)
 {
 	float4 originSubCenter = origin - center;
 
@@ -47,17 +49,24 @@ raySphereIntersect(	private float4	origin,
 	float tPos = -b + sqrtBC;
 	float tNeg = -b - sqrtBC;
 
-	if (tPos < tNeg && tPos >= 0)
+	if (tNeg < 0 && tPos < 0)
+		return -1;
+
+	float distence;
+	if (tPos < tNeg)
 	{
-		return tPos;
+		distence = tPos;
+		//return tPos;
 	}
-	else if (tNeg < tPos && tNeg >= 0)
+	else
 	{
-		return tNeg;
+		distence  = tNeg;
+		//return tNeg;
 	}
 
-	// Ray misses sphere.
-	return -1;
+	(*collisionPoint) = origin + distence * direction;
+	(*surfaceNormal) = (*collisionPoint) - center;
+	return distence;
 }
 
 /*
@@ -69,7 +78,9 @@ intersectCellContents(			float4		rayOrigin,
 								float4		rayDirection,
 						const	int			vectorsPerVoxel,
 								int			geometryIndex,
-		__global	read_only	float4 *	geometryArray)
+		__global	read_only	float4*		geometryArray,
+						private float4*		collisionPoint,
+						private float4*		surfaceNormal)
 {
 	float maxDistence = HUGE_VALF;
 	for (int i=0; i<vectorsPerVoxel; i++)
@@ -83,7 +94,7 @@ intersectCellContents(			float4		rayOrigin,
 		float radius = sphere.w;
 
 		// calculate intersection distance
-		float distence = raySphereIntersect(rayOrigin, rayDirection, center, radius);
+		float distence = raySphereIntersect(rayOrigin, rayDirection, center, radius, collisionPoint, surfaceNormal);
 
 		if (distence > 0 && distence < maxDistence)
 		{
@@ -109,15 +120,29 @@ render (	const		float4		cameraPosition,
 			const		float16		unprojectionMatrix,
 			const		float4		backgroundColor,
 			write_only	image2d_t	outputImage,
+
+			// Voxel data
 			read_only	image3d_t	voxelGrid,
 			const		float		cellSize,
+
+			// Geometry
 			__global	read_only	float4 * geometryArray,
 			const		int			vectorsPerVoxel,
+
+			// Lights
+			__global	read_only	float4* pointLights,
+			const		int			pointLightCount,
+			__local		float4*		localLightBuffer,
+
+			// Debug structs
 			__global write_only		debugStruct * debug,
 			const		int			debugSetCount,
 			const		int2		debugPixelLocation
 			)
 {
+	// Copy global data to local buffers
+	event_t lightsFinishedLoading = async_work_group_copy(localLightBuffer, pointLights, pointLightCount, 0);
+
 	int2 coord = (int2)(get_global_id(0), get_global_id(1));
 	int2 size = get_image_dim(outputImage);
 
@@ -301,13 +326,23 @@ render (	const		float4		cameraPosition,
 		{
 			// check for intersection with geometry in the current cell
 			int geometryIndex = (index.x * gridWidth * gridWidth + index.y * gridWidth + index.z) * vectorsPerVoxel;
-
-			float distence = intersectCellContents(rayOrigin, rayDirection, cellData.x, geometryIndex, geometryArray);
+			
+			float4*	collisionPoint;
+			float4* surfaceNormal;
+			float distence = intersectCellContents(rayOrigin, rayDirection, cellData.x, geometryIndex, geometryArray, collisionPoint, surfaceNormal);
 
 			if (distence > 0 && distence < HUGE_VALF)
 			{
 				rayHalted = true;
 				color = (float4)(0.5f, 0.0f, 0.0f, 0.0f);	// For testing: use sphere position as color
+
+				// test cosine shading
+				float4 testLightPos = (float4)(0.0f, 5.0f, 0.0f, 1.0f);
+				float4 lightDirection = testLightPos - (*collisionPoint);
+				float shade = dot((*surfaceNormal), lightDirection);
+
+				// NOTE: This line is causing an error. Debug later.
+				color.y += shade;
 			}
 
 		} // End checking geometry.

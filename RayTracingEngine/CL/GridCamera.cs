@@ -128,6 +128,10 @@ namespace Raytracing.CL
 			// Convert the camera position to homogeneous coordinates.
 			Vector4 homogeneousPosition = new Vector4(Position, 1);
 
+			// pick work group sizes;
+			long[] globalWorkSize = new long[] { ClientBounds.Width, ClientBounds.Height };
+			long[] localWorkSize = new long[] { 8,8 };
+
 			float cellSize = voxelGrid.CellSize;
 
 			// Set kernel arguments.
@@ -135,17 +139,23 @@ namespace Raytracing.CL
 			_renderKernel.SetValueArgument<Matrix4>(1, _screenToWorldMatrix);
 			_renderKernel.SetValueArgument<Color4>(2, Color4.CornflowerBlue);
 			_renderKernel.SetMemoryArgument(3, _renderTarget);
+			// Voxel grid arguments
 			_renderKernel.SetMemoryArgument(4, voxelGrid._voxelGrid, false);
 			_renderKernel.SetValueArgument<float>(5, cellSize);
+			// Pass in array of primitives
 			_renderKernel.SetMemoryArgument(6, voxelGrid.Geometry);
 			_renderKernel.SetValueArgument<int>(7, voxelGrid.VectorsPerVoxel);
-
-			_renderKernel.SetMemoryArgument(8, _debugBuffer, false);
-			_renderKernel.SetValueArgument<int>(9, _debugSetCount);
-			_renderKernel.SetValueArgument<Pixel>(10, _debugPixel);
+			// Pass in lights
+			_renderKernel.SetMemoryArgument(8, voxelGrid.PointLights);
+			_renderKernel.SetValueArgument<int>(9, voxelGrid.PointLightCount);
+			_renderKernel.SetLocalArgument(10, voxelGrid.PointLightCount * 4);
+			// Pass in debug arrays
+			_renderKernel.SetMemoryArgument(11, _debugBuffer, false);
+			_renderKernel.SetValueArgument<int>(12, _debugSetCount);
+			_renderKernel.SetValueArgument<Pixel>(13, _debugPixel);
 
 			// Add render task to the device queue.
-			_commandQueue.Execute(_renderKernel, null, new long[] { ClientBounds.Width, ClientBounds.Height }, null, null);
+			_commandQueue.Execute(_renderKernel, null, globalWorkSize, localWorkSize, null);
 
 			// Release OpenGL objects and block until calls are finished.
 			_commandQueue.ReleaseGLObjects(_sharedObjects, null);
