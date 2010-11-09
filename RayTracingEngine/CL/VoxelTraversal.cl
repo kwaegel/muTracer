@@ -109,7 +109,213 @@ intersectCellContents(			float4		rayOrigin,
 		}
 	}
 
-	return maxDistence;
+	return minDistence;
+}
+
+
+float
+findNearestIntersection(	
+						float4		rayOrigin,
+						float4		rayDirection,
+			// Voxel data
+			read_only	image3d_t	voxelGrid,
+			const		float		cellSize,
+			// Geometry
+			__global	read_only	float4 * geometryArray,
+			const		int			vectorsPerVoxel
+			)
+{
+	const sampler_t smp = 
+		CLK_NORMALIZED_COORDS_FALSE | //Natural coordinates
+		CLK_ADDRESS_CLAMP | //Clamp to zeros
+		CLK_FILTER_NEAREST; //Don't interpolate
+/**** Traverse the grid and find the nearest occupied cell ****/
+
+	// setup up traversel variables
+
+	// get grid size from the texture file. Assume identical sides.
+	int gridWidth = get_image_width(voxelGrid);
+
+	// traversel values
+
+	// Center the grid at 0,0,0
+	float4 halfGridWidth = (gridWidth * cellSize) / 2.0f;
+	float4 gridOrigin = -halfGridWidth;
+
+	// convert the ray start position to grid space
+	float4 gridSpaceCoordinates = rayOrigin - gridOrigin;
+
+	// get the current grid cell index and the distance to the next cell boundary
+	// index = gridCoords / cellSize (integer division).
+	//  frac = gridCoords % cellSize
+	int4 index;	// index of the current voxel
+	float4 frac = -myRemquo(gridSpaceCoordinates, (float4)cellSize, &index);
+
+
+	// Output debugging info
+	/*
+	if (debugPixel && debugIndex <= debugSetCount)
+	{
+		debug[debugIndex].rayOrigin = rayOrigin;
+		debug[debugIndex].rayDirection = rayDirection;
+		debug[debugIndex].gridSpaceCoordinates = gridSpaceCoordinates;
+		debug[debugIndex].frac = frac;
+	
+		debugIndex++;
+	}
+	*/
+
+	
+	// Don't draw anything if the camera is outside the grid.
+	// This prevents indexOutOfBounds exceptions during testing.
+	if (index.x < 0 || index.x >= gridWidth ||
+		index.y < 0 || index.y >= gridWidth ||
+		index.z < 0 || index.z >= gridWidth)
+	{
+		return;
+	}
+
+	int4 step = -1;		// cell direction to step in
+	int4 out = -1;		// index of the first positive invalid voxel index.
+	if (rayDirection.x >= 0)
+	{
+		out.x = gridWidth;
+		step.x = 1;
+		frac.x = cellSize + frac.x;		// frac is negative
+	}
+	if (rayDirection.y >= 0)
+	{
+		out.y = gridWidth;
+		step.y = 1;
+		frac.y = cellSize + frac.y;		// frac is negative
+	}
+	if (rayDirection.z >= 0)
+	{
+		out.z = gridWidth;
+		step.z = 1;
+		frac.z = cellSize + frac.z;		// frac is negative
+	}
+
+	// tMax: min distance to move before crossing a gird boundary
+	float4 tMax = frac / rayDirection;
+
+	// tDelta: distance (in t) between cell boundaries
+	float4 tDelta = ((float4)cellSize) / rayDirection;// compute projections onto the coordinate axes
+	tDelta = copysign(tDelta, (float4)1.0f);	// must be positive
+
+	// begin grid traversel
+	/*
+	 * Might want to change this to a while() loop to test the current voxel first,
+	 * before moving to the next one. I am not sure why this seems to be working in
+	 * the C# version.
+	* */
+	bool containsGeometry = false;
+	bool rayHalted = false;
+	int4 cellData;
+
+/*
+	// Output debugging info
+	if (debugPixel && debugIndex <= debugSetCount)
+	{
+		
+		debug[debugIndex].rayOrigin = rayOrigin;
+		debug[debugIndex].rayDirection = rayDirection;
+		debug[debugIndex].gridSpaceCoordinates = gridSpaceCoordinates;
+		debug[debugIndex].frac = frac;
+		debug[debugIndex].tMax = tMax;
+		debug[debugIndex].tDelta = tDelta;
+		debug[debugIndex].cellData = convert_float4(cellData);
+		debug[debugIndex].index = convert_float4(index);
+		debug[debugIndex].step = convert_float4(step);
+
+		debugIndex++;
+	}
+*/
+
+	// Check grid data at origional index
+	cellData = read_imagei(voxelGrid, smp, index);
+	containsGeometry = cellData.x > 0.5f || cellData.y > 0.5f || cellData.z > 0.5f || cellData.w > 0;
+
+	//while (!containsGeometry)
+	while (!rayHalted)
+	{
+		if (tMax.x < tMax.y)
+		{
+			if (tMax.x < tMax.z)
+			{
+				index.x += step.x;			// step to next voxel along this axis
+				if (index.x == out.x)		// outside grid
+					break; 
+				tMax.x = tMax.x + tDelta.x;	// increment max distence to next voxel
+			}
+			else
+			{
+				index.z += step.z;
+				if (index.z == out.z)
+					break;
+				tMax.z = tMax.z + tDelta.z;
+			}
+		}
+		else
+		{
+			if (tMax.y < tMax.z)
+			{
+				index.y += step.y;
+				if (index.y == out.y)
+					break;
+				tMax.y = tMax.y + tDelta.y;
+			}
+			else
+			{
+				index.z += step.z;
+				if (index.z == out.z)
+					break;
+				tMax.z = tMax.z + tDelta.z;
+			}
+		}
+
+		// get grid data at index
+		cellData = read_imagei(voxelGrid, smp, index);
+		containsGeometry = cellData.x > 0 || cellData.y > 0 || cellData.z > 0 || cellData.w > 0;
+
+		// Output debugging info
+/*
+		if (debugPixel && debugIndex <= debugSetCount)
+		{
+		
+			debug[debugIndex].rayOrigin = rayOrigin;
+			debug[debugIndex].rayDirection = rayDirection;
+			debug[debugIndex].gridSpaceCoordinates = gridSpaceCoordinates;
+			debug[debugIndex].frac = frac;
+			debug[debugIndex].tMax = tMax;
+			debug[debugIndex].tDelta = tDelta;
+			debug[debugIndex].cellData = convert_float4(cellData);
+			debug[debugIndex].index = convert_float4(index);
+			debug[debugIndex].step = convert_float4(step);
+
+			debugIndex++;
+		}
+*/
+
+		if (containsGeometry)
+		{
+			// check for intersection with geometry in the current cell
+			int geometryIndex = (index.x * gridWidth * gridWidth + index.y * gridWidth + index.z) * vectorsPerVoxel;
+			
+			float4 collisionPoint;
+			float4 surfaceNormal;
+			float distence = intersectCellContents(rayOrigin, rayDirection, cellData.x, geometryIndex, geometryArray, &collisionPoint, &surfaceNormal);
+
+			if (distence > 0 && distence < HUGE_VALF)
+			{
+				rayHalted = true;
+			}
+
+		} // End checking geometry.
+
+	} // End voxel traversel loop
+
+	return 0.0f;
 }
 
 kernel
