@@ -12,6 +12,14 @@ typedef struct {
 } debugStruct;
 
 float4
+myRemquo(float4 x, float4 y, int4* quo)
+{
+	float4 n = floor(x/y);
+	(*quo) = convert_int4(n);
+	return (x - n * y);
+}
+
+float4
 transformVector(	const	float16		transform, 
 					const	float4		vector)
 {
@@ -56,16 +64,14 @@ raySphereIntersect(	private float4	origin,
 	if (tPos < tNeg)
 	{
 		distence = tPos;
-		//return tPos;
 	}
 	else
 	{
 		distence  = tNeg;
-		//return tNeg;
 	}
 
 	(*collisionPoint) = origin + distence * direction;
-	(*surfaceNormal) = (*collisionPoint) - center;
+	(*surfaceNormal) = fast_normalize( (*collisionPoint) - center );
 	return distence;
 }
 
@@ -104,14 +110,6 @@ intersectCellContents(			float4		rayOrigin,
 	}
 
 	return maxDistence;
-}
-
-float4
-myRemquo(float4 x, float4 y, int4* quo)
-{
-	float4 n = floor(x/y);
-	(*quo) = convert_int4(n);
-	return (x - n * y);
 }
 
 kernel
@@ -195,18 +193,18 @@ render (	const		float4		cameraPosition,
 	int4 index;	// index of the current voxel
 	float4 frac = -myRemquo(gridSpaceCoordinates, (float4)cellSize, &index);
 
-/*
-	// Output debugging info
-	if (debugPixel && debugIndex <= debugSetCount)
-	{
-		debug[debugIndex].rayOrigin = rayOrigin;
-		debug[debugIndex].rayDirection = rayDirection;
-		debug[debugIndex].gridSpaceCoordinates = gridSpaceCoordinates;
-		debug[debugIndex].frac = frac;
 
-		debugIndex++;
-	}
-*/
+	// Output debugging info
+if (debugPixel && debugIndex <= debugSetCount)
+{
+	debug[debugIndex].rayOrigin = rayOrigin;
+	debug[debugIndex].rayDirection = rayDirection;
+	debug[debugIndex].gridSpaceCoordinates = gridSpaceCoordinates;
+	debug[debugIndex].frac = frac;
+	
+	debugIndex++;
+}
+
 	
 	// Don't draw anything if the camera is outside the grid.
 	// This prevents indexOutOfBounds exceptions during testing.
@@ -256,22 +254,22 @@ render (	const		float4		cameraPosition,
 	int4 cellData;
 
 /*
-		// Output debugging info
-		if (debugPixel && debugIndex <= debugSetCount)
-		{
+	// Output debugging info
+	if (debugPixel && debugIndex <= debugSetCount)
+	{
 		
-			debug[debugIndex].rayOrigin = rayOrigin;
-			debug[debugIndex].rayDirection = rayDirection;
-			debug[debugIndex].gridSpaceCoordinates = gridSpaceCoordinates;
-			debug[debugIndex].frac = frac;
-			debug[debugIndex].tMax = tMax;
-			debug[debugIndex].tDelta = tDelta;
-			debug[debugIndex].cellData = cellData;
-			debug[debugIndex].index = convert_float4(index);
-			debug[debugIndex].step = convert_float4(step);
+		debug[debugIndex].rayOrigin = rayOrigin;
+		debug[debugIndex].rayDirection = rayDirection;
+		debug[debugIndex].gridSpaceCoordinates = gridSpaceCoordinates;
+		debug[debugIndex].frac = frac;
+		debug[debugIndex].tMax = tMax;
+		debug[debugIndex].tDelta = tDelta;
+		debug[debugIndex].cellData = convert_float4(cellData);
+		debug[debugIndex].index = convert_float4(index);
+		debug[debugIndex].step = convert_float4(step);
 
-			debugIndex++;
-		}
+		debugIndex++;
+	}
 */
 
 	// Check grid data at origional index
@@ -320,16 +318,31 @@ render (	const		float4		cameraPosition,
 		cellData = read_imagei(voxelGrid, smp, index);
 		containsGeometry = cellData.x > 0 || cellData.y > 0 || cellData.z > 0 || cellData.w > 0;
 
-		// Check ray intersection with all geometry in the current voxel.
+		// Output debugging info
+		if (debugPixel && debugIndex <= debugSetCount)
+		{
+		
+			debug[debugIndex].rayOrigin = rayOrigin;
+			debug[debugIndex].rayDirection = rayDirection;
+			debug[debugIndex].gridSpaceCoordinates = gridSpaceCoordinates;
+			debug[debugIndex].frac = frac;
+			debug[debugIndex].tMax = tMax;
+			debug[debugIndex].tDelta = tDelta;
+			debug[debugIndex].cellData = convert_float4(cellData);
+			debug[debugIndex].index = convert_float4(index);
+			debug[debugIndex].step = convert_float4(step);
+
+			debugIndex++;
+		}
 
 		if (containsGeometry)
 		{
 			// check for intersection with geometry in the current cell
 			int geometryIndex = (index.x * gridWidth * gridWidth + index.y * gridWidth + index.z) * vectorsPerVoxel;
 			
-			float4*	collisionPoint;
-			float4* surfaceNormal;
-			float distence = intersectCellContents(rayOrigin, rayDirection, cellData.x, geometryIndex, geometryArray, collisionPoint, surfaceNormal);
+			float4 collisionPoint;
+			float4 surfaceNormal;
+			float distence = intersectCellContents(rayOrigin, rayDirection, cellData.x, geometryIndex, geometryArray, &collisionPoint, &surfaceNormal);
 
 			if (distence > 0 && distence < HUGE_VALF)
 			{
@@ -337,12 +350,31 @@ render (	const		float4		cameraPosition,
 				color = (float4)(0.5f, 0.0f, 0.0f, 0.0f);	// For testing: use sphere position as color
 
 				// test cosine shading
-				float4 testLightPos = (float4)(0.0f, 5.0f, 0.0f, 1.0f);
-				float4 lightDirection = testLightPos - (*collisionPoint);
-				float shade = dot((*surfaceNormal), lightDirection);
+				float4 testLightPos = (float4)(0.0f, 4.0f, 0.0f, 1.0f);
+				float testLightIntensity = 15.0f;
+				float4 lightVector = testLightPos - collisionPoint;
+				float lightDistence = length(lightVector);
+				float4 lightDirection = fast_normalize(lightVector);
+				float shade = dot(surfaceNormal, lightDirection);
 
-				// NOTE: This line is causing an error. Debug later.
-				color.y += shade;
+				// Output debugging info
+				if (debugPixel)
+				{
+					debugIndex--;
+					debug[debugIndex].cellData.x = shade;
+
+					debugIndex++;
+				}
+
+				if (shade < 0.0f)
+				{
+					shade = 0.0f;
+				}
+
+				// Apply shading modifiers.
+				color *= (float4)(shade);
+				color *= testLightIntensity;
+				color *= 1.0f/(lightDistence*lightDistence);	// Inverse square law
 			}
 
 		} // End checking geometry.
@@ -350,12 +382,12 @@ render (	const		float4		cameraPosition,
 	} // End voxel traversel loop
 
 
-/*
-	if (debugPixel)
-	{
-		color = (float4)(1.0f);
-	}
-*/
+
+//if (debugPixel)
+//{
+//	color = (float4)(1.0f);
+//}
+
 
 	// Write the resulting color to the camera texture.
 	write_imagef(outputImage, coord, color);

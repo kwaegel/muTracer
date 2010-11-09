@@ -36,7 +36,7 @@ namespace Raytracing.CL
 
 
 		// Debugging buffers. Used to get data out of the kernel.
-		private static Pixel _debugPixel = new Pixel(201, 190);
+		private static Pixel _debugPixel = new Pixel(150, 250);
 		private static readonly int _debugSetLength = 9;
 		private static readonly int _debugSetCount = 10;
 		private float4[] _debugValues;
@@ -164,7 +164,7 @@ namespace Raytracing.CL
 			// Print debug information from kernel call.
 			//_commandQueue.ReadFromBuffer<float4>(_debugBuffer, ref _debugValues, true, null);
 			//unpackDebugValues(_debugValues);
-			System.Diagnostics.Trace.WriteLine("");
+			//System.Diagnostics.Trace.WriteLine("");
 		}
 
 		/// <summary>
@@ -193,8 +193,8 @@ namespace Raytracing.CL
 			{
 				int debugSetIndex = setBase / _debugSetLength;
 				System.Diagnostics.Trace.WriteLine("Debug step " + debugSetIndex);
-				System.Diagnostics.Trace.WriteLine("\tfrac: " + debugValues[3]);
-				System.Diagnostics.Trace.WriteLine("\ttMax: " + debugValues[4]);
+				System.Diagnostics.Trace.WriteLine("\tfrac: " + debugValues[setBase+3]);
+				System.Diagnostics.Trace.WriteLine("\ttMax: " + debugValues[setBase+4]);
 				System.Diagnostics.Trace.WriteLine("\tcellData: " + debugValues[setBase + 6]);
 				System.Diagnostics.Trace.WriteLine("\tindex: " + debugValues[setBase + 7]);
 				System.Diagnostics.Trace.WriteLine("");
