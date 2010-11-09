@@ -50,24 +50,25 @@ raySphereIntersect(	private float4	origin,
 	float bSqrSubC = fma(b,b,-c);	// bSqrSUbC = b * b - c;
 	// if (b*b-c) < 0, ray misses sphere
 	if (bSqrSubC < 0)
-		return -1;
+		return HUGE_VALF;
 
 	float sqrtBC = native_sqrt(bSqrSubC);
 
 	float tPos = -b + sqrtBC;
 	float tNeg = -b - sqrtBC;
 
-	if (tNeg < 0 && tPos < 0)
-		return -1;
-
-	float distence;
-	if (tPos < tNeg)
+	float distence = HUGE_VALF;
+	if (tPos < tNeg && tPos > 0)
 	{
 		distence = tPos;
 	}
-	else
+	else if (tNeg > 0)
 	{
 		distence  = tNeg;
+	}
+	else
+	{
+		return HUGE_VALF;	// Error condition: ray misses sphere.
 	}
 
 	(*collisionPoint) = origin + distence * direction;
@@ -88,7 +89,7 @@ intersectCellContents(			float4		rayOrigin,
 						private float4*		collisionPoint,
 						private float4*		surfaceNormal)
 {
-	float maxDistence = HUGE_VALF;
+	float minDistence = HUGE_VALF;
 	for (int i=0; i<vectorsPerVoxel; i++)
 	{
 
@@ -99,13 +100,12 @@ intersectCellContents(			float4		rayOrigin,
 		center.w=1;
 		float radius = sphere.w;
 
-		// calculate intersection distance
+		// calculate intersection distance. Returns HUGE_VALF if ray misses sphere.
 		float distence = raySphereIntersect(rayOrigin, rayDirection, center, radius, collisionPoint, surfaceNormal);
 
-		if (distence > 0 && distence < maxDistence)
+		if (distence < minDistence)
 		{
-			// debugging: use sphere position as color
-			maxDistence = distence;
+			minDistence = distence;
 		}
 	}
 
