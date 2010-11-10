@@ -110,29 +110,23 @@ namespace Raytracing.CL
 				// create a reference a kernel function
 				_renderKernel = _renderProgram.CreateKernel("render");
 			}
-			catch (BuildProgramFailureComputeException)
+			catch (BuildProgramFailureComputeException e)
 			{
 				String buildLog = _renderProgram.GetBuildLog(_commandQueue.Device);
 				System.Diagnostics.Trace.WriteLine(buildLog);
-
-				// Unable to handle error. Terminate application.
-				Environment.Exit(-1);
+				throw e;
 			}
-			catch (InvalidBuildOptionsComputeException)
+			catch (InvalidBuildOptionsComputeException e)
 			{
 				String buildLog = _renderProgram.GetBuildLog(_commandQueue.Device);
 				System.Diagnostics.Trace.WriteLine(buildLog);
-
-				// Unable to handle error. Terminate application.
-				Environment.Exit(-1);
+				throw e;
 			}
-            catch (InvalidBinaryComputeException)
+            catch (InvalidBinaryComputeException e)
             {
                 String buildLog = _renderProgram.GetBuildLog(_commandQueue.Device);
                 System.Diagnostics.Trace.WriteLine(buildLog);
-
-                // Unable to handle error. Terminate application.
-                Environment.Exit(-1);
+				throw e;
             }
 		}
 

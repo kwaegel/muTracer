@@ -109,8 +109,10 @@ namespace Raytracing.Driver
 			_clSphereBuffer.Dispose();
 			_voxelGrid.Dispose();
 			
-			_clCamera.Dispose();
-			_gridCamera.Dispose();
+			if (_clCamera != null)
+				_clCamera.Dispose();
+			if (_gridCamera != null)
+				_gridCamera.Dispose();
 
 			_commandQueue.Dispose();
 			_computeContext.Dispose();
@@ -138,23 +140,30 @@ namespace Raytracing.Driver
 
 			int halfWidth = ClientRectangle.Width / 2;
 
-			Rectangle rtDrawBounds = new Rectangle(halfWidth, 0, halfWidth, ClientRectangle.Height);
-			_rtCamera = new RayTracingCamera(rtDrawBounds, (-Vector3.UnitZ), Vector3.UnitY, cameraPosition);
-			_rtCamera.VerticalFieldOfView = vFOV;
-			_rtCamera.computeProjection();
+			try
+			{
+				Rectangle rtDrawBounds = new Rectangle(halfWidth, 0, halfWidth, ClientRectangle.Height);
+				_rtCamera = new RayTracingCamera(rtDrawBounds, (-Vector3.UnitZ), Vector3.UnitY, cameraPosition);
+				_rtCamera.VerticalFieldOfView = vFOV;
+				_rtCamera.computeProjection();
 
-            Rectangle clDrawBounds = new Rectangle(0, 0, halfWidth, ClientRectangle.Height);
-            _clCamera = new CLCamera(clDrawBounds, _commandQueue, -Vector3.UnitZ, Vector3.UnitY, cameraPosition);
-			_clCamera.VerticalFieldOfView = vFOV;
-            _clCamera.computeProjection();
+				Rectangle clDrawBounds = new Rectangle(0, 0, halfWidth, ClientRectangle.Height);
+				_clCamera = new CLCamera(clDrawBounds, _commandQueue, -Vector3.UnitZ, Vector3.UnitY, cameraPosition);
+				_clCamera.VerticalFieldOfView = vFOV;
+				_clCamera.computeProjection();
 
-			_gridCamera = new GridCamera(clDrawBounds, _commandQueue, -Vector3.UnitZ, Vector3.UnitY, cameraPosition);
-			_gridCamera.VerticalFieldOfView = vFOV;
-			_gridCamera.computeProjection();
+				_gridCamera = new GridCamera(clDrawBounds, _commandQueue, -Vector3.UnitZ, Vector3.UnitY, cameraPosition);
+				_gridCamera.VerticalFieldOfView = vFOV;
+				_gridCamera.computeProjection();
 
-			_softwareGridCamera = new ClCameraInCS(rtDrawBounds, (-Vector3.UnitZ), Vector3.UnitY, cameraPosition);
-			_softwareGridCamera.VerticalFieldOfView = vFOV;
-			_softwareGridCamera.computeProjection();
+				_softwareGridCamera = new ClCameraInCS(rtDrawBounds, (-Vector3.UnitZ), Vector3.UnitY, cameraPosition);
+				_softwareGridCamera.VerticalFieldOfView = vFOV;
+				_softwareGridCamera.computeProjection();
+			}
+			catch (Exception)
+			{
+				this.Exit();
+			}
 
 			// create the scene
 			_scene = new GridScene(16, 1);
