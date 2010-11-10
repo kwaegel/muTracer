@@ -336,7 +336,7 @@ render (	const		float4		cameraPosition,
 
 		float4 lightVector = testLightPos - collisionPoint;
 		float lightDistence = length(lightVector);
-		float4 lightDirection = fast_normalize(ligtVector);
+		float4 lightDirection = fast_normalize(lightVector);
 
 		float shade = clamp(dot(surfaceNormal, lightDirection),0.0f,1.0f);	// Clamped cosine shading
 
