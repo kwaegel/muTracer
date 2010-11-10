@@ -205,6 +205,10 @@ namespace Raytracing.Driver
 		{
 			VoxelGrid grid = new VoxelGrid(_commandQueue, 16, 16);
 
+			// Add test light
+			grid.addPointLight(new Vector3(0,4,0), Color4.White, 20.0f);
+			grid.addPointLight(new Vector3(0.1f, 0.1f, 0.1f), Color4.White, 2.0f);
+
 			// Add test data.
 
 			// Create sphere that crosses voxel bounderies
@@ -215,6 +219,7 @@ namespace Raytracing.Driver
 			grid.addSphere(new Vector3(0.2f, 0.2f, -0.2f), 0.05f, Color4.Black);
 			grid.addSphere(new Vector3(0.2f, -0.2f, 0.2f), 0.05f, Color4.Black);
 			grid.addSphere(new Vector3(0.2f, -0.2f, -0.2f), 0.05f, Color4.Black);
+			
 			grid.addSphere(new Vector3(-0.2f, 0.2f, 0.2f), 0.05f, Color4.Black);
 			grid.addSphere(new Vector3(-0.2f, 0.2f, -0.2f), 0.05f, Color4.Black);
 			grid.addSphere(new Vector3(-0.2f, -0.2f, 0.2f), 0.05f, Color4.Black);
@@ -238,6 +243,8 @@ namespace Raytracing.Driver
 					}
 				}
 			}
+			float mid = min+(max - min) / 2.0f;
+			grid.addPointLight(new Vector3(mid,mid,mid), Color4.White, 2.0f);
 
 			return grid;
 		}

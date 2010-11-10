@@ -11,6 +11,11 @@ typedef struct {
 	float4 step;
 } debugStruct;
 
+typedef struct{
+	float4 position;
+	float4 colorAndIntensity;
+} pointLight;
+
 float4
 myRemquo(float4 x, float4 y, int4* quo)
 {
@@ -278,22 +283,22 @@ render (	const		float4		cameraPosition,
 			const		float		cellSize,
 
 			// Geometry
-			__global	read_only	float4 * geometryArray,
+__global	read_only	float4 *	geometryArray,
 			const		int			vectorsPerVoxel,
 
 			// Lights
-			__global	read_only	float4* pointLights,
+__global	read_only	float8*		pointLights,
 			const		int			pointLightCount,
-			__local		float4*		localLightBuffer,
+__local					float8*		localLightBuffer,
 
 			// Debug structs
-			__global write_only		debugStruct * debug,
+__global	write_only	debugStruct* debug,
 			const		int			debugSetCount,
 			const		int2		debugPixelLocation
 			)
 {
 	// Copy global data to local buffers
-	event_t lightsFinishedLoading = async_work_group_copy(localLightBuffer, pointLights, pointLightCount, 0);
+	event_t lightsFinishedLoading = async_work_group_copy(localLightBuffer, pointLights, (size_t)(pointLightCount), 0);
 
 	int2 coord = (int2)(get_global_id(0), get_global_id(1));
 	int2 size = get_image_dim(outputImage);
@@ -328,31 +333,48 @@ render (	const		float4		cameraPosition,
 	// If the ray has hit somthing, draw the color of that object.
 	if (distence < HUGE_VALF)
 	{
-		color = (float4)(0.5f, 0.0f, 0.0f, 0.0f);	// Use generic color for testing.
+		color = (float4)(0.0f);
+		wait_group_events(1, &lightsFinishedLoading);
 
-		// test cosine shading
-		float4 testLightPos = (float4)(0.0f, 4.0f, 0.0f, 1.0f);
-		float testLightIntensity = 15.0f;
+		float4 objectColor = (float4)(0.5f, 0.0f, 0.0f, 0.0f);	// Use generic color for testing.
 
-		float4 lightVector = testLightPos - collisionPoint;
-		float lightDistence = length(lightVector);
-		float4 lightDirection = fast_normalize(lightVector);
-
-		float shade = clamp(dot(surfaceNormal, lightDirection),0.0f,1.0f);	// Clamped cosine shading
-
-		// Output debugging info
-		if (debugPixel)
+		// Sum up contributions of all light sources
+		for (int lightIndex = 0; lightIndex < pointLightCount; lightIndex++)
 		{
-			debugIndex--;
-			debug[debugIndex].cellData.x = shade;
+			// test cosine shading
+			//float8 lightData = localLightBuffer[lightIndex];
+			float4 lightPosition = pointLights[lightIndex].s0123;
+			float4 lightColor = pointLights[lightIndex].s4567;
+			//float4 lightPosition = localLightBuffer[lightIndex].s0123;
+			//float4 lightColor = localLightBuffer[lightIndex].s4567;
+			float lightIntensity = lightColor.w;
 
-			debugIndex++;
+			if (debugPixel)
+			{
+				debug[debugIndex].frac = lightPosition;
+				debug[debugIndex].tMax = lightColor;
+				debug[debugIndex].index.x = (float)(lightIndex);
+				debug[debugIndex].index.y = (float)(pointLightCount);
+				debug[debugIndex].index.z = lightIntensity;
+				debugIndex++;
+			}
+			
+
+			float4 lightVector = lightPosition - collisionPoint;
+			float lightDistence = length(lightVector);
+			float4 lightDirection = fast_normalize(lightVector);
+
+			float shade = clamp(dot(surfaceNormal, lightDirection),0.0f,1.0f);	// Clamped cosine shading
+
+			// Apply shading modifiers.
+			float4 lightContrib = objectColor;
+			lightContrib *= (float4)(shade);
+			lightContrib *= lightIntensity;
+			lightContrib *= 1.0f/(lightDistence*lightDistence);	// Inverse square law
+			
+			// Add light contribution to total color.
+			color += lightContrib;
 		}
-
-		// Apply shading modifiers.
-		color *= (float4)(shade);
-		color *= testLightIntensity;
-		color *= 1.0f/(lightDistence*lightDistence);	// Inverse square law
 	}
 
 //if (debugPixel)

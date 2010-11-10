@@ -10,6 +10,7 @@ using Raytracing.Math;
 
 namespace Raytracing.CL
 {
+	[StructLayout(LayoutKind.Sequential)]
 	public struct Voxel
 	{
 		public uint PrimitiveCount;
@@ -18,10 +19,12 @@ namespace Raytracing.CL
 		public uint w;
 	}
 
+	[StructLayout(LayoutKind.Sequential)]
 	public struct SimplePointLight
 	{
-		public Vector3 position;
-		public float intensity;
+		public Vector4 position;
+		public Color4 colorAndIntensity;
+		
 	}
 
 	class VoxelGrid
@@ -166,12 +169,16 @@ namespace Raytracing.CL
 		}
 
 
-		public void addPointLight(Vector3 position, float intensity)
+		public void addPointLight(Vector3 position, Color4 color, float intensity)
 		{
 			if (PointLightCount < _pointLightArray.Length - 1)
 			{
-				_pointLightArray[PointLightCount].position = position;
-				_pointLightArray[PointLightCount].intensity = intensity;
+				// pack the color and intensity values into a single struct
+				Color4 colorAndIntensity = color;
+				colorAndIntensity.A = intensity;
+
+				_pointLightArray[PointLightCount].position = new Vector4(position, 1.0f);
+				_pointLightArray[PointLightCount].colorAndIntensity = colorAndIntensity;
 				PointLightCount++;
 			}
 		}
@@ -198,10 +205,11 @@ namespace Raytracing.CL
 			// TODO: Only write sections of buffers that have changed.
 
 			// Copy pinned geometry data to device memory.
-			_commandQueue.WriteToBuffer<Vector4>(_geometryArray, _geometryBuffer, true, null);
+			_commandQueue.WriteToBuffer<Vector4>(_geometryArray, _geometryBuffer, false, null);
 
 			// Copy pinned light data to device memory.
-			_commandQueue.WriteToBuffer<SimplePointLight>(_pointLightArray, _pointLightBuffer, true, null);
+			_commandQueue.WriteToBuffer<SimplePointLight>(_pointLightArray, _pointLightBuffer, false, null);
+			_commandQueue.AddBarrier();
 		}
 
 		private void clampToGrid(ref int x, ref int y, ref int z)
