@@ -175,22 +175,19 @@ findNearestIntersection(
 	// Try to vectorize the if-else code below
 	// Idea: MSB of a float is the sign bit, and select can switch based on the sign bit.
 	// value = MSBset ? b : a;
-
-	int4 one = (int4)(1);
-	int4 negOne = (int4)(-1);
 	float4 upperFraction = cellSizeVec + frac;	// frac is negative here
 	
 	// first if positive direction, second if negitive direction
-	int4 out = select((int4)(gridWidth), negOne, as_int4(rayDirection));
-	int4 step = select(one, negOne, as_int4(rayDirection));
-	frac = select(upperFraction, frac, as_int4(rayDirection));
+	int4 out =	select((int4)	gridWidth,	(int4)-1,	as_int4(rayDirection));
+	int4 step = select((int4)			1,	(int4)-1,	as_int4(rayDirection));
+	frac =		select(		upperFraction,		frac,	as_int4(rayDirection));
 
 	// tMax: min distance to move before crossing a gird boundary
 	float4 tMax = frac / rayDirection;
 
 	// tDelta: distance (in t) between cell boundaries
-	float4 tDelta = cellSizeVec / rayDirection;	// compute projections onto the coordinate axes
-	tDelta = copysign(tDelta, (float4)1.0f);	// must be positive
+	float4 tDelta = cellSizeVec / rayDirection;	// compute projections onto the coordinate axes.
+	tDelta = copysign(tDelta, (float4)1.0f);	// ensure tDelta is positive.
 
 	// begin grid traversel
 	/*
@@ -335,6 +332,7 @@ __global	write_only	debugStruct* debug,
 		for (int lightIndex = 0; lightIndex < pointLightCount; lightIndex++)
 		{
 			// test cosine shading
+			// TODO: the async copy is not copying the light buffer correctly.
 			//float8 lightData = localLightBuffer[lightIndex];
 			float4 lightPosition = pointLights[lightIndex].s0123;
 			float4 lightColor = pointLights[lightIndex].s4567;
@@ -374,7 +372,6 @@ __global	write_only	debugStruct* debug,
 //{
 //	color = (float4)(1.0f);
 //}
-
 
 	// Write the resulting color to the camera texture.
 	write_imagef(outputImage, coord, color);
