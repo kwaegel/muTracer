@@ -152,15 +152,19 @@ findNearestIntersection(
 	// convert the ray start position to grid space
 	float4 gridSpaceCoordinates = rayOrigin - gridOrigin;
 
+	// Need to use cellSize as a vector, so only expand it once.
+	float4 cellSizeVec = (float4)(cellSize);
+
 	// get the current grid cell index and the distance to the next cell boundary
 	// index = gridCoords / cellSize (integer division).
 	//  frac = gridCoords % cellSize
 	int4 index;	// index of the current voxel
-	float4 frac = -myRemquo(gridSpaceCoordinates, (float4)cellSize, &index);
+	float4 frac = -myRemquo(gridSpaceCoordinates, cellSizeVec, &index);
 
 	
 	// Don't draw anything if the camera is outside the grid.
 	// This prevents indexOutOfBounds exceptions during testing.
+	// TODO: change to a box intersection test and allow drawing outside the grid.
 	if (index.x < 0 || index.x >= gridWidth ||
 		index.y < 0 || index.y >= gridWidth ||
 		index.z < 0 || index.z >= gridWidth)
@@ -168,32 +172,24 @@ findNearestIntersection(
 		return;
 	}
 
-	int4 step = -1;		// cell direction to step in
-	int4 out = -1;		// index of the first positive invalid voxel index.
-	if (rayDirection.x >= 0)
-	{
-		out.x = gridWidth;
-		step.x = 1;
-		frac.x = cellSize + frac.x;		// frac is negative
-	}
-	if (rayDirection.y >= 0)
-	{
-		out.y = gridWidth;
-		step.y = 1;
-		frac.y = cellSize + frac.y;		// frac is negative
-	}
-	if (rayDirection.z >= 0)
-	{
-		out.z = gridWidth;
-		step.z = 1;
-		frac.z = cellSize + frac.z;		// frac is negative
-	}
+	// Try to vectorize the if-else code below
+	// Idea: MSB of a float is the sign bit, and select can switch based on the sign bit.
+	// value = MSBset ? b : a;
+
+	int4 one = (int4)(1);
+	int4 negOne = (int4)(-1);
+	float4 upperFraction = cellSizeVec + frac;	// frac is negative here
+	
+	// first if positive direction, second if negitive direction
+	int4 out = select((int4)(gridWidth), negOne, as_int4(rayDirection));
+	int4 step = select(one, negOne, as_int4(rayDirection));
+	frac = select(upperFraction, frac, as_int4(rayDirection));
 
 	// tMax: min distance to move before crossing a gird boundary
 	float4 tMax = frac / rayDirection;
 
 	// tDelta: distance (in t) between cell boundaries
-	float4 tDelta = ((float4)cellSize) / rayDirection;// compute projections onto the coordinate axes
+	float4 tDelta = cellSizeVec / rayDirection;	// compute projections onto the coordinate axes
 	tDelta = copysign(tDelta, (float4)1.0f);	// must be positive
 
 	// begin grid traversel
@@ -316,9 +312,6 @@ __global	write_only	debugStruct* debug,
 	float4 screenPoint = (float4)(screenPoint2d.x, screenPoint2d.y, -1.0f, 1.0f);
 	float4 rayOrigin = transformVector(unprojectionMatrix, screenPoint);
 	float4 rayDirection = normalize(rayOrigin - cameraPosition);
-
-	// create a generic test light
-	float4 lightPosition = (float4)(10.0f, 20.0f, 10.0f, 1.0f);
 
 	// set the default background color
 	float4 color = backgroundColor;
