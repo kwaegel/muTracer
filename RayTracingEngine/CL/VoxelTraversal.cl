@@ -159,8 +159,8 @@ findNearestIntersection(
 	// index = gridCoords / cellSize (integer division).
 	//  frac = gridCoords % cellSize
 	int4 index;	// index of the current voxel
-	float4 frac = -myRemquo(gridSpaceCoordinates, cellSizeVec, &index);
-
+	float4 lowerFraction = myRemquo(gridSpaceCoordinates, cellSizeVec, &index);
+	float4 upperFraction = cellSizeVec - lowerFraction;
 	
 	// Don't draw anything if the camera is outside the grid.
 	// This prevents indexOutOfBounds exceptions during testing.
@@ -172,15 +172,12 @@ findNearestIntersection(
 		return;
 	}
 
-	// Try to vectorize the if-else code below
-	// Idea: MSB of a float is the sign bit, and select can switch based on the sign bit.
+	// MSB of a float is the sign bit, so the select call can switch based on the sign bit.
 	// value = MSBset ? b : a;
-	float4 upperFraction = cellSizeVec + frac;	// frac is negative here
-	
-	// first if positive direction, second if negitive direction
-	int4 out =	select((int4)	gridWidth,	(int4)-1,	as_int4(rayDirection));
-	int4 step = select((int4)			1,	(int4)-1,	as_int4(rayDirection));
-	frac =		select(		upperFraction,		frac,	as_int4(rayDirection));
+	// first if positive, second if negitive
+	int4 out =		select((int4)gridWidth,		  (int4)-1,		as_int4(rayDirection));
+	int4 step =		select((int4)		 1,		  (int4)-1,		as_int4(rayDirection));
+	float4 frac =	select(  upperFraction,  -lowerFraction,	as_int4(rayDirection));
 
 	// tMax: min distance to move before crossing a gird boundary
 	float4 tMax = frac / rayDirection;
