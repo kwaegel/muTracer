@@ -201,6 +201,18 @@ findNearestIntersection(
 	cellData = read_imagei(voxelGrid, smp, index);
 	containsGeometry = cellData.x > 0 || cellData.y > 0 || cellData.z > 0 || cellData.w > 0;
 
+	if (containsGeometry)
+	{
+		// check for intersection with geometry in the current cell
+		int geometryIndex = (index.x * gridWidth * gridWidth + index.y * gridWidth + index.z) * vectorsPerVoxel;
+			
+		minDistence = intersectCellContents(rayOrigin, rayDirection, cellData.x, geometryIndex, geometryArray, collisionPoint, surfaceNormal);
+
+		// Halt ray progress if it collides with anything.
+		rayHalted = minDistence < HUGE_VALF;
+
+	} // End checking geometry.
+
 	while (!rayHalted)
 	{
 		if (tMax.x < tMax.y)
@@ -250,10 +262,7 @@ findNearestIntersection(
 			minDistence = intersectCellContents(rayOrigin, rayDirection, cellData.x, geometryIndex, geometryArray, collisionPoint, surfaceNormal);
 
 			// Halt ray progress if it collides with anything.
-			if (minDistence < HUGE_VALF)
-			{
-				rayHalted = true;
-			}
+			rayHalted = minDistence < HUGE_VALF;
 
 		} // End checking geometry.
 	} // End voxel traversel loop
