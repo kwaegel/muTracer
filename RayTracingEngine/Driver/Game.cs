@@ -136,6 +136,7 @@ namespace Raytracing.Driver
 			// looking down the Z-axis into the scene
 			Vector3 cameraPosition = new Vector3(-0.50f, 0, 5.5f);
 			Quaternion cameraRotation = Quaternion.Identity;
+			float nearClip = 0.001f;
 			float vFOV = 75.0f;
 
 			int halfWidth = ClientRectangle.Width / 2;
@@ -145,19 +146,23 @@ namespace Raytracing.Driver
 				Rectangle rtDrawBounds = new Rectangle(halfWidth, 0, halfWidth, ClientRectangle.Height);
 				_rtCamera = new RayTracingCamera(rtDrawBounds, (-Vector3.UnitZ), Vector3.UnitY, cameraPosition);
 				_rtCamera.VerticalFieldOfView = vFOV;
+				_rtCamera.NearPlane = nearClip;
 				_rtCamera.computeProjection();
 
 				Rectangle clDrawBounds = new Rectangle(0, 0, halfWidth, ClientRectangle.Height);
 				_clCamera = new CLCamera(clDrawBounds, _commandQueue, -Vector3.UnitZ, Vector3.UnitY, cameraPosition);
 				_clCamera.VerticalFieldOfView = vFOV;
+				_clCamera.NearPlane = nearClip;
 				_clCamera.computeProjection();
 
 				_gridCamera = new GridCamera(clDrawBounds, _commandQueue, -Vector3.UnitZ, Vector3.UnitY, cameraPosition);
 				_gridCamera.VerticalFieldOfView = vFOV;
+				_gridCamera.NearPlane = nearClip;
 				_gridCamera.computeProjection();
 
 				_softwareGridCamera = new ClCameraInCS(rtDrawBounds, (-Vector3.UnitZ), Vector3.UnitY, cameraPosition);
 				_softwareGridCamera.VerticalFieldOfView = vFOV;
+				_softwareGridCamera.NearPlane = nearClip;
 				_softwareGridCamera.computeProjection();
 			}
 			catch (Exception)
@@ -186,7 +191,6 @@ namespace Raytracing.Driver
 			// select OpenCL device and platform
 			ComputePlatform platform = ComputePlatform.Platforms[0];
 			ComputeDevice device = platform.Devices[0];
-
 
 			IntPtr curDC = wglGetCurrentDC();
 

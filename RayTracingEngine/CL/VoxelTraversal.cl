@@ -270,10 +270,39 @@ findNearestIntersection(
 	return minDistence;
 }
 
+float4
+unprojectPrimaryRay(			int2		screenCoords,
+						int2		screenSize,
+			const		float4		cameraPosition,
+			const		float16		unprojectionMatrix,
+
+						float4*		rayOrigin,
+						float4*		rayDirection)
+{
+	float4 windowCoords = (float4)(screenCoords.x, screenCoords.y, 0.0f, 1.0f);
+
+	// map x and y from window coords
+	windowCoords.xy /= convert_float2(screenSize);
+
+	// Convert window to normalized device coordinates in the range [-1, 1]
+	// Assume viewport is at zero, so do not need to subtract viewport (x,y)
+	float4 ndc = 2.0f * windowCoords  - 1.0f;
+
+	*rayOrigin = transformVector(unprojectionMatrix, ndc);
+
+	// Convert to homogeneous coordinates.
+	// Not sure what this really does, but it is required.
+	*rayOrigin /= (float4)(rayOrigin->w);	
+
+	*rayDirection = normalize(*rayOrigin - cameraPosition);
+}
+
+
 kernel
 void
 render (	const		float4		cameraPosition,
 			const		float16		unprojectionMatrix,
+
 			const		float4		backgroundColor,
 			write_only	image2d_t	outputImage,
 
@@ -288,12 +317,12 @@ __global	read_only	float4 *	geometryArray,
 			// Lights
 __global	read_only	float8*		pointLights,
 			const		int			pointLightCount,
-__local					float8*		localLightBuffer,
+__local					float8*		localLightBuffer
 
 			// Debug structs
-__global	write_only	debugStruct* debug,
-			const		int			debugSetCount,
-			const		int2		debugPixelLocation
+//__global	write_only	debugStruct* debug,
+//			const		int			debugSetCount,
+//			const		int2		debugPixelLocation
 			)
 {
 	// Copy global data to local buffers
@@ -303,18 +332,12 @@ __global	write_only	debugStruct* debug,
 	int2 size = get_image_dim(outputImage);
 
 	///// DEBUG VALUES /////
-	bool debugPixel = coord.x == debugPixelLocation.x && coord.y == debugPixelLocation.y;
-	int debugIndex = 0;
+	//bool debugPixel = coord.x == debugPixelLocation.x && coord.y == debugPixelLocation.y;
+	//int debugIndex = 0;
 
-	///// Create a ray in world coordinates /////
-
-	// convert to normilized device (screen) coordinates [-1, 1]
-	float2 screenPoint2d = (float2)(2.0f) * convert_float2(coord) / convert_float2(size) - (float2)(1.0f);
-
-	// unproject screen point to world
-	float4 screenPoint = (float4)(screenPoint2d.x, screenPoint2d.y, -1.0f, 1.0f);
-	float4 rayOrigin = transformVector(unprojectionMatrix, screenPoint);
-	float4 rayDirection = normalize(rayOrigin - cameraPosition);
+	// Create a ray in world coordinates 
+	float4 rayOrigin, rayDirection;
+	unprojectPrimaryRay(coord, size, cameraPosition, unprojectionMatrix, &rayOrigin, &rayDirection);
 
 	// set the default background color
 	float4 color = backgroundColor;
@@ -345,7 +368,7 @@ __global	write_only	debugStruct* debug,
 			//float4 lightPosition = localLightBuffer[lightIndex].s0123;
 			//float4 lightColor = localLightBuffer[lightIndex].s4567;
 			float lightIntensity = lightColor.w;
-
+/*
 			if (debugPixel)
 			{
 				debug[debugIndex].frac = lightPosition;
@@ -355,6 +378,7 @@ __global	write_only	debugStruct* debug,
 				debug[debugIndex].index.z = lightIntensity;
 				debugIndex++;
 			}
+*/
 			
 
 			float4 lightVector = lightPosition - collisionPoint;

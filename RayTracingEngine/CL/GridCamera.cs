@@ -139,24 +139,28 @@ namespace Raytracing.CL
 			float cellSize = voxelGrid.CellSize;
 
 			// Set kernel arguments.
-			_renderKernel.SetValueArgument<Vector4>(0, homogeneousPosition);
-			_renderKernel.SetValueArgument<Matrix4>(1, _screenToWorldMatrix);
-			_renderKernel.SetValueArgument<Color4>(2, Color4.CornflowerBlue);
-			_renderKernel.SetMemoryArgument(3, _renderTarget);
+			int argi = 0;
+			_renderKernel.SetValueArgument<Vector4>(argi++, homogeneousPosition);
+			_renderKernel.SetValueArgument<Matrix4>(argi++, _screenToWorldMatrix);
+
+			_renderKernel.SetValueArgument<Color4>(argi++, Color4.CornflowerBlue);
+			_renderKernel.SetMemoryArgument(argi++, _renderTarget);
 			// Voxel grid arguments
-			_renderKernel.SetMemoryArgument(4, voxelGrid._voxelGrid, false);
-			_renderKernel.SetValueArgument<float>(5, cellSize);
+			_renderKernel.SetMemoryArgument(argi++, voxelGrid._voxelGrid, false);
+			_renderKernel.SetValueArgument<float>(argi++, cellSize);
 			// Pass in array of primitives
-			_renderKernel.SetMemoryArgument(6, voxelGrid.Geometry);
-			_renderKernel.SetValueArgument<int>(7, voxelGrid.VectorsPerVoxel);
+			_renderKernel.SetMemoryArgument(argi++, voxelGrid.Geometry);
+			_renderKernel.SetValueArgument<int>(argi++, voxelGrid.VectorsPerVoxel);
 			// Pass in lights
-			_renderKernel.SetMemoryArgument(8, voxelGrid.PointLights);
-			_renderKernel.SetValueArgument<int>(9, voxelGrid.PointLightCount);
-			_renderKernel.SetLocalArgument(10, voxelGrid.PointLightCount * 8);
-			// Pass in debug arrays
-			_renderKernel.SetMemoryArgument(11, _debugBuffer, false);
-			_renderKernel.SetValueArgument<int>(12, _debugSetCount);
-			_renderKernel.SetValueArgument<Pixel>(13, _debugPixel);
+			_renderKernel.SetMemoryArgument(argi++, voxelGrid.PointLights);
+			_renderKernel.SetValueArgument<int>(argi++, voxelGrid.PointLightCount);
+			_renderKernel.SetLocalArgument(argi++, voxelGrid.PointLightCount * 8);
+
+
+			// Pass in debug arrays. Removed due to reaching the max constant argument count.
+			//_renderKernel.SetMemoryArgument(argi++, _debugBuffer, false);
+			//_renderKernel.SetValueArgument<int>(argi++, _debugSetCount);
+			//_renderKernel.SetValueArgument<Pixel>(argi++, _debugPixel);
 
 			// Add render task to the device queue.
 			_commandQueue.Execute(_renderKernel, null, globalWorkSize, localWorkSize, null);
@@ -166,12 +170,13 @@ namespace Raytracing.CL
 			_commandQueue.Finish();
 
 			
-#if DEBUG
-			// Print debug information from kernel call.
-			_commandQueue.ReadFromBuffer<float4>(_debugBuffer, ref _debugValues, true, null);
-			unpackDebugValues(_debugValues);
-			System.Diagnostics.Trace.WriteLine("");
-#endif
+//#if DEBUG
+//            // Print debug information from kernel call.
+//            _commandQueue.ReadFromBuffer<float4>(_debugBuffer, ref _debugValues, true, null);
+//            unpackDebugValues(_debugValues);
+//            System.Diagnostics.Trace.WriteLine("");
+//#endif
+			 
 		}
 
 		/// <summary>

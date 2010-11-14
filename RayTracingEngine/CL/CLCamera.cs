@@ -34,7 +34,6 @@ namespace Raytracing.CL
 
 #region Fields
 
-		Matrix4 _oldView;
 		protected Matrix4 _screenToWorldMatrix;
 
 		// list of shared objects. Needed for OpenCL, OpenGL interop.
@@ -199,8 +198,6 @@ namespace Raytracing.CL
 		public new void computeProjection()
 		{
 			base.computeProjection();
-
-			_oldView = new Matrix4();
 		}
 
 
@@ -209,8 +206,7 @@ namespace Raytracing.CL
 		{
 			// Calculace the matrix needed to unproject pixels.
 			// View matrix will change for every camera movement.
-			Matrix4 vp = View * Projection;
-			_screenToWorldMatrix = Matrix4.Invert(vp);
+			_screenToWorldMatrix = Matrix4.Invert(View * Projection);
 		}
 
 
