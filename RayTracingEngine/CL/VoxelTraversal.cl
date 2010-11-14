@@ -399,9 +399,10 @@ __local					float8*		localLightBuffer
 			float4 lightContrib = objectColor;
 			lightContrib *= (float4)(shade);
 			lightContrib *= lightIntensity;
-			lightContrib *= 1.0f/(lightDistence*lightDistence);	// Inverse square law
+			lightContrib *= native_recip(lightDistence*lightDistence);	// Inverse square law
 			
 			// Add light contribution to total color.
+			// Multiply by shadow factor to ignore contributions of hidden lights.
 			color += lightContrib * !isInShadow;
 		}
 	}
