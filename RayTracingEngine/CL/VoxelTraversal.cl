@@ -212,9 +212,24 @@ findNearestIntersection(
 		rayHalted = minDistence < HUGE_VALF;
 
 	} // End checking geometry.
-
+	
+	int4 mask;
 	while (!rayHalted)
 	{
+
+		mask.x = (tMax.x < tMax.y) && (tMax.x < tMax.z);
+		mask.y = (tMax.y < tMax.x) && (tMax.y < tMax.z);
+		mask.z = !mask.x && !mask.y;
+
+		index += step * mask;
+		tMax += tDelta * convert_float4(mask);
+
+		if (index.x == out.x || index.y == out.y || index.z == out.z)
+		{
+			break;
+		}
+
+/*
 		if (tMax.x < tMax.y)
 		{
 			if (tMax.x < tMax.z)
@@ -249,6 +264,7 @@ findNearestIntersection(
 				tMax.z = tMax.z + tDelta.z;
 			}
 		}
+*/
 
 		// get grid data at index
 		cellData = read_imagei(voxelGrid, smp, index);
