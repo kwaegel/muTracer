@@ -220,12 +220,12 @@ namespace Raytracing.Driver
 
 			// Add test light
 			grid.addPointLight(new Vector3(0,4,0), Color4.White, 20.0f);
-			grid.addPointLight(new Vector3(0.1f, 0.1f, 0.1f), Color4.White, 2.0f);
+			grid.addPointLight(new Vector3(0,0,0), Color4.White, 2.0f);
 
 			// Add test data.
 
 			// Create sphere that crosses voxel bounderies
-			grid.addSphere(new Vector3(-3f, 0, 0), 1.0f, Color4.Black);
+			grid.addSphere(new Vector3(3f, 0, 0), 1.0f, Color4.Black);
 
 			// Create multiple spheres in the same voxel
 			grid.addSphere(new Vector3(0.2f, 0.2f, 0.2f), 0.05f, Color4.Black);
@@ -242,6 +242,8 @@ namespace Raytracing.Driver
 			grid.addSphere(new Vector3(1f, 0, 0), 0.25f, Color4.Red);
 			grid.addSphere(new Vector3(0, 1f, 0), 0.25f, Color4.Green);
 			grid.addSphere(new Vector3(0, 0, 1f), 0.25f, Color4.Blue);
+
+			grid.addSphere(new Vector3(0, 1.5f, 0), 0.05f, Color4.Red);
 
 			// Create a large number of spheres to stress the memory system.
 			int min = 2;

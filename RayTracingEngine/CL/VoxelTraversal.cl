@@ -362,7 +362,6 @@ __local					float8*		localLightBuffer
 		{
 			// test cosine shading
 			// TODO: the async copy is not copying the light buffer correctly.
-			//float8 lightData = localLightBuffer[lightIndex];
 			float4 lightPosition = pointLights[lightIndex].s0123;
 			float4 lightColor = pointLights[lightIndex].s4567;
 			//float4 lightPosition = localLightBuffer[lightIndex].s0123;
@@ -387,6 +386,15 @@ __local					float8*		localLightBuffer
 
 			float shade = clamp(dot(surfaceNormal, lightDirection),0.0f,1.0f);	// Clamped cosine shading
 
+			// check for shadowing. Reuse collisionPoint and surfaceNormal as they are no longer needed.
+			float4 shadowCollisionPoint, shadowSurfaceNormal;
+			float4 shadowRayStart = collisionPoint + (float4)(0.00001f) * lightDirection;
+			float shadowRayDistence = findNearestIntersection(	shadowRayStart, lightDirection, 
+																&shadowCollisionPoint, &shadowSurfaceNormal,
+																voxelGrid, cellSize, geometryArray, vectorsPerVoxel);
+
+			bool isInShadow = shadowRayDistence < lightDistence;
+
 			// Apply shading modifiers.
 			float4 lightContrib = objectColor;
 			lightContrib *= (float4)(shade);
@@ -394,7 +402,7 @@ __local					float8*		localLightBuffer
 			lightContrib *= 1.0f/(lightDistence*lightDistence);	// Inverse square law
 			
 			// Add light contribution to total color.
-			color += lightContrib;
+			color += lightContrib * !isInShadow;
 		}
 	}
 
