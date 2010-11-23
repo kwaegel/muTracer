@@ -22,7 +22,7 @@ namespace Raytracing.Driver
 {
     class Game : GameWindow
     {
-		
+		private static Vector3 InitialCameraPosition = new Vector3(2.5f, -2f, 5.5f);
 
 #if DEBUG
 		private static readonly bool limitFrames = false;
@@ -134,7 +134,7 @@ namespace Raytracing.Driver
 
 			// create the camera
 			// looking down the Z-axis into the scene
-			Vector3 cameraPosition = new Vector3(-0.50f, 0, 5.5f);
+			Vector3 cameraPosition = InitialCameraPosition;
 			Quaternion cameraRotation = Quaternion.Identity;
 			float nearClip = 0.001f;
 			float vFOV = 75.0f;

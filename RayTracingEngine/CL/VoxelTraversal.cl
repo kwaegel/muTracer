@@ -118,7 +118,7 @@ intersectCellContents(			float4		rayOrigin,
 }
 
 
-float
+float4
 findNearestIntersection(	
 							float4		rayOrigin,
 							float4		rayDirection,
@@ -129,7 +129,12 @@ findNearestIntersection(
 				const		float		cellSize,
 			
 		global	read_only	float4*		geometryArray,		// Geometry data
-				const		int			vectorsPerVoxel)
+				const		int			vectorsPerVoxel,
+
+			// Debug structs
+__global	write_only	debugStruct* debug,
+						int			debugSetCount,
+						bool		debugPixel)
 {
 	const sampler_t smp = 
 		CLK_NORMALIZED_COORDS_FALSE | //Natural coordinates
@@ -137,6 +142,10 @@ findNearestIntersection(
 		CLK_FILTER_NEAREST; //Don't interpolate
 
 /**** Traverse the grid and find the nearest occupied cell ****/
+
+	int debugIndex = 0;
+	debug[0].rayOrigin = rayOrigin;
+	debug[0].rayDirection = rayDirection;
 
 	// setup up traversel variables
 
@@ -169,7 +178,8 @@ findNearestIntersection(
 		index.y < 0 || index.y >= gridWidth ||
 		index.z < 0 || index.z >= gridWidth)
 	{
-		return;
+		//return HUGE_VALF;
+		return (float4)(0.0f, 0.0f, 0.0f, HUGE_VALF);
 	}
 
 	// MSB of a float is the sign bit, so the select call can switch based on the sign bit.
@@ -212,59 +222,90 @@ findNearestIntersection(
 		rayHalted = minDistence < HUGE_VALF;
 
 	} // End checking geometry.
+
+	if (debugPixel)
+	{
+		debug[debugIndex].frac = frac;
+		debug[debugIndex].tMax = tMax;
+		debug[debugIndex].tDelta = tDelta;
+		debug[debugIndex].index = convert_float4(index);
+		debugIndex++;
+	}
 	
 	int4 mask;
 	while (!rayHalted)
 	{
+		mask = (int4)(0);
+		bool useMask = true;
 
-		mask.x = (tMax.x < tMax.y) && (tMax.x < tMax.z);
-		mask.y = (tMax.y < tMax.x) && (tMax.y < tMax.z);
-		mask.z = !mask.x && !mask.y;
-
-		index += step * mask;
-		tMax += tDelta * convert_float4(mask);
-
-		if (index.x == out.x || index.y == out.y || index.z == out.z)
+		if (useMask)
 		{
-			break;
-		}
+			mask.x = !isnan(tMax.x) && (tMax.x < tMax.y) && (tMax.x < tMax.z);
+			mask.y = !isnan(tMax.y) && (tMax.y <= tMax.x) && (tMax.y < tMax.z);
+			mask.z = !mask.x && !mask.y;
 
-/*
-		if (tMax.x < tMax.y)
-		{
-			if (tMax.x < tMax.z)
+			debug[debugIndex].step = convert_float4(mask);
+
+			index += step * mask;
+			tMax += tDelta * convert_float4(mask);
+
+			if (index.x == out.x || index.y == out.y || index.z == out.z)
 			{
-				index.x += step.x;			// step to next voxel along this axis
-				if (index.x == out.x)		// outside grid
-					break; 
-				tMax.x = tMax.x + tDelta.x;	// increment max distence to next voxel
-			}
-			else
-			{
-				index.z += step.z;
-				if (index.z == out.z)
-					break;
-				tMax.z = tMax.z + tDelta.z;
+				break;
 			}
 		}
 		else
 		{
-			if (tMax.y < tMax.z)
+			if (tMax.x < tMax.y)
 			{
-				index.y += step.y;
-				if (index.y == out.y)
-					break;
-				tMax.y = tMax.y + tDelta.y;
+				if (tMax.x < tMax.z)
+				{
+					mask.x = 1;
+					index.x += step.x;			// step to next voxel along this axis
+					if (index.x == out.x)		// outside grid
+						break; 
+					tMax.x = tMax.x + tDelta.x;	// increment max distence to next voxel
+				}
+				else
+				{
+					mask.z = 1;
+					index.z += step.z;
+					if (index.z == out.z)
+						break;
+					tMax.z = tMax.z + tDelta.z;
+				}
 			}
 			else
 			{
-				index.z += step.z;
-				if (index.z == out.z)
-					break;
-				tMax.z = tMax.z + tDelta.z;
+				if (tMax.y < tMax.z)
+				{
+					mask.y = 1;
+					index.y += step.y;
+					if (index.y == out.y)
+						break;
+					tMax.y = tMax.y + tDelta.y;
+				}
+				else
+				{
+					mask.z = 1;
+					index.z += step.z;
+					if (index.z == out.z)
+						break;
+					tMax.z = tMax.z + tDelta.z;
+				}
 			}
 		}
-*/
+
+		if (debugPixel)
+		{
+			debug[debugIndex].frac = frac;
+			debug[debugIndex].tMax = tMax;
+			debug[debugIndex].tDelta = tDelta;
+			debug[debugIndex].index = convert_float4(index);
+			//debug[debugIndex].step = convert_float4(mask);
+			debugIndex++;
+		}
+
 
 		// get grid data at index
 		cellData = read_imagei(voxelGrid, smp, index);
@@ -283,7 +324,8 @@ findNearestIntersection(
 		} // End checking geometry.
 	} // End voxel traversel loop
 
-	return minDistence;
+	//return minDistence;
+	return (float4)(0.0f, 0.0f, 0.0f, minDistence);
 }
 
 float4
@@ -333,23 +375,24 @@ __global	read_only	float4 *	geometryArray,
 			// Lights
 __global	read_only	float8*		pointLights,
 			const		int			pointLightCount,
-__local					float8*		localLightBuffer
+__local					float8*		localLightBuffer,
 
 			// Debug structs
-//__global	write_only	debugStruct* debug,
-//			const		int			debugSetCount,
-//			const		int2		debugPixelLocation
+__global	write_only	debugStruct* debug,
+						int			debugSetCount,
+						int2		debugPixelLocation
 			)
 {
 	// Copy global data to local buffers
-	event_t lightsFinishedLoading = async_work_group_copy(localLightBuffer, pointLights, (size_t)(pointLightCount), 0);
+	event_t lightsFinishedLoading = async_work_group_copy(localLightBuffer, pointLights, (size_t)(pointLightCount*4), 0);
+	wait_group_events(1, &lightsFinishedLoading);
 
 	int2 coord = (int2)(get_global_id(0), get_global_id(1));
 	int2 size = get_image_dim(outputImage);
 
 	///// DEBUG VALUES /////
-	//bool debugPixel = coord.x == debugPixelLocation.x && coord.y == debugPixelLocation.y;
-	//int debugIndex = 0;
+	bool debugPixel = coord.x == debugPixelLocation.x && coord.y == debugPixelLocation.y;
+	int debugIndex = 0;
 
 	// Create a ray in world coordinates 
 	float4 rayOrigin, rayDirection;
@@ -362,14 +405,36 @@ __local					float8*		localLightBuffer
 	float4 surfaceNormal;
 
 	// find the nearest intersected object
-	float distence = findNearestIntersection(rayOrigin, rayDirection, &collisionPoint, &surfaceNormal,
-													voxelGrid, cellSize, geometryArray, vectorsPerVoxel);
+	float4 distence = findNearestIntersection(rayOrigin, rayDirection, &collisionPoint, &surfaceNormal,
+												voxelGrid, cellSize, geometryArray, vectorsPerVoxel,
+												debug, debugSetCount, debugPixel);
+/*
+	// DEBUG case
+	if (distence.w == HUGE_VALF)
+	{
+		float4 errorColor = (float4)(0.0f);
 
+		if (distence.x == INFINITY)
+		{
+			errorColor.x = 1.0f;
+		}
+		if (distence.y == INFINITY)
+		{
+			errorColor.y = 1.0f;
+		}
+		if (distence.z == INFINITY)
+		{
+			errorColor.z = 1.0f;
+		}
+
+		write_imagef(outputImage, coord, errorColor);
+		return;
+	}
+*/
 	// If the ray has hit somthing, draw the color of that object.
-	if (distence < HUGE_VALF)
+	if (distence.w < HUGE_VALF)
 	{
 		color = (float4)(0.0f);
-		wait_group_events(1, &lightsFinishedLoading);
 
 		float4 objectColor = (float4)(0.5f, 0.0f, 0.0f, 0.0f);	// Use generic color for testing.
 
@@ -403,13 +468,13 @@ __local					float8*		localLightBuffer
 			float shade = clamp(dot(surfaceNormal, lightDirection),0.0f,1.0f);	// Clamped cosine shading
 
 			// check for shadowing. Reuse collisionPoint and surfaceNormal as they are no longer needed.
-			float4 shadowCollisionPoint, shadowSurfaceNormal;
-			float4 shadowRayStart = collisionPoint + (float4)(0.00001f) * lightDirection;
-			float shadowRayDistence = findNearestIntersection(	shadowRayStart, lightDirection, 
-																&shadowCollisionPoint, &shadowSurfaceNormal,
-																voxelGrid, cellSize, geometryArray, vectorsPerVoxel);
+			//float4 shadowCollisionPoint, shadowSurfaceNormal;
+			//float4 shadowRayStart = collisionPoint + (float4)(0.00001f) * lightDirection;
+			//float4 shadowRayDistence = findNearestIntersection(	shadowRayStart, lightDirection, 
+			//													&shadowCollisionPoint, &shadowSurfaceNormal,
+			//													voxelGrid, cellSize, geometryArray, vectorsPerVoxel);
 
-			bool isInShadow = shadowRayDistence < lightDistence;
+			//bool isInShadow = shadowRayDistence.w < lightDistence;
 
 			// Apply shading modifiers.
 			float4 lightContrib = objectColor;
@@ -419,14 +484,14 @@ __local					float8*		localLightBuffer
 			
 			// Add light contribution to total color.
 			// Multiply by shadow factor to ignore contributions of hidden lights.
-			color += lightContrib * !isInShadow;
+			color += lightContrib;// * !isInShadow;
 		}
 	}
 
-//if (debugPixel)
-//{
-//	color = (float4)(1.0f);
-//}
+if (debugPixel)
+{
+	color = (float4)(1.0f);
+}
 
 	// Write the resulting color to the camera texture.
 	write_imagef(outputImage, coord, color);

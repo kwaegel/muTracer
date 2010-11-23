@@ -36,7 +36,7 @@ namespace Raytracing.CL
 
 
 		// Debugging buffers. Used to get data out of the kernel.
-		private static Pixel _debugPixel = new Pixel(150, 250);
+		private static Pixel _debugPixel = new Pixel(300, 400);
 		private static readonly int _debugSetLength = 9;
 		private static readonly int _debugSetCount = 10;
 		private float4[] _debugValues;
@@ -158,9 +158,9 @@ namespace Raytracing.CL
 
 
 			// Pass in debug arrays. Removed due to reaching the max constant argument count.
-			//_renderKernel.SetMemoryArgument(argi++, _debugBuffer, false);
-			//_renderKernel.SetValueArgument<int>(argi++, _debugSetCount);
-			//_renderKernel.SetValueArgument<Pixel>(argi++, _debugPixel);
+			_renderKernel.SetMemoryArgument(argi++, _debugBuffer, false);
+			_renderKernel.SetValueArgument<int>(argi++, _debugSetCount);
+			_renderKernel.SetValueArgument<Pixel>(argi++, _debugPixel);
 
 			// Add render task to the device queue.
 			_commandQueue.Execute(_renderKernel, null, globalWorkSize, localWorkSize, null);
@@ -170,12 +170,12 @@ namespace Raytracing.CL
 			_commandQueue.Finish();
 
 			
-//#if DEBUG
-//            // Print debug information from kernel call.
-//            _commandQueue.ReadFromBuffer<float4>(_debugBuffer, ref _debugValues, true, null);
-//            unpackDebugValues(_debugValues);
-//            System.Diagnostics.Trace.WriteLine("");
-//#endif
+#if DEBUG
+            // Print debug information from kernel call.
+            _commandQueue.ReadFromBuffer<float4>(_debugBuffer, ref _debugValues, true, null);
+            unpackDebugValues(_debugValues);
+            System.Diagnostics.Trace.WriteLine("");
+#endif
 			 
 		}
 
@@ -197,8 +197,8 @@ namespace Raytracing.CL
 			System.Diagnostics.Trace.WriteLine("\tray origin: " + debugValues[0]);
 			System.Diagnostics.Trace.WriteLine("\tray direction: " + debugValues[1]);
 			System.Diagnostics.Trace.WriteLine("\tGridSpace coords: " + debugValues[2]);
-			System.Diagnostics.Trace.WriteLine("\ttDelta: " + debugValues[5]);
-			System.Diagnostics.Trace.WriteLine("\tstep direction: " + debugValues[8]);
+			//System.Diagnostics.Trace.WriteLine("\ttDelta: " + debugValues[5]);
+			//System.Diagnostics.Trace.WriteLine("\tstep direction: " + debugValues[8]);
 			System.Diagnostics.Trace.WriteLine("");
 
 			for (int setBase = 0; setBase < debugValues.Length; setBase += _debugSetLength)
@@ -207,8 +207,10 @@ namespace Raytracing.CL
 				System.Diagnostics.Trace.WriteLine("Debug step " + debugSetIndex);
 				System.Diagnostics.Trace.WriteLine("\tfrac: " + debugValues[setBase+3]);
 				System.Diagnostics.Trace.WriteLine("\ttMax: " + debugValues[setBase+4]);
+				System.Diagnostics.Trace.WriteLine("\ttDelta: " + debugValues[5]);
 				System.Diagnostics.Trace.WriteLine("\tcellData: " + debugValues[setBase + 6]);
 				System.Diagnostics.Trace.WriteLine("\tindex: " + debugValues[setBase + 7]);
+				System.Diagnostics.Trace.WriteLine("\tmask: " + debugValues[8]);
 				System.Diagnostics.Trace.WriteLine("");
 
 				if (debugValues[setBase + 6] != Vector4.Zero)

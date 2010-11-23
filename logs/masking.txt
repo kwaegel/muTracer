@@ -1,0 +1,78 @@
+Masking
+
+Constant data
+	ray origin: (2.500765, -1.999235, 5.499, 1)
+	ray direction: (0.5192751, 0.5191132, -0.6788777, 0)
+	GridSpace coords: (0, 0, 0, 0)
+
+Debug step 0
+	frac: (0.5, 0.9997444, -0.4990005, 1)
+	tMax: (Infinity, 4.037061, 0.5150433, Infinity)
+	tDelta: (Infinity, 4.038093, 1.03215, Infinity)
+	cellData: (0, 0, 0, 0)
+	index: (10, 6, 13, 9)
+	mask: (1, 0, 0, 1.065353E+09)
+
+Debug step 1
+	frac: (0.5, 0.9997444, -0.4990005, 1)
+	tMax: (NaN, 4.037061, 1.547193, Infinity)
+	tDelta: (Infinity, 4.038093, 1.03215, Infinity)
+	cellData: (0, 0, 0, 0)
+	index: (10, 6, 12, 1.065353E+09)
+	mask: (1, 0, 0, 1.065353E+09)
+
+Debug step 2
+	frac: (0.5, 0.9997444, -0.4990005, 1)
+	tMax: (NaN, 4.037061, 2.579343, Infinity)
+	tDelta: (Infinity, 4.038093, 1.03215, Infinity)
+	cellData: (0, 0, 0, 0)
+	index: (10, 6, 11, 2.130706E+09)
+	mask: (1, 0, 0, 1.065353E+09)
+
+Debug step 3
+	frac: (0.5, 0.9997444, -0.4990005, 1)
+	tMax: (NaN, 4.037061, 3.611492, Infinity)
+	tDelta: (Infinity, 4.038093, 1.03215, Infinity)
+	cellData: (0, 0, 0, 0)
+	index: (10, 6, 10, -1.098908E+09)
+	mask: (1, 0, 0, 1.065353E+09)
+
+Debug step 4
+	frac: (0.5, 0.9997444, -0.4990005, 1)
+	tMax: (NaN, 4.037061, 4.643642, Infinity)
+	tDelta: (Infinity, 4.038093, 1.03215, Infinity)
+	cellData: (0, 0, 0, 0)
+	index: (10, 6, 9, -3.355442E+07)
+	mask: (1, 0, 0, 1.065353E+09)
+
+Debug step 5
+	frac: (0.5, 0.9997444, -0.4990005, 1)
+	tMax: (NaN, 4.037061, 5.675792, Infinity)
+	tDelta: (Infinity, 4.038093, 1.03215, Infinity)
+	cellData: (0, 0, 0, 0)
+	index: (10, 6, 8, 1.031799E+09)
+	mask: (1, 0, 0, 1.065353E+09)
+
+Debug step 6
+	frac: (0.5, 0.9997444, -0.4990005, 1)
+	tMax: (NaN, 4.037061, 6.707942, Infinity)
+	tDelta: (Infinity, 4.038093, 1.03215, Infinity)
+	cellData: (0, 0, 0, 0)
+	index: (10, 6, 7, 2.097152E+09)
+	mask: (1, 0, 0, 1.065353E+09)
+
+Debug step 7
+	frac: (0.5, 0.9997444, -0.4990005, 1)
+	tMax: (NaN, 4.037061, 7.740091, Infinity)
+	tDelta: (Infinity, 4.038093, 1.03215, Infinity)
+	cellData: (0, 0, 0, 0)
+	index: (10, 6, 6, -1.132462E+09)
+	mask: (1, 0, 0, 1.065353E+09)
+
+Debug step 8
+	frac: (0.5, 0.9997444, -0.4990005, 1)
+	tMax: (NaN, 4.037061, 8.772241, Infinity)
+	tDelta: (Infinity, 4.038093, 1.03215, Infinity)
+	cellData: (0, 0, 0, 0)
+	index: (10, 6, 5, -6.710886E+07)
+	mask: (1, 0, 0, 1.065353E+09)
