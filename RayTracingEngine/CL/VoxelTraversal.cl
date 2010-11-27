@@ -223,31 +223,44 @@ __global	write_only	debugStruct* debug,
 
 	} // End checking geometry.
 
-	if (debugPixel)
+	// Record constant values
+	if (debugPixel && debugIndex < debugSetCount)
 	{
-		debug[debugIndex].frac = frac;
-		debug[debugIndex].tMax = tMax;
-		debug[debugIndex].tDelta = tDelta;
-		debug[debugIndex].index = convert_float4(index);
-		debugIndex++;
+		debug[0].rayOrigin = rayOrigin;
+		debug[0].rayDirection = rayDirection;
+		debug[0].frac = frac;
+		debug[0].gridSpaceCoordinates = gridSpaceCoordinates;
+		debug[0].tDelta = tDelta;
+		debug[0].step = convert_float4(step);
 	}
 	
 	int4 mask;
 	while (!rayHalted)
 	{
+
 		mask = (int4)(0);
+
 		bool useMask = true;
 
 		if (useMask)
 		{
-			mask.x = !isnan(tMax.x) && (tMax.x < tMax.y) && (tMax.x < tMax.z);
-			mask.y = !isnan(tMax.y) && (tMax.y <= tMax.x) && (tMax.y < tMax.z);
+			mask.x = (tMax.x < tMax.y) && (tMax.x < tMax.z);
+			mask.y = (tMax.y <= tMax.x) && (tMax.y < tMax.z);
 			mask.z = !mask.x && !mask.y;
 
-			debug[debugIndex].step = convert_float4(mask);
-
 			index += step * mask;
-			tMax += tDelta * convert_float4(mask);
+
+			// The problem here is that no number is sorted less then NaN, so that mask
+			// is always false. I need numbers to sort less then NaN, or not to multiply 
+			// infinity values in tMax by zero.
+			// tMax += tDelta * convert_float4(mask);
+
+			if (mask.x)
+				tMax.x += tDelta.x;
+			if (mask.y)
+				tMax.y += tDelta.y;
+			if (mask.z)
+				tMax.z += tDelta.z;
 
 			if (index.x == out.x || index.y == out.y || index.z == out.z)
 			{
