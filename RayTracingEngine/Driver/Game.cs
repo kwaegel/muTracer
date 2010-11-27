@@ -22,7 +22,7 @@ namespace Raytracing.Driver
 {
     class Game : GameWindow
     {
-		private static Vector3 InitialCameraPosition = new Vector3(2.5f, -2f, 5.5f);
+		private static Vector3 InitialCameraPosition = new Vector3(-0.15f,0.25f,0.4f);
 
 #if DEBUG
 		private static readonly bool limitFrames = false;
@@ -98,7 +98,7 @@ namespace Raytracing.Driver
 
 		/// <summary>Creates a window with the specified title.</summary>
         public Game()
-            : base(1200, 600, GraphicsMode.Default, "Raytracing tester")
+            : base(600, 600, GraphicsMode.Default, "Raytracing tester")
         {
             VSync = VSyncMode.Off;
         }
@@ -143,27 +143,28 @@ namespace Raytracing.Driver
 
 			try
 			{
-				Rectangle rtDrawBounds = new Rectangle(halfWidth, 0, halfWidth, ClientRectangle.Height);
-				_rtCamera = new RayTracingCamera(rtDrawBounds, (-Vector3.UnitZ), Vector3.UnitY, cameraPosition);
-				_rtCamera.VerticalFieldOfView = vFOV;
-				_rtCamera.NearPlane = nearClip;
-				_rtCamera.computeProjection();
+				//Rectangle rtDrawBounds = new Rectangle(halfWidth, 0, halfWidth, ClientRectangle.Height);
+				//_rtCamera = new RayTracingCamera(rtDrawBounds, (-Vector3.UnitZ), Vector3.UnitY, cameraPosition);
+				//_rtCamera.VerticalFieldOfView = vFOV;
+				//_rtCamera.NearPlane = nearClip;
+				//_rtCamera.computeProjection();
 
-				Rectangle clDrawBounds = new Rectangle(0, 0, halfWidth, ClientRectangle.Height);
-				_clCamera = new CLCamera(clDrawBounds, _commandQueue, -Vector3.UnitZ, Vector3.UnitY, cameraPosition);
-				_clCamera.VerticalFieldOfView = vFOV;
-				_clCamera.NearPlane = nearClip;
-				_clCamera.computeProjection();
+				//Rectangle clDrawBounds = new Rectangle(0, 0, halfWidth, ClientRectangle.Height);
+				//_clCamera = new CLCamera(clDrawBounds, _commandQueue, -Vector3.UnitZ, Vector3.UnitY, cameraPosition);
+				//_clCamera.VerticalFieldOfView = vFOV;
+				//_clCamera.NearPlane = nearClip;
+				//_clCamera.computeProjection();
 
-				_gridCamera = new GridCamera(clDrawBounds, _commandQueue, -Vector3.UnitZ, Vector3.UnitY, cameraPosition);
+				_gridCamera = new GridCamera(this.ClientRectangle, _commandQueue, -Vector3.UnitZ, Vector3.UnitY, cameraPosition);
 				_gridCamera.VerticalFieldOfView = vFOV;
 				_gridCamera.NearPlane = nearClip;
 				_gridCamera.computeProjection();
+				_gridCamera.rotateWorldY(-90.0f);
 
-				_softwareGridCamera = new ClCameraInCS(rtDrawBounds, (-Vector3.UnitZ), Vector3.UnitY, cameraPosition);
-				_softwareGridCamera.VerticalFieldOfView = vFOV;
-				_softwareGridCamera.NearPlane = nearClip;
-				_softwareGridCamera.computeProjection();
+				//_softwareGridCamera = new ClCameraInCS(rtDrawBounds, (-Vector3.UnitZ), Vector3.UnitY, cameraPosition);
+				//_softwareGridCamera.VerticalFieldOfView = vFOV;
+				//_softwareGridCamera.NearPlane = nearClip;
+				//_softwareGridCamera.computeProjection();
 			}
 			catch (Exception)
 			{
@@ -388,14 +389,26 @@ namespace Raytracing.Driver
 			int halfWidth = ClientRectangle.Width / 2;
 
 			// Set the client bounds for the CL camera
-			Rectangle clDrawBounds = new Rectangle(0, 0, halfWidth, ClientRectangle.Height);
-			_clCamera.setClientBounds(clDrawBounds);
-			_clCamera.computeProjection();
+			if(_clCamera != null)
+			{
+				Rectangle clDrawBounds = new Rectangle(0, 0, halfWidth, ClientRectangle.Height);
+				_clCamera.setClientBounds(clDrawBounds);
+				_clCamera.computeProjection();
+			}
 
-			// Set the viewport bounds for the RT camera
-			Rectangle rtDrawBounds = new Rectangle(halfWidth, 0, halfWidth, ClientRectangle.Height);
-			_rtCamera.setClientBounds(rtDrawBounds);
-			_rtCamera.computeProjection();
+			if (_rtCamera != null)
+			{
+				// Set the viewport bounds for the RT camera
+				Rectangle rtDrawBounds = new Rectangle(halfWidth, 0, halfWidth, ClientRectangle.Height);
+				_rtCamera.setClientBounds(rtDrawBounds);
+				_rtCamera.computeProjection();
+			}
+
+			if (_gridCamera != null)
+			{
+				_gridCamera.setClientBounds(ClientRectangle);
+				_gridCamera.computeProjection();
+			}
 
 			// orthographic projection
 			GL.MatrixMode(MatrixMode.Projection);
@@ -434,6 +447,10 @@ namespace Raytracing.Driver
 			{
 				System.Diagnostics.Trace.WriteLine("Breakpoint hit");
 			}
+
+#if DEBUG
+			//_gridCamera.DebugPixel = new GridCamera.Pixel(Mouse.X, ClientRectangle.Height-Mouse.Y);
+#endif
 
 			// Allows the game to exit
 			if (Keyboard[Key.Escape])
@@ -489,17 +506,26 @@ namespace Raytracing.Driver
 
 
 			// move both cameras
-			processCameraMovement(_rtCamera, (float)e.Time, false);
+			processCameraMovement(_gridCamera, (float)e.Time, false);
+
 
 			// copy position and rotation to other cameras
-			_gridCamera.Position = _rtCamera.Position;
-			_gridCamera.Rotation = _rtCamera.Rotation;
+			if (_rtCamera != null)
+			{
+				_rtCamera.Position = _gridCamera.Position;
+				_rtCamera.Rotation = _gridCamera.Rotation;
+			}
 
-			_clCamera.Position = _rtCamera.Position;
-			_clCamera.Rotation = _rtCamera.Rotation;
-
-			_softwareGridCamera.Rotation = _rtCamera.Rotation;
-			_softwareGridCamera.Position = _rtCamera.Position;
+			if (_clCamera != null)
+			{
+				_clCamera.Position = _gridCamera.Position;
+				_clCamera.Rotation = _gridCamera.Rotation;
+			}
+			if (_softwareGridCamera != null)
+			{
+				_softwareGridCamera.Rotation = _gridCamera.Rotation;
+				_softwareGridCamera.Position = _gridCamera.Position;
+			}
 
 			// DEBUG: print the camera location
 			//System.Console.WriteLine(_rtCamera.Position);
@@ -635,7 +661,7 @@ namespace Raytracing.Driver
 			{
 				fpsString = String.Format("{0:##.0}", fps);
 			}
-			this.Title = "Raytracing tester (" + fpsString + " FPS, " + pixelString + " pixels)";
+			this.Title = "Raytracing tester (" + fpsString + " FPS, " + pixelString + " pixels) @ (" + _gridCamera.Position + ")";
 		}
 
         /// <summary>
