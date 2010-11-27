@@ -36,13 +36,11 @@ namespace Raytracing.CL
 
 
 		// Debugging buffers. Used to get data out of the kernel.
-#if DEBUG
-		private static Pixel _debugPixel = new Pixel(300, 400);
-#else
-		private static Pixel _debugPixel = new Pixel(900000, 900000);
-#endif
-		private static readonly int _debugSetLength = 10;
-		private static readonly int _debugSetCount = 10;
+		private static Pixel _defaultDebugPixel = new Pixel(100, 200);
+		//private static Pixel _defaultDebugPixel = new Pixel(50, 200);
+		public Pixel DebugPixel {get; set;}
+		private static readonly int _debugSetLength = 11;
+		private static readonly int _debugSetCount = 20;
 		private float4[] _debugValues;
 		private ComputeBuffer<float4> _debugBuffer;
 
@@ -69,6 +67,11 @@ namespace Raytracing.CL
 
 		private void debugInit(ComputeCommandQueue commandQueue)
 		{
+#if DEBUG
+			DebugPixel = _defaultDebugPixel;
+#else
+			DebugPixel = new Pixel(900000, 900000);
+#endif
 			_debugValues = new float4[_debugSetCount * _debugSetLength];
 			_debugBuffer = new ComputeBuffer<float4>(commandQueue.Context, ComputeMemoryFlags.ReadWrite | ComputeMemoryFlags.CopyHostPointer, _debugValues);
 		}
@@ -164,7 +167,7 @@ namespace Raytracing.CL
 			// Pass in debug arrays. Removed due to reaching the max constant argument count.
 			_renderKernel.SetMemoryArgument(argi++, _debugBuffer, false);
 			_renderKernel.SetValueArgument<int>(argi++, _debugSetCount);
-			_renderKernel.SetValueArgument<Pixel>(argi++, _debugPixel);
+			_renderKernel.SetValueArgument<Pixel>(argi++, DebugPixel);
 
 			// Add render task to the device queue.
 			_commandQueue.Execute(_renderKernel, null, globalWorkSize, localWorkSize, null);
@@ -178,7 +181,8 @@ namespace Raytracing.CL
             // Print debug information from kernel call.
             _commandQueue.ReadFromBuffer<float4>(_debugBuffer, ref _debugValues, true, null);
             unpackDebugValues(_debugValues);
-            System.Diagnostics.Trace.WriteLine("");
+			//showFinalGridCell(_debugValues);
+			System.Diagnostics.Trace.Write("");
 #endif
 			 
 		}
@@ -204,24 +208,56 @@ namespace Raytracing.CL
 			System.Diagnostics.Trace.WriteLine("\t GridSpace coords: " + debugValues[2]);
 			System.Diagnostics.Trace.WriteLine("\t tDelta: " +		debugValues[5]);
 			System.Diagnostics.Trace.WriteLine("\t step direction: " + debugValues[8]);
+			//System.Diagnostics.Trace.WriteLine("\t distence: " + debugValues[10].W);
 			System.Diagnostics.Trace.WriteLine("");
 
 			Vector4 stopValue = new Vector4(9999.0f, 9999.0f, 9999.0f, 9999.0f);
 			for (int setBase = 0; setBase < debugValues.Length; setBase += _debugSetLength)
 			{
-				if (debugValues[setBase] == stopValue)
-				{
-					break;	// assume the ray terminated and there is no more data to print.
-				}
+				
 
 				int debugSetIndex = setBase / _debugSetLength;
 				System.Diagnostics.Trace.WriteLine("Debug step " +	debugSetIndex);
 				System.Diagnostics.Trace.WriteLine("\t tMax: " +		debugValues[setBase + 4]);
 				System.Diagnostics.Trace.WriteLine("\t index: " +	debugValues[setBase + 7]);
 				System.Diagnostics.Trace.WriteLine("\t mask: " +		debugValues[setBase + 9]);
+				System.Diagnostics.Trace.WriteLine("\t distence: " + debugValues[10]);
 				System.Diagnostics.Trace.WriteLine("");
+
+				if (debugValues[setBase] == stopValue)
+				{
+					break;	// assume the ray terminated and there is no more data to print.
+				}
 			}
 			System.Diagnostics.Trace.WriteLine("");
+		}
+
+		/// <summary>
+		/// float4 rayOrigin;
+		/// float4 rayDirection;
+		/// float4 gridSpaceCoordinates;
+		/// float4 frac;
+		/// float4 tMax;
+		/// float4 tDelta;
+		/// float4 cellData;
+		/// </summary>
+		/// <param name="debugValues"></param>
+		private void showFinalGridCell(float4[] debugValues)
+		{
+			Vector4 stopValue = new Vector4(9999.0f, 9999.0f, 9999.0f, 9999.0f);
+			for (int setBase = 0; setBase < debugValues.Length; setBase += _debugSetLength)
+			{
+				int debugSetIndex = setBase / _debugSetLength;
+				//System.Diagnostics.Trace.WriteLine("Debug step " + debugSetIndex);
+				//System.Diagnostics.Trace.WriteLine("index: " + debugValues[setBase + 7]);
+
+				if (debugValues[setBase] == stopValue)
+				{
+					System.Diagnostics.Trace.WriteLine("index: " + debugValues[setBase + 7]);
+					break;	// assume the ray terminated and there is no more data to print.
+				}
+				
+			}
 		}
 
 	}

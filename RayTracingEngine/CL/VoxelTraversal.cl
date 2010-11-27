@@ -10,6 +10,7 @@ typedef struct {
 	float4 index;
 	float4 step;
 	float4 mask;
+	float4 collisionPoint;
 } debugStruct;
 
 typedef struct{
@@ -90,7 +91,7 @@ float
 intersectCellContents(			float4		rayOrigin, 
 								float4		rayDirection,
 						const	int			vectorsPerVoxel,
-								int			geometryIndex,
+								int			geometryBaseIndex,
 		__global	read_only	float4*		geometryArray,
 						private float4*		collisionPoint,
 						private float4*		surfaceNormal)
@@ -99,7 +100,9 @@ intersectCellContents(			float4		rayOrigin,
 	for (int i=0; i<vectorsPerVoxel; i++)
 	{
 
-		float4 sphere = geometryArray[geometryIndex+i];
+		// FIXME: I have no idea what is going on here...
+		int geometryIndex = geometryBaseIndex+i;
+		float4 sphere = geometryArray[geometryIndex];
 
 		// Unpack sphere data.
 		float4 center = sphere;
@@ -109,12 +112,9 @@ intersectCellContents(			float4		rayOrigin,
 		// calculate intersection distance. Returns HUGE_VALF if ray misses sphere.
 		float distence = raySphereIntersect(rayOrigin, rayDirection, center, radius, collisionPoint, surfaceNormal);
 
-		if (distence < minDistence)
-		{
-			minDistence = distence;
-		}
+		minDistence = min(minDistence, distence);
 	}
-
+	
 	return minDistence;
 }
 
@@ -290,7 +290,7 @@ __global	write_only	debugStruct* debug,
 		debug[debugIndex].tMax = stopValue;
 		debug[debugIndex].tDelta = stopValue;
 		debug[debugIndex].cellData = stopValue;
-		debug[debugIndex].index = stopValue;
+		//debug[debugIndex].index = stopValue;
 		debug[debugIndex].step = stopValue;
 		debug[debugIndex].mask = stopValue;
 	}	
@@ -383,6 +383,9 @@ __global	write_only	debugStruct* debug,
 	// If the ray has hit somthing, draw the color of that object.
 	if (distence.w < HUGE_VALF)
 	{
+		debug[0].collisionPoint = collisionPoint;
+		debug[0].collisionPoint.w = distence.w;
+
 		color = (float4)(0.0f);
 
 		float4 objectColor = (float4)(0.5f, 0.0f, 0.0f, 0.0f);	// Use generic color for testing.
