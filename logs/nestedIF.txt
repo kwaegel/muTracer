@@ -1,78 +1,34 @@
 If blocks
 
 Constant data
-	ray origin: (2.500765, -1.999246, 5.499, 1)
-	ray direction: (0.5211488, 0.5140009, -0.6813273, 0)
-	GridSpace coords: (0, 0, 0, 0)
+	 ray origin: (2.5, -1.999744, 5.499, 1)
+	 ray direction: (0, 0.2476416, -0.9688517, 0)
+	 frac: (0.5, 0.9997444, -0.4990005, 1)
+	 GridSpace coords: (10.5, 6.000256, 13.499, 9)
+	 tDelta: (Infinity, 4.038093, 1.03215, Infinity)
+	 step direction: (1, 1, -1, 1)
 
 Debug step 0
-	frac: (0.5, 0.9997444, -0.4990005, 1)
-	tMax: (Infinity, 4.037061, 0.5150433, Infinity)
-	tDelta: (Infinity, 4.038093, 1.03215, Infinity)
-	cellData: (0, 0, 0, 0)
-	index: (10, 6, 13, 9)
-	mask: (0, 0, 0, 0)
+	 tMax: (Infinity, 4.037061, 1.547193, Infinity)
+	 index: (10, 6, 12, 9)
+	 mask: (0, 0, 1, 0)
 
 Debug step 1
-	frac: (0.5, 0.9997444, -0.4990005, 1)
-	tMax: (Infinity, 4.037061, 1.547193, Infinity)
-	tDelta: (Infinity, 4.038093, 1.03215, Infinity)
-	cellData: (0, 0, 0, 0)
-	index: (10, 6, 12, 9)
-	mask: (0, 0, 0, 0)
+	 tMax: (Infinity, 4.037061, 2.579343, Infinity)
+	 index: (10, 6, 11, 9)
+	 mask: (0, 0, 1, 0)
 
 Debug step 2
-	frac: (0.5, 0.9997444, -0.4990005, 1)
-	tMax: (Infinity, 4.037061, 2.579343, Infinity)
-	tDelta: (Infinity, 4.038093, 1.03215, Infinity)
-	cellData: (0, 0, 0, 0)
-	index: (10, 6, 11, 9)
-	mask: (0, 0, 0, 0)
+	 tMax: (Infinity, 4.037061, 3.611492, Infinity)
+	 index: (10, 6, 10, 9)
+	 mask: (0, 0, 1, 0)
 
 Debug step 3
-	frac: (0.5, 0.9997444, -0.4990005, 1)
-	tMax: (Infinity, 4.037061, 3.611492, Infinity)
-	tDelta: (Infinity, 4.038093, 1.03215, Infinity)
-	cellData: (0, 0, 0, 0)
-	index: (10, 6, 10, 9)
-	mask: (0, 0, 0, 0)
+	 tMax: (Infinity, 4.037061, 4.643642, Infinity)
+	 index: (10, 6, 9, 9)
+	 mask: (0, 0, 1, 0)
 
 Debug step 4
-	frac: (0.5, 0.9997444, -0.4990005, 1)
-	tMax: (Infinity, 4.037061, 4.643642, Infinity)
-	tDelta: (Infinity, 4.038093, 1.03215, Infinity)
-	cellData: (0, 0, 0, 0)
-	index: (10, 6, 9, 9)
-	mask: (0, 0, 0, 0)
-
-Debug step 5
-	frac: (0.5, 0.9997444, -0.4990005, 1)
-	tMax: (Infinity, 8.075154, 4.643642, Infinity)
-	tDelta: (Infinity, 4.038093, 1.03215, Infinity)
-	cellData: (0, 0, 0, 0)
-	index: (10, 7, 9, 9)
-	mask: (0, 0, 0, 0)
-
-Debug step 6
-	frac: (0, 0, 0, 0)
-	tMax: (0, 0, 0, 0)
-	tDelta: (Infinity, 4.038093, 1.03215, Infinity)
-	cellData: (0, 0, 0, 0)
-	index: (0, 0, 0, 0)
-	mask: (0, 0, 0, 0)
-
-Debug step 7
-	frac: (0, 0, 0, 0)
-	tMax: (0, 0, 0, 0)
-	tDelta: (Infinity, 4.038093, 1.03215, Infinity)
-	cellData: (0, 0, 0, 0)
-	index: (0, 0, 0, 0)
-	mask: (0, 0, 0, 0)
-
-Debug step 8
-	frac: (0, 0, 0, 0)
-	tMax: (0, 0, 0, 0)
-	tDelta: (Infinity, 4.038093, 1.03215, Infinity)
-	cellData: (0, 0, 0, 0)
-	index: (0, 0, 0, 0)
-	mask: (0, 0, 0, 0)
+	 tMax: (Infinity, 8.075154, 4.643642, Infinity)
+	 index: (10, 7, 9, 9)
+	 mask: (0, 1, 0, 0)

@@ -36,8 +36,12 @@ namespace Raytracing.CL
 
 
 		// Debugging buffers. Used to get data out of the kernel.
+#if DEBUG
 		private static Pixel _debugPixel = new Pixel(300, 400);
-		private static readonly int _debugSetLength = 9;
+#else
+		private static Pixel _debugPixel = new Pixel(900000, 900000);
+#endif
+		private static readonly int _debugSetLength = 10;
 		private static readonly int _debugSetCount = 10;
 		private float4[] _debugValues;
 		private ComputeBuffer<float4> _debugBuffer;
@@ -65,7 +69,7 @@ namespace Raytracing.CL
 
 		private void debugInit(ComputeCommandQueue commandQueue)
 		{
-			_debugValues = new float4[_debugSetLength * _debugSetLength];
+			_debugValues = new float4[_debugSetCount * _debugSetLength];
 			_debugBuffer = new ComputeBuffer<float4>(commandQueue.Context, ComputeMemoryFlags.ReadWrite | ComputeMemoryFlags.CopyHostPointer, _debugValues);
 		}
 
@@ -194,29 +198,28 @@ namespace Raytracing.CL
 			int debugSets = debugValues.Length % _debugSetLength;
 
 			System.Diagnostics.Trace.WriteLine("Constant data");
-			System.Diagnostics.Trace.WriteLine("\tray origin: " + debugValues[0]);
-			System.Diagnostics.Trace.WriteLine("\tray direction: " + debugValues[1]);
-			System.Diagnostics.Trace.WriteLine("\tGridSpace coords: " + debugValues[2]);
-			//System.Diagnostics.Trace.WriteLine("\ttDelta: " + debugValues[5]);
-			//System.Diagnostics.Trace.WriteLine("\tstep direction: " + debugValues[8]);
+			System.Diagnostics.Trace.WriteLine("\t ray origin: " +	debugValues[0]);
+			System.Diagnostics.Trace.WriteLine("\t ray direction: " + debugValues[1]);
+			System.Diagnostics.Trace.WriteLine("\t frac: " +			debugValues[3]);
+			System.Diagnostics.Trace.WriteLine("\t GridSpace coords: " + debugValues[2]);
+			System.Diagnostics.Trace.WriteLine("\t tDelta: " +		debugValues[5]);
+			System.Diagnostics.Trace.WriteLine("\t step direction: " + debugValues[8]);
 			System.Diagnostics.Trace.WriteLine("");
 
+			Vector4 stopValue = new Vector4(9999.0f, 9999.0f, 9999.0f, 9999.0f);
 			for (int setBase = 0; setBase < debugValues.Length; setBase += _debugSetLength)
 			{
-				int debugSetIndex = setBase / _debugSetLength;
-				System.Diagnostics.Trace.WriteLine("Debug step " + debugSetIndex);
-				System.Diagnostics.Trace.WriteLine("\tfrac: " + debugValues[setBase+3]);
-				System.Diagnostics.Trace.WriteLine("\ttMax: " + debugValues[setBase+4]);
-				System.Diagnostics.Trace.WriteLine("\ttDelta: " + debugValues[5]);
-				System.Diagnostics.Trace.WriteLine("\tcellData: " + debugValues[setBase + 6]);
-				System.Diagnostics.Trace.WriteLine("\tindex: " + debugValues[setBase + 7]);
-				System.Diagnostics.Trace.WriteLine("\tmask: " + debugValues[8]);
-				System.Diagnostics.Trace.WriteLine("");
-
-				if (debugValues[setBase + 6] != Vector4.Zero)
+				if (debugValues[setBase] == stopValue)
 				{
 					break;	// assume the ray terminated and there is no more data to print.
 				}
+
+				int debugSetIndex = setBase / _debugSetLength;
+				System.Diagnostics.Trace.WriteLine("Debug step " +	debugSetIndex);
+				System.Diagnostics.Trace.WriteLine("\t tMax: " +		debugValues[setBase + 4]);
+				System.Diagnostics.Trace.WriteLine("\t index: " +	debugValues[setBase + 7]);
+				System.Diagnostics.Trace.WriteLine("\t mask: " +		debugValues[setBase + 9]);
+				System.Diagnostics.Trace.WriteLine("");
 			}
 			System.Diagnostics.Trace.WriteLine("");
 		}

@@ -9,6 +9,7 @@ typedef struct {
 	float4 cellData;
 	float4 index;
 	float4 step;
+	float4 mask;
 } debugStruct;
 
 typedef struct{
@@ -142,10 +143,7 @@ __global	write_only	debugStruct* debug,
 		CLK_FILTER_NEAREST; //Don't interpolate
 
 /**** Traverse the grid and find the nearest occupied cell ****/
-
 	int debugIndex = 0;
-	debug[0].rayOrigin = rayOrigin;
-	debug[0].rayDirection = rayDirection;
 
 	// setup up traversel variables
 
@@ -237,92 +235,37 @@ __global	write_only	debugStruct* debug,
 	int4 mask;
 	while (!rayHalted)
 	{
+		mask.x = (tMax.x < tMax.y) && (tMax.x < tMax.z);
+		mask.y = (tMax.y <= tMax.x) && (tMax.y < tMax.z);
+		mask.z = !mask.x && !mask.y;
 
-		mask = (int4)(0);
+		index += step * mask;
+		if (mask.x)
+			tMax.x += tDelta.x;
+		if (mask.y)
+			tMax.y += tDelta.y;
+		if (mask.z)
+			tMax.z += tDelta.z;
 
-		bool useMask = true;
 
-		if (useMask)
+		if (index.x == out.x || index.y == out.y || index.z == out.z)
 		{
-			mask.x = (tMax.x < tMax.y) && (tMax.x < tMax.z);
-			mask.y = (tMax.y <= tMax.x) && (tMax.y < tMax.z);
-			mask.z = !mask.x && !mask.y;
-
-			index += step * mask;
-
-			// The problem here is that no number is sorted less then NaN, so that mask
-			// is always false. I need numbers to sort less then NaN, or not to multiply 
-			// infinity values in tMax by zero.
-			// tMax += tDelta * convert_float4(mask);
-
-			if (mask.x)
-				tMax.x += tDelta.x;
-			if (mask.y)
-				tMax.y += tDelta.y;
-			if (mask.z)
-				tMax.z += tDelta.z;
-
-			if (index.x == out.x || index.y == out.y || index.z == out.z)
-			{
-				break;
-			}
-		}
-		else
-		{
-			if (tMax.x < tMax.y)
-			{
-				if (tMax.x < tMax.z)
-				{
-					mask.x = 1;
-					index.x += step.x;			// step to next voxel along this axis
-					if (index.x == out.x)		// outside grid
-						break; 
-					tMax.x = tMax.x + tDelta.x;	// increment max distence to next voxel
-				}
-				else
-				{
-					mask.z = 1;
-					index.z += step.z;
-					if (index.z == out.z)
-						break;
-					tMax.z = tMax.z + tDelta.z;
-				}
-			}
-			else
-			{
-				if (tMax.y < tMax.z)
-				{
-					mask.y = 1;
-					index.y += step.y;
-					if (index.y == out.y)
-						break;
-					tMax.y = tMax.y + tDelta.y;
-				}
-				else
-				{
-					mask.z = 1;
-					index.z += step.z;
-					if (index.z == out.z)
-						break;
-					tMax.z = tMax.z + tDelta.z;
-				}
-			}
+			break;
 		}
 
-		if (debugPixel)
+		// get grid data at index
+		cellData = read_imagei(voxelGrid, smp, index);
+		containsGeometry = cellData.x > 0 || cellData.y > 0 || cellData.z > 0 || cellData.w > 0;
+
+		if (debugPixel && debugIndex < debugSetCount)
 		{
 			debug[debugIndex].frac = frac;
 			debug[debugIndex].tMax = tMax;
 			debug[debugIndex].tDelta = tDelta;
 			debug[debugIndex].index = convert_float4(index);
-			//debug[debugIndex].step = convert_float4(mask);
-			debugIndex++;
+			debug[debugIndex].mask = convert_float4(mask);
+			debugIndex += 1;
 		}
-
-
-		// get grid data at index
-		cellData = read_imagei(voxelGrid, smp, index);
-		containsGeometry = cellData.x > 0 || cellData.y > 0 || cellData.z > 0 || cellData.w > 0;
 
 		if (containsGeometry)
 		{
@@ -336,6 +279,21 @@ __global	write_only	debugStruct* debug,
 
 		} // End checking geometry.
 	} // End voxel traversel loop
+
+	if (debugPixel && debugIndex < debugSetCount)
+	{
+		float4 stopValue = (float4)(9999);
+		debug[debugIndex].rayOrigin = stopValue;
+		debug[debugIndex].rayDirection = stopValue;
+		debug[debugIndex].gridSpaceCoordinates = stopValue;
+		debug[debugIndex].frac = stopValue;
+		debug[debugIndex].tMax = stopValue;
+		debug[debugIndex].tDelta = stopValue;
+		debug[debugIndex].cellData = stopValue;
+		debug[debugIndex].index = stopValue;
+		debug[debugIndex].step = stopValue;
+		debug[debugIndex].mask = stopValue;
+	}	
 
 	//return minDistence;
 	return (float4)(0.0f, 0.0f, 0.0f, minDistence);
@@ -421,29 +379,7 @@ __global	write_only	debugStruct* debug,
 	float4 distence = findNearestIntersection(rayOrigin, rayDirection, &collisionPoint, &surfaceNormal,
 												voxelGrid, cellSize, geometryArray, vectorsPerVoxel,
 												debug, debugSetCount, debugPixel);
-/*
-	// DEBUG case
-	if (distence.w == HUGE_VALF)
-	{
-		float4 errorColor = (float4)(0.0f);
 
-		if (distence.x == INFINITY)
-		{
-			errorColor.x = 1.0f;
-		}
-		if (distence.y == INFINITY)
-		{
-			errorColor.y = 1.0f;
-		}
-		if (distence.z == INFINITY)
-		{
-			errorColor.z = 1.0f;
-		}
-
-		write_imagef(outputImage, coord, errorColor);
-		return;
-	}
-*/
 	// If the ray has hit somthing, draw the color of that object.
 	if (distence.w < HUGE_VALF)
 	{
@@ -461,17 +397,6 @@ __global	write_only	debugStruct* debug,
 			//float4 lightPosition = localLightBuffer[lightIndex].s0123;
 			//float4 lightColor = localLightBuffer[lightIndex].s4567;
 			float lightIntensity = lightColor.w;
-/*
-			if (debugPixel)
-			{
-				debug[debugIndex].frac = lightPosition;
-				debug[debugIndex].tMax = lightColor;
-				debug[debugIndex].index.x = (float)(lightIndex);
-				debug[debugIndex].index.y = (float)(pointLightCount);
-				debug[debugIndex].index.z = lightIntensity;
-				debugIndex++;
-			}
-*/
 			
 
 			float4 lightVector = lightPosition - collisionPoint;
