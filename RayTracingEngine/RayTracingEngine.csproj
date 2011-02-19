@@ -64,7 +64,7 @@
     <Compile Include="BoundingVolumes\AxisAlignedBoundingBox.cs" />
     <Compile Include="BoundingVolumes\Frustum.cs" />
     <Compile Include="Cameras\ClTextureCamera.cs" />
-    <Compile Include="Cameras\VoxelGrid.cs" />
+    <Compile Include="SceneStructures\VoxelGrid.cs" />
     <Compile Include="Cameras\GridCamera.cs" />
     <Compile Include="Math\Vector4i.cs" />
     <Compile Include="Primitives\PrimitiveStructs.cs" />
@@ -97,10 +97,6 @@
     <Compile Include="Primitives\Sphere.cs" />
     <None Include="Primitives\Triangle.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="RayTracingCamera.cs" />
-    <Compile Include="SceneStructures\GridScene.cs" />
-    <Compile Include="SceneStructures\LinearScene.cs" />
-    <Compile Include="SceneStructures\Scene.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />

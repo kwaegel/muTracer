@@ -8,7 +8,7 @@ using Cloo;
 
 using Raytracing.Math;
 
-namespace Raytracing.CL
+namespace Raytracing.SceneStructures
 {
 	[StructLayout(LayoutKind.Sequential)]
 	public struct Voxel
