@@ -63,13 +63,11 @@
   <ItemGroup>
     <Compile Include="BoundingVolumes\AxisAlignedBoundingBox.cs" />
     <Compile Include="BoundingVolumes\Frustum.cs" />
-    <Compile Include="Cameras\ClCameraInCS.cs" />
-    <Compile Include="Cameras\CLCamera.cs" />
+    <Compile Include="Cameras\ClTextureCamera.cs" />
     <Compile Include="Cameras\VoxelGrid.cs" />
     <Compile Include="Cameras\GridCamera.cs" />
     <Compile Include="Math\Vector4i.cs" />
     <Compile Include="Primitives\PrimitiveStructs.cs" />
-    <Compile Include="Cameras\CLSphereBuffer.cs" />
     <Compile Include="Driver\Game.cs" />
     <None Include="Cameras\clScripts\clCameraCode.cl">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

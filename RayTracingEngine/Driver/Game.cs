@@ -53,16 +53,6 @@ namespace Raytracing.Driver
 		private int _frames = 0;
 		double _totalTime = 0;
 
-		private bool _renderCLCamera			= false;
-		private bool _renderSoftwareRTCamera	= false;
-
-		private bool _renderGridCamera			= true;
-		private bool _renderSoftwareGridCamera	= false;
-
-		private bool _cameraSelectionPressed = true;
-
-		private bool _moveLight = false;
-
 		#endregion
 
 		#region OpenCL-OpenGL properties
@@ -78,24 +68,8 @@ namespace Raytracing.Driver
 
 		#endregion
 
-		#region Cameras
-
-		RayTracingCamera _rtCamera = null;
-		ClCameraInCS _softwareGridCamera = null;
-		CLCamera _clCamera = null;		// test camera using OpenCL
 		GridCamera _gridCamera = null;	// Camera using voxel traversal
-
-		#endregion	
-
-		#region Scene structures
-		Scene _scene;
-		PointLight _light;
-
-		CLSphereBuffer _clSphereBuffer;
-
 		VoxelGrid _voxelGrid;	// used for the grid camera;
-
-		#endregion
 
 		/// <summary>Creates a window with the specified title.</summary>
         public Game()
@@ -108,17 +82,11 @@ namespace Raytracing.Driver
 		{
 			_commandQueue.Finish();
 			
-            /*
-			if (_clCamera != null) _clCamera.Dispose();
-			if (_gridCamera != null) _gridCamera.Dispose();
-
-
-
-			_clSphereBuffer.Dispose();
+			_gridCamera.Dispose();
 			_voxelGrid.Dispose();
+
             _commandQueue.Dispose();
             _computeContext.Dispose();
-             * */
 
 			base.Dispose(manual);
 		}
@@ -136,6 +104,10 @@ namespace Raytracing.Driver
 
 			openCLSharedInit();
 
+            // Create the scene.
+            // Use a simple voxel grid for testing
+            _voxelGrid = createVoxelGrid(16, 10); 
+
 			// create the camera
 			// looking down the Z-axis into the scene
 			Vector3 cameraPosition = InitialCameraPosition;
@@ -147,47 +119,17 @@ namespace Raytracing.Driver
 
 			try
 			{
-				//Rectangle rtDrawBounds = new Rectangle(halfWidth, 0, halfWidth, ClientRectangle.Height);
-				//_rtCamera = new RayTracingCamera(rtDrawBounds, (-Vector3.UnitZ), Vector3.UnitY, cameraPosition);
-				//_rtCamera.VerticalFieldOfView = vFOV;
-				//_rtCamera.NearPlane = nearClip;
-				//_rtCamera.computeProjection();
-
-				//Rectangle clDrawBounds = new Rectangle(0, 0, halfWidth, ClientRectangle.Height);
-				//_clCamera = new CLCamera(clDrawBounds, _commandQueue, -Vector3.UnitZ, Vector3.UnitY, cameraPosition);
-				//_clCamera.VerticalFieldOfView = vFOV;
-				//_clCamera.NearPlane = nearClip;
-				//_clCamera.computeProjection();
-
 				_gridCamera = new GridCamera(this.ClientRectangle, _commandQueue, -Vector3.UnitZ, Vector3.UnitY, cameraPosition);
+                _gridCamera.setScene(_voxelGrid);
 				_gridCamera.VerticalFieldOfView = vFOV;
 				_gridCamera.NearPlane = nearClip;
 				_gridCamera.computeProjection();
 				_gridCamera.rotateWorldY(-90.0f);
-
-				//_softwareGridCamera = new ClCameraInCS(rtDrawBounds, (-Vector3.UnitZ), Vector3.UnitY, cameraPosition);
-				//_softwareGridCamera.VerticalFieldOfView = vFOV;
-				//_softwareGridCamera.NearPlane = nearClip;
-				//_softwareGridCamera.computeProjection();
 			}
 			catch (Exception)
 			{
 				this.Exit();
 			}
-
-			// create the scene
-			_scene = new GridScene(16, 1);
-			//_scene = new LinearScene(Color4.CornflowerBlue);
-			_clSphereBuffer = new CLSphereBuffer(_commandQueue, 1024);
-			_scene.BackgroundColor = Color4.Black;
-			//buildBlockScene(_scene, _clSphereBuffer);
-			buildEdgeScene(_scene, _clSphereBuffer);
-			//buildAxisScene(_scene, _clSphereBuffer);
-
-			// create a voxel grid for testing
-			_voxelGrid = createVoxelGrid(16, 10); 
-
-			_scene.BackgroundColor = DefaultBackgroundColor;
         }
 
 		// Create a shared context between OpenGL and OpenCL. 
@@ -278,100 +220,6 @@ namespace Raytracing.Driver
 			return grid;
 		}
 
-		// build a simple scene with one sphere
-		private void buildAxisScene(Scene scene, CLSphereBuffer buffer)
-		{
-			scene.add(new PointLight(new Vector3(5, 10, 5), 1.0f, Color4.White));
-
-			scene.add(new Sphere(Vector3.Zero, 1.0f, new Material(Color4.White)));
-			scene.add(new Sphere(Vector3.UnitX, 0.5f, new Material(Color4.Red)));
-			scene.add(new Sphere(Vector3.UnitY, 0.5f, new Material(Color4.Green)));
-			scene.add(new Sphere(Vector3.UnitZ, 0.5f, new Material(Color4.Blue)));
-
-			buffer.addSphere(new SphereStruct(Vector3.Zero, 1.0f, Color4.White));
-			buffer.addSphere(new SphereStruct(Vector3.UnitX, 0.5f, Color4.Red));
-			buffer.addSphere(new SphereStruct(Vector3.UnitY, 0.5f, Color4.Green));
-			buffer.addSphere(new SphereStruct(Vector3.UnitZ, 0.5f, Color4.Blue));
-			buffer.sendDataToDevice();
-		}
-
-		private void buildEdgeScene(Scene scene, CLSphereBuffer buffer)
-		{
-			_moveLight = true;
-
-			int low = -5;
-			int high = 5;
-
-			List<int> cornerList = new List<int>(2);
-			cornerList.Add(-5);
-			cornerList.Add(5);
-
-			foreach (int x in cornerList)
-			{
-				foreach (int y in cornerList)
-				{
-					foreach (int z in cornerList)
-					{
-							Color4 color = getColor(low, high, x, y, z);
-							Material mat = new Material(color, 0);
-							Vector3 position = new Vector3(x, y, z);
-							Sphere s = new Sphere(position, 0.5f, mat);
-							scene.add(s);
-
-							buffer.addSphere(new SphereStruct(position, 0.5f, color));
-					}
-				}
-			}
-
-
-			_light = new PointLight(Vector3.Zero, 1.0f, Color4.White);
-			scene.add(_light);
-
-			buffer.sendDataToDevice();
-		}
-
-		private void buildBlockScene(Scene scene, CLSphereBuffer buffer)
-		{
-			_moveLight = true;
-
-			int low = -5;
-			int high = 5;
-
-			//int low = -1;
-			//int high = 1;
-
-			for (int x = low; x <= high; x++)
-			{
-				for (int y = low; y <= high; y++)
-				{
-					for (int z = low; z <= high; z++)
-					{
-						if (x != 0 && y != 0 && z != 0)
-						{
-							Color4 color = getColor(low, high, x, y, z);
-							Material mat = new Material(color, 0);
-							Vector3 position = new Vector3(x, y, z);
-							Sphere s = new Sphere(position, 0.5f, mat);
-							scene.add(s);
-
-							buffer.addSphere(new SphereStruct(position, 0.25f, color));
-						}
-					    else
-						{
-							_light = new PointLight(Vector3.Zero, 1.0f, Color4.DarkKhaki);
-							scene.add(_light);
-						}
-					}
-				}
-			}
-
-			buffer.sendDataToDevice();
-
-			int width = high - low;
-			int objects = (int)System.Math.Pow(width, 3);
-			System.Console.WriteLine("added " + objects + " spheres.");
-		}
-
 		private Color4 getColor(int start, int end, int x, int y, int z)
 		{
 			float percentX = (float)(x - start) / (float)(end - start);
@@ -401,27 +249,9 @@ namespace Raytracing.Driver
 
 			int halfWidth = ClientRectangle.Width / 2;
 
-			// Set the client bounds for the CL camera
-			if(_clCamera != null)
-			{
-				Rectangle clDrawBounds = new Rectangle(0, 0, halfWidth, ClientRectangle.Height);
-				_clCamera.setClientBounds(clDrawBounds);
-				_clCamera.computeProjection();
-			}
-
-			if (_rtCamera != null)
-			{
-				// Set the viewport bounds for the RT camera
-				Rectangle rtDrawBounds = new Rectangle(halfWidth, 0, halfWidth, ClientRectangle.Height);
-				_rtCamera.setClientBounds(rtDrawBounds);
-				_rtCamera.computeProjection();
-			}
-
-			if (_gridCamera != null)
-			{
-				_gridCamera.setClientBounds(ClientRectangle);
-				_gridCamera.computeProjection();
-			}
+			// Set the client bounds for the camera
+            _gridCamera.setClientBounds(ClientRectangle);
+			_gridCamera.computeProjection();
 
 			// orthographic projection
 			GL.MatrixMode(MatrixMode.Projection);
@@ -445,17 +275,6 @@ namespace Raytracing.Driver
 				base.Exit();
 			}
 
-			if (_moveLight)
-			{
-				float x = (float)System.Math.Cos(_totalTime / 1f);
-				float y = (float)System.Math.Cos(_totalTime / 1f);
-				float z = (float)System.Math.Sin(_totalTime / 1f);
-
-				_light.Position.X = 4f * x;
-				//_light.Position.Y = 0.15f * y;
-				_light.Position.Z = 4f * z;
-			}
-
 			if (Keyboard[Key.Space])
 			{
 				System.Diagnostics.Trace.WriteLine("Breakpoint hit");
@@ -467,77 +286,12 @@ namespace Raytracing.Driver
 				this.Exit();
 			}
 
-			// toggle either camera on or off
-			if (!_cameraSelectionPressed)
-			{
-				if (Keyboard[Key.Number1])
-				{
-					//_renderCLCamera = !_renderCLCamera;
-					_renderCLCamera = true;
-					_renderGridCamera = false;
-					System.Console.WriteLine("CL camera enabled =" + _renderCLCamera);
-					_cameraSelectionPressed = true;
-				}
-				else if (Keyboard[Key.Number2])
-				{
-					_renderGridCamera = true;
-					_renderCLCamera = false;
-					System.Console.WriteLine("Grid camera enabled =" + _renderSoftwareRTCamera);
-					_cameraSelectionPressed = true;
-				}
-
-				if (Keyboard[Key.Number3])
-				{
-					_renderSoftwareRTCamera = !_renderSoftwareRTCamera;
-					_renderSoftwareGridCamera = false;
-					System.Console.WriteLine("RT camera enabled =" + _renderSoftwareRTCamera);
-					_cameraSelectionPressed = true;
-				}
-				else if (Keyboard[Key.Number4])
-				{
-					_renderSoftwareGridCamera = true;
-					_renderSoftwareRTCamera = false;
-					_cameraSelectionPressed = true;
-				}
-				else if (Keyboard[Key.Number5])
-				{
-					_renderSoftwareRTCamera = false;
-					_renderSoftwareGridCamera = false;
-					System.Console.WriteLine("RT camera disabled");
-					_cameraSelectionPressed = true;
-				}
-				
-			}
-			else if (!Keyboard[Key.Number1] && !Keyboard[Key.Number2])
-			{
-				_cameraSelectionPressed = false;
-			}
-
 
 			// move both cameras
 			processCameraMovement(_gridCamera, (float)e.Time, false);
 
-
-			// copy position and rotation to other cameras
-			if (_rtCamera != null)
-			{
-				_rtCamera.Position = _gridCamera.Position;
-				_rtCamera.Rotation = _gridCamera.Rotation;
-			}
-
-			if (_clCamera != null)
-			{
-				_clCamera.Position = _gridCamera.Position;
-				_clCamera.Rotation = _gridCamera.Rotation;
-			}
-			if (_softwareGridCamera != null)
-			{
-				_softwareGridCamera.Rotation = _gridCamera.Rotation;
-				_softwareGridCamera.Position = _gridCamera.Position;
-			}
-
 			// DEBUG: print the camera location
-			//System.Console.WriteLine(_rtCamera.Position);
+			//System.Console.WriteLine(_gridCamera.Position);
 
             if (Keyboard[Key.Escape])
                 Exit();
@@ -626,29 +380,9 @@ namespace Raytracing.Driver
 			// clear the screen
 			GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
 
-			// Render the scene with which ever cameras are selected.
-			if (_renderSoftwareRTCamera)
-			{
-				_rtCamera.render(_scene);
-			}
-
-			if (_renderSoftwareGridCamera)
-			{
-				_softwareGridCamera.setVoxelGrid(_voxelGrid);
-				_softwareGridCamera.render(_scene);
-			}
-
-			if (_renderCLCamera)
-			{
-				_clSphereBuffer.sendDataToDevice();
-				_clCamera.render(_clSphereBuffer, (float)_totalTime);
-			}
-
-			if (_renderGridCamera)
-			{
-				_voxelGrid.syncBuffers();
-				_gridCamera.render(_voxelGrid, (float)_totalTime);
-			}
+			// Render the scene
+			_voxelGrid.syncBuffers();
+			_gridCamera.render();
 
 			// Display the frame that was just rendered.
 			SwapBuffers();

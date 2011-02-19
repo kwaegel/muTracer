@@ -18,7 +18,7 @@ using float4 = OpenTK.Vector4;
 namespace Raytracing.CL
 {
 
-	class GridCamera : CLCamera
+	class GridCamera : ClTextureCamera
 	{
 
 		[StructLayout(LayoutKind.Sequential)]
@@ -44,6 +44,7 @@ namespace Raytracing.CL
 		private float4[] _debugValues;
 		private ComputeBuffer<float4> _debugBuffer;
 
+        private VoxelGrid _voxelGrid;
 
 
 		public GridCamera(Rectangle clientBounds, ComputeCommandQueue commandQueue)
@@ -75,6 +76,11 @@ namespace Raytracing.CL
 			_debugValues = new float4[_debugSetCount * _debugSetLength];
 			_debugBuffer = new ComputeBuffer<float4>(commandQueue.Context, ComputeMemoryFlags.ReadWrite | ComputeMemoryFlags.CopyHostPointer, _debugValues);
 		}
+
+        public void setScene(VoxelGrid grid)
+        {
+            _voxelGrid = grid;
+        }
 
 		protected override void buildOpenCLProgram()
 		{
@@ -115,19 +121,7 @@ namespace Raytracing.CL
 			}
 		}
 
-		public void render(VoxelGrid grid, float time)
-		{
-			// Compute new view matrix.
-			computeView();
-
-			// Raytrace the scene and render to a texture
-			renderSceneToTexture(grid, time);
-
-			// Draw the texture to the screen.
-			drawTextureToScreen();
-		}
-
-		private void renderSceneToTexture(VoxelGrid voxelGrid, float time)
+		protected override void renderSceneToTexture()
 		{
 			// Switch viewport to camera client bounds
 			GL.Viewport(ClientBounds);
@@ -143,7 +137,7 @@ namespace Raytracing.CL
 			long[] globalWorkSize = new long[] { ClientBounds.Width, ClientBounds.Height };
 			long[] localWorkSize = new long[] { 8,8 };
 
-			float cellSize = voxelGrid.CellSize;
+			float cellSize = _voxelGrid.CellSize;
 
 			// Set kernel arguments.
 			int argi = 0;
@@ -154,16 +148,16 @@ namespace Raytracing.CL
 			_renderKernel.SetMemoryArgument(argi++, _renderTarget);                 // Image to render to
 
 			// Voxel grid arguments
-			_renderKernel.SetMemoryArgument(argi++, voxelGrid._voxelGrid, false);
+			_renderKernel.SetMemoryArgument(argi++, _voxelGrid._voxelGrid, false);
 			_renderKernel.SetValueArgument<float>(argi++, cellSize);
 
 			// Pass in array of primitives
-			_renderKernel.SetMemoryArgument(argi++, voxelGrid.Geometry);
-			_renderKernel.SetValueArgument<int>(argi++, voxelGrid.VectorsPerVoxel);
+			_renderKernel.SetMemoryArgument(argi++, _voxelGrid.Geometry);
+			_renderKernel.SetValueArgument<int>(argi++, _voxelGrid.VectorsPerVoxel);
 
 			// Pass in lights
-			_renderKernel.SetMemoryArgument(argi++, voxelGrid.PointLights);
-			_renderKernel.SetValueArgument<int>(argi++, voxelGrid.PointLightCount);
+			_renderKernel.SetMemoryArgument(argi++, _voxelGrid.PointLights);
+			_renderKernel.SetValueArgument<int>(argi++, _voxelGrid.PointLightCount);
 
 			// Pass in debug arrays.
 			_renderKernel.SetMemoryArgument(argi++, _debugBuffer, false);

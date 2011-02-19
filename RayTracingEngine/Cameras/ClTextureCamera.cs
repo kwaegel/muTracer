@@ -29,7 +29,7 @@ namespace Raytracing.CL
 		public Color4 cellData;
 	}
 
-	class CLCamera : MuxEngine.Movables.Camera
+	abstract class ClTextureCamera : MuxEngine.Movables.Camera
 	{
 
 #region Fields
@@ -55,18 +55,18 @@ namespace Raytracing.CL
 
 #region Initialization
 
-		public CLCamera(Rectangle clientBounds, ComputeCommandQueue commandQueue)
+		public ClTextureCamera(Rectangle clientBounds, ComputeCommandQueue commandQueue)
 			: this(clientBounds, commandQueue, MuxEngine.LinearAlgebra.Matrix4.Identity)
 		{
 		}
 
-		public CLCamera(Rectangle clientBounds, ComputeCommandQueue commandQueue, MuxEngine.LinearAlgebra.Matrix4 transform)
+		public ClTextureCamera(Rectangle clientBounds, ComputeCommandQueue commandQueue, MuxEngine.LinearAlgebra.Matrix4 transform)
 			: base(clientBounds, transform)
 		{
 			rayTracingInit(commandQueue);
 		}
 
-		public CLCamera(Rectangle clientBounds, ComputeCommandQueue commandQueue, 
+		public ClTextureCamera(Rectangle clientBounds, ComputeCommandQueue commandQueue, 
 			Vector3 forward, Vector3 up, Vector3 position)
 			: base (clientBounds, forward, up, position)
 		{
@@ -215,51 +215,24 @@ namespace Raytracing.CL
 			return _screenToWorldMatrix;
 		}
 
-		public void render(CLSphereBuffer sphereBuffer, float time)
+		public void render()
 		{
 			this.computeView();
 
-			// Raytrace the scene and render to a texture
-			renderSceneToTexture(sphereBuffer, time);
+			// Raytrace the scene and render it to a textured quad.
+			renderSceneToTexture();
 
-			// Draw the texture to the screen.
+			// Draw the texture to the screen using OpenGL calls.
 			drawTextureToScreen();
 		}
 
-		protected virtual void renderSceneToTexture(CLSphereBuffer sphereBuffer, float time)
-		{
-			// Switch viewport to camera client bounds
-			GL.Viewport(ClientBounds);
-
-			// Aquire lock on OpenGL objects.
-			GL.Finish();
-			_commandQueue.AcquireGLObjects(_sharedObjects, null);
-
-			// Convert the camera position to homogeneous coordinates.
-			Vector4 homogeneousPosition = new Vector4(Position, 1);
-
-			// Set kernel arguments.
-            _renderKernel.SetValueArgument<float>(0, time);
-			_renderKernel.SetValueArgument<Vector4>(1, homogeneousPosition);
-			_renderKernel.SetValueArgument<Matrix4>(2, _screenToWorldMatrix);
-			_renderKernel.SetValueArgument<Color4>(3, Color4.DarkBlue);
-			_renderKernel.SetMemoryArgument(4, _renderTarget);
-			_renderKernel.SetMemoryArgument(5, sphereBuffer.getBuffer());
-			_renderKernel.SetValueArgument<int>(6, sphereBuffer.getCount());
-			
-			// Add render task to the device queue.
-			_commandQueue.Execute(_renderKernel, null, new long[] { ClientBounds.Width, ClientBounds.Height }, null, null);
-
-			// Release OpenGL objects.
-			_commandQueue.ReleaseGLObjects(_sharedObjects, null);
-			_commandQueue.Finish();
-		}
+		protected abstract void renderSceneToTexture();
 
 		/// <summary>
 		/// Draw the texture that OpenCL renders into using a full-viewport quad. Drawn 
 		/// at z=1 so it is behind all other elements.
 		/// </summary>
-		protected void drawTextureToScreen()
+		private void drawTextureToScreen()
 		{
 			GL.Color4(Color4.Transparent);		// No blend Color.
 

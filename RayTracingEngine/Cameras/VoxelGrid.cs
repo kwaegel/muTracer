@@ -39,26 +39,15 @@ namespace Raytracing.CL
 
 		// Primitive buffer
 		private Vector4[] _geometryArray;
-		private ComputeBuffer<Vector4> _geometryBuffer;
-		private GCHandle _geometryHandle;
 		public int VectorsPerVoxel { get; private set; }
-		internal ComputeBuffer<Vector4> Geometry {
-			get
-			{
-				return _geometryBuffer;
-			}
-			private set
-			{
-				// Only a getter.
-			}
-		}
+
+        internal ComputeBuffer<Vector4> Geometry { get; private set; }
 
 		// Light buffer
 		private static int InitialPointLightArraySize = 4;
 		public int PointLightCount { get; private set; }
 		private SimplePointLight[] _pointLightArray;
 		private ComputeBuffer<SimplePointLight> _pointLightBuffer;
-		private GCHandle _pointLightHandle;
 		internal ComputeBuffer<SimplePointLight> PointLights
 		{
 			get { return _pointLightBuffer; }
@@ -122,15 +111,12 @@ namespace Raytracing.CL
 			// Create array to hold primitives.
 			VectorsPerVoxel = 16;	// Low value for testing;
 			_geometryArray = new Vector4[cellCount * VectorsPerVoxel];
-			// Array needs to be pinned during copy data to device memory.
-			_geometryHandle = GCHandle.Alloc(_geometryArray, GCHandleType.Pinned);
-			_geometryBuffer = new ComputeBuffer<Vector4>(_commandQueue.Context, ComputeMemoryFlags.ReadWrite | ComputeMemoryFlags.UseHostPointer, _geometryArray.LongLength, _geometryHandle.AddrOfPinnedObject());
+            Geometry = new ComputeBuffer<Vector4>(_commandQueue.Context, ComputeMemoryFlags.ReadWrite | ComputeMemoryFlags.UseHostPointer, _geometryArray);
 
 			// Create array for lights
 			_pointLightArray = new SimplePointLight[InitialPointLightArraySize];
 			PointLightCount = 0;
-			_pointLightHandle = GCHandle.Alloc(_pointLightArray, GCHandleType.Pinned);
-			_pointLightBuffer = new ComputeBuffer<SimplePointLight>(_commandQueue.Context, ComputeMemoryFlags.ReadOnly | ComputeMemoryFlags.UseHostPointer, _pointLightArray.LongLength, _pointLightHandle.AddrOfPinnedObject());
+			_pointLightBuffer = new ComputeBuffer<SimplePointLight>(_commandQueue.Context, ComputeMemoryFlags.ReadOnly | ComputeMemoryFlags.UseHostPointer, _pointLightArray);
 
 			syncBuffers();
 		}
@@ -138,9 +124,8 @@ namespace Raytracing.CL
 		public void Dispose()
 		{
 			_voxelGrid.Dispose();
-
-			_geometryHandle.Free();
-			_geometryBuffer.Dispose();
+            Geometry.Dispose();
+            _pointLightBuffer.Dispose();
 		}
 
 
@@ -212,7 +197,7 @@ namespace Raytracing.CL
 
 			// Copy pinned geometry data to device memory.
             // NOTE: using the unblocking version creates hundreds of ComputeEvents.
-			_commandQueue.WriteToBuffer<Vector4>(_geometryArray, _geometryBuffer, true, null);
+			_commandQueue.WriteToBuffer<Vector4>(_geometryArray, Geometry, true, null);
 
 			// Copy pinned light data to device memory.
 			_commandQueue.WriteToBuffer<SimplePointLight>(_pointLightArray, _pointLightBuffer, true, null);

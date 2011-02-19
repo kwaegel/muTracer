@@ -1,4 +1,4 @@
-﻿#define DEBUG
+﻿//#define DEBUG
 
 typedef struct {
 	float4 rayOrigin;
@@ -373,8 +373,10 @@ __global	write_only	debugStruct* debug,
 
 	///// DEBUG VALUES /////
 #ifdef DEBUG
-	bool debugPixel = false;// (coord.x == debugPixelLocation.x) && (coord.y == debugPixelLocation.y);
+	bool debugPixel = (coord.x == debugPixelLocation.x) && (coord.y == debugPixelLocation.y);
 	int debugIndex = 0;
+#else
+	bool debugPixel = false;
 #endif
 
 	// Create a ray in world coordinates
