@@ -77,6 +77,13 @@ namespace Raytracing.CL
 			_debugBuffer = new ComputeBuffer<float4>(commandQueue.Context, ComputeMemoryFlags.ReadWrite | ComputeMemoryFlags.CopyHostPointer, _debugValues);
 		}
 
+        public void Dispose()
+        {
+            _debugBuffer.Dispose();
+
+            base.Dispose();
+        }
+
         public void setScene(VoxelGrid grid)
         {
             _voxelGrid = grid;
