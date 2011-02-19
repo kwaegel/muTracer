@@ -1,4 +1,5 @@
-﻿
+﻿#define DEBUG
+
 typedef struct {
 	float4 rayOrigin;
 	float4 rayDirection;
@@ -17,6 +18,11 @@ typedef struct{
 	float4 position;
 	float4 colorAndIntensity;
 } pointLight;
+
+typedef struct {
+	float4 origin;
+	float4 direction;
+} Ray;
 
 float4
 myRemquo(float4 x, float4 y, int4* quo)
@@ -97,12 +103,11 @@ intersectCellContents(			float4		rayOrigin,
 						private float4*		surfaceNormal)
 {
 	float minDistence = HUGE_VALF;
+	float4 tempCP, tempSN;
 	for (int i=0; i<vectorsPerVoxel; i++)
 	{
-
-		// FIXME: I have no idea what is going on here...
-		int geometryIndex = geometryBaseIndex+i;
-		float4 sphere = geometryArray[geometryIndex];
+		// Get the sphere data.
+		float4 sphere = geometryArray[geometryBaseIndex+i];
 
 		// Unpack sphere data.
 		float4 center = sphere;
@@ -110,9 +115,14 @@ intersectCellContents(			float4		rayOrigin,
 		float radius = sphere.w;
 
 		// calculate intersection distance. Returns HUGE_VALF if ray misses sphere.
-		float distence = raySphereIntersect(rayOrigin, rayDirection, center, radius, collisionPoint, surfaceNormal);
+		float distence = raySphereIntersect(rayOrigin, rayDirection, center, radius, &tempCP, &tempSN);
 
-		minDistence = min(minDistence, distence);
+		if (distence < minDistence)
+		{
+			minDistence = distence;
+			*collisionPoint = tempCP;
+			*surfaceNormal = tempSN;
+		}
 	}
 	
 	return minDistence;
@@ -121,8 +131,9 @@ intersectCellContents(			float4		rayOrigin,
 
 float4
 findNearestIntersection(	
-							float4		rayOrigin,
-							float4		rayDirection,
+							Ray*		ray,
+							//float4		rayOrigin,
+							//float4		rayDirection,
 							float4*		collisionPoint,		// Output collision point and surface normal
 							float4*		surfaceNormal,		// and return the distence.
 			
@@ -157,7 +168,7 @@ __global	write_only	debugStruct* debug,
 	float4 gridOrigin = -halfGridWidth;
 
 	// convert the ray start position to grid space
-	float4 gridSpaceCoordinates = rayOrigin - gridOrigin;
+	float4 gridSpaceCoordinates = ray->origin - gridOrigin;
 
 	// Need to use cellSize as a vector, so only expand it once.
 	float4 cellSizeVec = (float4)(cellSize);
@@ -183,15 +194,15 @@ __global	write_only	debugStruct* debug,
 	// MSB of a float is the sign bit, so the select call can switch based on the sign bit.
 	// value = MSBset ? b : a;
 	// first if positive, second if negitive
-	int4 out =		select((int4)gridWidth,		  (int4)-1,		as_int4(rayDirection));
-	int4 step =		select((int4)		 1,		  (int4)-1,		as_int4(rayDirection));
-	float4 frac =	select(  upperFraction,  -lowerFraction,	as_int4(rayDirection));
+	int4 out =		select((int4)gridWidth,		  (int4)-1,		as_int4(ray->direction));
+	int4 step =		select((int4)		 1,		  (int4)-1,		as_int4(ray->direction));
+	float4 frac =	select(  upperFraction,  -lowerFraction,	as_int4(ray->direction));
 
 	// tMax: min distance to move before crossing a gird boundary
-	float4 tMax = frac / rayDirection;
+	float4 tMax = frac / ray->direction;
 
 	// tDelta: distance (in t) between cell boundaries
-	float4 tDelta = cellSizeVec / rayDirection;	// compute projections onto the coordinate axes.
+	float4 tDelta = cellSizeVec / ray->direction;	// compute projections onto the coordinate axes.
 	tDelta = copysign(tDelta, (float4)1.0f);	// ensure tDelta is positive.
 
 	// begin grid traversel
@@ -214,7 +225,7 @@ __global	write_only	debugStruct* debug,
 		// check for intersection with geometry in the current cell
 		int geometryIndex = (index.x * gridWidth * gridWidth + index.y * gridWidth + index.z) * vectorsPerVoxel;
 			
-		minDistence = intersectCellContents(rayOrigin, rayDirection, cellData.x, geometryIndex, geometryArray, collisionPoint, surfaceNormal);
+		minDistence = intersectCellContents(ray->origin, ray->direction, cellData.x, geometryIndex, geometryArray, collisionPoint, surfaceNormal);
 
 		// Halt ray progress if it collides with anything.
 		rayHalted = minDistence < HUGE_VALF;
@@ -224,8 +235,8 @@ __global	write_only	debugStruct* debug,
 	// Record constant values
 	if (debugPixel && debugIndex < debugSetCount)
 	{
-		debug[0].rayOrigin = rayOrigin;
-		debug[0].rayDirection = rayDirection;
+		debug[0].rayOrigin = ray->origin;
+		debug[0].rayDirection = ray->direction;
 		debug[0].frac = frac;
 		debug[0].gridSpaceCoordinates = gridSpaceCoordinates;
 		debug[0].tDelta = tDelta;
@@ -272,7 +283,7 @@ __global	write_only	debugStruct* debug,
 			// check for intersection with geometry in the current cell
 			int geometryIndex = (index.x * gridWidth * gridWidth + index.y * gridWidth + index.z) * vectorsPerVoxel;
 			
-			minDistence = intersectCellContents(rayOrigin, rayDirection, cellData.x, geometryIndex, geometryArray, collisionPoint, surfaceNormal);
+			minDistence = intersectCellContents(ray->origin, ray->direction, cellData.x, geometryIndex, geometryArray, collisionPoint, surfaceNormal);
 
 			// Halt ray progress if it collides with anything.
 			rayHalted = minDistence < HUGE_VALF;
@@ -299,16 +310,14 @@ __global	write_only	debugStruct* debug,
 	return (float4)(0.0f, 0.0f, 0.0f, minDistence);
 }
 
-float4
-unprojectPrimaryRay(			int2		screenCoords,
+Ray
+unprojectPrimaryRay(	int2		screenCoords,
 						int2		screenSize,
 			const		float4		cameraPosition,
-			const		float16		unprojectionMatrix,
-
-						float4*		rayOrigin,
-						float4*		rayDirection)
+			const		float16		unprojectionMatrix)
 {
 	float4 windowCoords = (float4)(screenCoords.x, screenCoords.y, 0.0f, 1.0f);
+	Ray ray;
 
 	// map x and y from window coords
 	windowCoords.xy /= convert_float2(screenSize);
@@ -317,13 +326,15 @@ unprojectPrimaryRay(			int2		screenCoords,
 	// Assume viewport is at zero, so do not need to subtract viewport (x,y)
 	float4 ndc = 2.0f * windowCoords  - 1.0f;
 
-	*rayOrigin = transformVector(unprojectionMatrix, ndc);
+	ray.origin = transformVector(unprojectionMatrix, ndc);
 
 	// Convert to homogeneous coordinates.
 	// Not sure what this really does, but it is required.
-	*rayOrigin /= (float4)(rayOrigin->w);	
+	ray.origin /= (float4)(ray.origin.w);
 
-	*rayDirection = normalize(*rayOrigin - cameraPosition);
+	ray.direction = normalize(ray.origin - cameraPosition);
+
+	return ray;
 }
 
 
@@ -362,12 +373,12 @@ __global	write_only	debugStruct* debug,
 	int2 size = get_image_dim(outputImage);
 
 	///// DEBUG VALUES /////
-	bool debugPixel = coord.x == debugPixelLocation.x && coord.y == debugPixelLocation.y;
+	//bool debugPixel = (coord.x == debugPixelLocation.x) && (coord.y == debugPixelLocation.y);
+	bool debugPixel = false;
 	int debugIndex = 0;
 
-	// Create a ray in world coordinates 
-	float4 rayOrigin, rayDirection;
-	unprojectPrimaryRay(coord, size, cameraPosition, unprojectionMatrix, &rayOrigin, &rayDirection);
+	// Create a ray in world coordinates
+	Ray primaryRay = unprojectPrimaryRay(coord, size, cameraPosition, unprojectionMatrix);
 
 	// set the default background color
 	float4 color = backgroundColor;
@@ -376,7 +387,7 @@ __global	write_only	debugStruct* debug,
 	float4 surfaceNormal;
 
 	// find the nearest intersected object
-	float4 distence = findNearestIntersection(rayOrigin, rayDirection, &collisionPoint, &surfaceNormal,
+	float4 distence = findNearestIntersection(&primaryRay, &collisionPoint, &surfaceNormal,
 												voxelGrid, cellSize, geometryArray, vectorsPerVoxel,
 												debug, debugSetCount, debugPixel);
 
@@ -400,7 +411,6 @@ __global	write_only	debugStruct* debug,
 			//float4 lightPosition = localLightBuffer[lightIndex].s0123;
 			//float4 lightColor = localLightBuffer[lightIndex].s4567;
 			float lightIntensity = lightColor.w;
-			
 
 			float4 lightVector = lightPosition - collisionPoint;
 			float lightDistence = length(lightVector);
@@ -409,13 +419,15 @@ __global	write_only	debugStruct* debug,
 			float shade = clamp(dot(surfaceNormal, lightDirection),0.0f,1.0f);	// Clamped cosine shading
 
 			// check for shadowing. Reuse collisionPoint and surfaceNormal as they are no longer needed.
-			//float4 shadowCollisionPoint, shadowSurfaceNormal;
-			//float4 shadowRayStart = collisionPoint + (float4)(0.00001f) * lightDirection;
-			//float4 shadowRayDistence = findNearestIntersection(	shadowRayStart, lightDirection, 
-			//													&shadowCollisionPoint, &shadowSurfaceNormal,
-			//													voxelGrid, cellSize, geometryArray, vectorsPerVoxel);
+			Ray shadowRay = {collisionPoint, lightDirection};
 
-			//bool isInShadow = shadowRayDistence.w < lightDistence;
+			float4 shadowCollisionPoint, shadowSurfaceNormal;
+			float4 shadowRayDistence = findNearestIntersection(	&shadowRay, 
+																&shadowCollisionPoint, &shadowSurfaceNormal,
+																voxelGrid, cellSize, geometryArray, vectorsPerVoxel,
+																debug, debugSetCount, debugPixel);
+
+			bool isInShadow = shadowRayDistence.w < lightDistence;
 
 			// Apply shading modifiers.
 			float4 lightContrib = objectColor;
@@ -425,7 +437,7 @@ __global	write_only	debugStruct* debug,
 			
 			// Add light contribution to total color.
 			// Multiply by shadow factor to ignore contributions of hidden lights.
-			color += lightContrib;// * !isInShadow;
+			color += lightContrib * !isInShadow;
 		}
 	}
 
@@ -433,7 +445,7 @@ if (debugPixel)
 {
 	color = (float4)(1.0f);
 }
-
+	
 	// Write the resulting color to the camera texture.
 	write_imagef(outputImage, coord, color);
 }
