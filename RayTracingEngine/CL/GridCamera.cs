@@ -177,13 +177,13 @@ namespace Raytracing.CL
 			_commandQueue.Finish();
 
 			
-#if DEBUG
-            // Print debug information from kernel call.
-            _commandQueue.ReadFromBuffer<float4>(_debugBuffer, ref _debugValues, true, null);
-            unpackDebugValues(_debugValues);
-			//showFinalGridCell(_debugValues);
-			System.Diagnostics.Trace.Write("");
-#endif
+//#if DEBUG
+//            // Print debug information from kernel call.
+//            _commandQueue.ReadFromBuffer<float4>(_debugBuffer, ref _debugValues, true, null);
+//            unpackDebugValues(_debugValues);
+//            //showFinalGridCell(_debugValues);
+//            System.Diagnostics.Trace.Write("");
+//#endif
 			 
 		}
 

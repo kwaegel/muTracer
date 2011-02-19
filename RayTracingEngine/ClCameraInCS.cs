@@ -142,11 +142,6 @@ namespace Raytracing
 			float fracY = (gridSpaceCoordinates.Y % cellSize);
 			float fracZ = (gridSpaceCoordinates.Z % cellSize);
 
-			if (debug)
-			{
-				bool stop = true;
-			}
-
 			fracX = -fracX;
 			fracY = -fracY;
 			fracZ = -fracZ;
@@ -188,10 +183,10 @@ namespace Raytracing
 			float tDeltaY = System.Math.Abs(cellSize / rayDirection.Y);
 			float tDeltaZ = System.Math.Abs(cellSize / rayDirection.Z);
 
-			if (debug)
-			{
-				bool stop = true;
-			}
+            //if (debug)
+            //{
+            //    bool stop = true;
+            //}
 
 			// begin grid traversel
 			bool containsGeometry = false;
