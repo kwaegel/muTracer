@@ -79,7 +79,7 @@ namespace Raytracing.CL
 		protected override void buildOpenCLProgram()
 		{
 			// Load the OpenCL clSource code
-			StreamReader sourceReader = new StreamReader("CL/VoxelTraversal.cl");
+			StreamReader sourceReader = new StreamReader("Cameras/clScripts/VoxelTraversal.cl");
 			String clSource = sourceReader.ReadToEnd();
 
 			// Build and compile the OpenCL program
@@ -150,21 +150,22 @@ namespace Raytracing.CL
 			_renderKernel.SetValueArgument<Vector4>(argi++, homogeneousPosition);
 			_renderKernel.SetValueArgument<Matrix4>(argi++, _screenToWorldMatrix);
 
-			_renderKernel.SetValueArgument<Color4>(argi++, Color4.CornflowerBlue);
-			_renderKernel.SetMemoryArgument(argi++, _renderTarget);
+			_renderKernel.SetValueArgument<Color4>(argi++, Color4.CornflowerBlue);  // Frame background color.
+			_renderKernel.SetMemoryArgument(argi++, _renderTarget);                 // Image to render to
+
 			// Voxel grid arguments
 			_renderKernel.SetMemoryArgument(argi++, voxelGrid._voxelGrid, false);
 			_renderKernel.SetValueArgument<float>(argi++, cellSize);
+
 			// Pass in array of primitives
 			_renderKernel.SetMemoryArgument(argi++, voxelGrid.Geometry);
 			_renderKernel.SetValueArgument<int>(argi++, voxelGrid.VectorsPerVoxel);
+
 			// Pass in lights
 			_renderKernel.SetMemoryArgument(argi++, voxelGrid.PointLights);
 			_renderKernel.SetValueArgument<int>(argi++, voxelGrid.PointLightCount);
-			_renderKernel.SetLocalArgument(argi++, voxelGrid.PointLightCount * 8);
 
-
-			// Pass in debug arrays. Removed due to reaching the max constant argument count.
+			// Pass in debug arrays.
 			_renderKernel.SetMemoryArgument(argi++, _debugBuffer, false);
 			_renderKernel.SetValueArgument<int>(argi++, _debugSetCount);
 			_renderKernel.SetValueArgument<Pixel>(argi++, DebugPixel);
@@ -172,7 +173,7 @@ namespace Raytracing.CL
 			// Add render task to the device queue.
 			_commandQueue.Execute(_renderKernel, null, globalWorkSize, localWorkSize, null);
 
-			// Release OpenGL objects and block until calls are finished.
+			// Enqueue releasing OpenGL objects and block until calls are finished.
 			_commandQueue.ReleaseGLObjects(_sharedObjects, null);
 			_commandQueue.Finish();
 

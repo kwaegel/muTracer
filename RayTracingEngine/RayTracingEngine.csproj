@@ -63,18 +63,18 @@
   <ItemGroup>
     <Compile Include="BoundingVolumes\AxisAlignedBoundingBox.cs" />
     <Compile Include="BoundingVolumes\Frustum.cs" />
-    <Compile Include="ClCameraInCS.cs" />
-    <Compile Include="CL\CLCamera.cs" />
-    <Compile Include="CL\VoxelGrid.cs" />
-    <Compile Include="CL\GridCamera.cs" />
+    <Compile Include="Cameras\ClCameraInCS.cs" />
+    <Compile Include="Cameras\CLCamera.cs" />
+    <Compile Include="Cameras\VoxelGrid.cs" />
+    <Compile Include="Cameras\GridCamera.cs" />
     <Compile Include="Math\Vector4i.cs" />
     <Compile Include="Primitives\PrimitiveStructs.cs" />
-    <Compile Include="CL\CLSphereBuffer.cs" />
+    <Compile Include="Cameras\CLSphereBuffer.cs" />
     <Compile Include="Driver\Game.cs" />
-    <None Include="CL\clCameraCode.cl">
+    <None Include="Cameras\clScripts\clCameraCode.cl">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Include="CL\VoxelTraversal.cl">
+    <None Include="Cameras\clScripts\VoxelTraversal.cl">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <Compile Include="Math\Vector3i.cs" />

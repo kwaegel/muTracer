@@ -132,21 +132,19 @@ intersectCellContents(			float4		rayOrigin,
 float4
 findNearestIntersection(	
 							Ray*		ray,
-							//float4		rayOrigin,
-							//float4		rayDirection,
 							float4*		collisionPoint,		// Output collision point and surface normal
 							float4*		surfaceNormal,		// and return the distence.
 			
-		global	read_only	image3d_t	voxelGrid,			// Voxel data
+	__global	read_only	image3d_t	voxelGrid,			// Voxel data
 				const		float		cellSize,
 			
-		global	read_only	float4*		geometryArray,		// Geometry data
+	__global	read_only	float4*		geometryArray,		// Geometry data
 				const		int			vectorsPerVoxel,
 
 			// Debug structs
-__global	write_only	debugStruct* debug,
-						int			debugSetCount,
-						bool		debugPixel)
+	__global	write_only	debugStruct* debug,
+							int			debugSetCount,
+							bool		debugPixel)
 {
 	const sampler_t smp = 
 		CLK_NORMALIZED_COORDS_FALSE | //Natural coordinates
@@ -232,6 +230,7 @@ __global	write_only	debugStruct* debug,
 
 	} // End checking geometry.
 
+#ifdef DEBUG
 	// Record constant values
 	if (debugPixel && debugIndex < debugSetCount)
 	{
@@ -242,6 +241,7 @@ __global	write_only	debugStruct* debug,
 		debug[0].tDelta = tDelta;
 		debug[0].step = convert_float4(step);
 	}
+#endif
 	
 	int4 mask;
 	while (!rayHalted)
@@ -268,6 +268,7 @@ __global	write_only	debugStruct* debug,
 		cellData = read_imagei(voxelGrid, smp, index);
 		containsGeometry = cellData.x > 0 || cellData.y > 0 || cellData.z > 0 || cellData.w > 0;
 
+#ifdef DEBUG
 		if (debugPixel && debugIndex < debugSetCount)
 		{
 			debug[debugIndex].frac = frac;
@@ -277,6 +278,7 @@ __global	write_only	debugStruct* debug,
 			debug[debugIndex].mask = convert_float4(mask);
 			debugIndex += 1;
 		}
+#endif
 
 		if (containsGeometry)
 		{
@@ -291,6 +293,7 @@ __global	write_only	debugStruct* debug,
 		} // End checking geometry.
 	} // End voxel traversel loop
 
+#ifdef DEBUG
 	if (debugPixel && debugIndex < debugSetCount)
 	{
 		float4 stopValue = (float4)(9999);
@@ -304,7 +307,8 @@ __global	write_only	debugStruct* debug,
 		//debug[debugIndex].index = stopValue;
 		debug[debugIndex].step = stopValue;
 		debug[debugIndex].mask = stopValue;
-	}	
+	}
+#endif
 
 	//return minDistence;
 	return (float4)(0.0f, 0.0f, 0.0f, minDistence);
@@ -357,7 +361,6 @@ __global	read_only	float4 *	geometryArray,
 			// Lights
 __global	read_only	float8*		pointLights,
 			const		int			pointLightCount,
-__local					float8*		localLightBuffer,
 
 			// Debug structs
 __global	write_only	debugStruct* debug,
@@ -365,17 +368,14 @@ __global	write_only	debugStruct* debug,
 						int2		debugPixelLocation
 			)
 {
-	// Copy global data to local buffers
-	event_t lightsFinishedLoading = async_work_group_copy(localLightBuffer, pointLights, (size_t)(pointLightCount*4), 0);
-	wait_group_events(1, &lightsFinishedLoading);
-
 	int2 coord = (int2)(get_global_id(0), get_global_id(1));
 	int2 size = get_image_dim(outputImage);
 
 	///// DEBUG VALUES /////
-	//bool debugPixel = (coord.x == debugPixelLocation.x) && (coord.y == debugPixelLocation.y);
-	bool debugPixel = false;
+#ifdef DEBUG
+	bool debugPixel = false;// (coord.x == debugPixelLocation.x) && (coord.y == debugPixelLocation.y);
 	int debugIndex = 0;
+#endif
 
 	// Create a ray in world coordinates
 	Ray primaryRay = unprojectPrimaryRay(coord, size, cameraPosition, unprojectionMatrix);
@@ -394,8 +394,10 @@ __global	write_only	debugStruct* debug,
 	// If the ray has hit somthing, draw the color of that object.
 	if (distence.w < HUGE_VALF)
 	{
+#ifdef DEBUG
 		debug[0].collisionPoint = collisionPoint;
 		debug[0].collisionPoint.w = distence.w;
+#endif
 
 		color = (float4)(0.0f);
 
@@ -405,11 +407,8 @@ __global	write_only	debugStruct* debug,
 		for (int lightIndex = 0; lightIndex < pointLightCount; lightIndex++)
 		{
 			// test cosine shading
-			// TODO: the async copy is not copying the light buffer correctly.
 			float4 lightPosition = pointLights[lightIndex].s0123;
 			float4 lightColor = pointLights[lightIndex].s4567;
-			//float4 lightPosition = localLightBuffer[lightIndex].s0123;
-			//float4 lightColor = localLightBuffer[lightIndex].s4567;
 			float lightIntensity = lightColor.w;
 
 			float4 lightVector = lightPosition - collisionPoint;
@@ -441,10 +440,12 @@ __global	write_only	debugStruct* debug,
 		}
 	}
 
-if (debugPixel)
-{
-	color = (float4)(1.0f);
-}
+#ifdef DEBUG
+	if (debugPixel)
+	{
+		color = (float4)(1.0f);
+	}
+#endif
 	
 	// Write the resulting color to the camera texture.
 	write_imagef(outputImage, coord, color);
