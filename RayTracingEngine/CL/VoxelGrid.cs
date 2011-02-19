@@ -106,6 +106,19 @@ namespace Raytracing.CL
 			int cellCount = gridResolution * gridResolution * gridResolution;
 			_voxelArray = new Voxel[cellCount];
 
+            unsafe
+            {
+                fixed (Voxel* gridData = _voxelArray)
+                {
+                    _voxelGrid = new ComputeImage3D(_commandQueue.Context,
+                        ComputeMemoryFlags.CopyHostPointer | ComputeMemoryFlags.ReadOnly,
+                        _imageFormat,
+                        GridResolution, GridResolution, GridResolution,
+                        0, 0,
+                        (IntPtr)gridData);
+                }
+            }
+
 			// Create array to hold primitives.
 			VectorsPerVoxel = 16;	// Low value for testing;
 			_geometryArray = new Vector4[cellCount * VectorsPerVoxel];
@@ -149,11 +162,11 @@ namespace Raytracing.CL
 			int cellCount = 0;
 
 			// Add a reference to model to every cell the bounding box intesects
-			for (int x = minX; x <= maxX; x += 1)
+			for (int x = minX; x <= maxX; x++)
 			{
-				for (int y = minY; y <= maxY; y += 1)
+				for (int y = minY; y <= maxY; y++)
 				{
-					for (int z = minZ; z <= maxZ; z += 1)
+					for (int z = minZ; z <= maxZ; z++)
 					{
 						Voxel voxelData = this[x, y, z];
 
@@ -186,29 +199,23 @@ namespace Raytracing.CL
 
 		public void syncBuffers()
 		{
+            // TODO: Only write sections of buffers that have changed.
+
 			// copy voxel texture
 			unsafe
 			{
 				fixed (Voxel* gridData = _voxelArray)
 				{
-					_voxelGrid = new ComputeImage3D(_commandQueue.Context,
-						ComputeMemoryFlags.CopyHostPointer | ComputeMemoryFlags.ReadOnly,
-						_imageFormat,
-						GridResolution, GridResolution, GridResolution,
-						0, 0,
-						(IntPtr)gridData);
+                    _commandQueue.WriteToImage((IntPtr)gridData, _voxelGrid, true, null);
 				}
-
-				
 			}
 
-			// TODO: Only write sections of buffers that have changed.
-
 			// Copy pinned geometry data to device memory.
-			_commandQueue.WriteToBuffer<Vector4>(_geometryArray, _geometryBuffer, false, null);
+            // NOTE: using the unblocking version creates hundreds of ComputeEvents.
+			_commandQueue.WriteToBuffer<Vector4>(_geometryArray, _geometryBuffer, true, null);
 
 			// Copy pinned light data to device memory.
-			_commandQueue.WriteToBuffer<SimplePointLight>(_pointLightArray, _pointLightBuffer, false, null);
+			_commandQueue.WriteToBuffer<SimplePointLight>(_pointLightArray, _pointLightBuffer, true, null);
 			_commandQueue.AddBarrier();
 		}
 

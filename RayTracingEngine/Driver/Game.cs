@@ -2,6 +2,7 @@
 
 using System;
 using System.Drawing;
+using System.Diagnostics;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 
@@ -79,10 +80,10 @@ namespace Raytracing.Driver
 
 		#region Cameras
 
-		RayTracingCamera _rtCamera;
-		ClCameraInCS _softwareGridCamera;
-		CLCamera _clCamera;		// test camera using OpenCL
-		GridCamera _gridCamera;	// Camera using voxel traversal
+		RayTracingCamera _rtCamera = null;
+		ClCameraInCS _softwareGridCamera = null;
+		CLCamera _clCamera = null;		// test camera using OpenCL
+		GridCamera _gridCamera = null;	// Camera using voxel traversal
 
 		#endregion	
 
@@ -106,16 +107,19 @@ namespace Raytracing.Driver
 		protected override void Dispose(bool manual)
 		{
 			_commandQueue.Finish();
+			
+            /*
+			if (_clCamera != null) _clCamera.Dispose();
+			if (_gridCamera != null) _gridCamera.Dispose();
+
+
+
 			_clSphereBuffer.Dispose();
 			_voxelGrid.Dispose();
-			
-			if (_clCamera != null)
-				_clCamera.Dispose();
-			if (_gridCamera != null)
-				_gridCamera.Dispose();
+            _commandQueue.Dispose();
+            _computeContext.Dispose();
+             * */
 
-			_commandQueue.Dispose();
-			_computeContext.Dispose();
 			base.Dispose(manual);
 		}
 
@@ -190,18 +194,27 @@ namespace Raytracing.Driver
 		private void openCLSharedInit()
 		{
 			// select OpenCL device and platform
+            // TODO: need to make this more general.
 			ComputePlatform platform = ComputePlatform.Platforms[0];
 			ComputeDevice device = platform.Devices[0];
+            if (device.Type != ComputeDeviceTypes.Gpu)
+            {
+                platform = ComputePlatform.Platforms[1];
+                device = platform.Devices[0];
+            }
+#if DEBUG
+            Trace.WriteLine("Creating context for " + device.ToString());
+#endif
 
-			IntPtr curDC = wglGetCurrentDC();
+			IntPtr deviceContextHandle = wglGetCurrentDC();
 
 			_glContext = (OpenTK.Graphics.IGraphicsContextInternal)OpenTK.Graphics.GraphicsContext.CurrentContext;
-			IntPtr raw_context_handle = _glContext.Context.Handle;
-			ComputeContextProperty p1 = new ComputeContextProperty(ComputeContextPropertyName.CL_GL_CONTEXT_KHR, raw_context_handle);
-			ComputeContextProperty p2 = new ComputeContextProperty(ComputeContextPropertyName.CL_WGL_HDC_KHR, curDC);
-			ComputeContextProperty p3 = new ComputeContextProperty(ComputeContextPropertyName.Platform, platform.Handle);
-			List<ComputeContextProperty> props = new List<ComputeContextProperty>() { p1, p2, p3 };
-			ComputeContextPropertyList Properties = new ComputeContextPropertyList(props);
+			IntPtr glContextHandle = _glContext.Context.Handle;
+			ComputeContextProperty p1 = new ComputeContextProperty(ComputeContextPropertyName.CL_GL_CONTEXT_KHR, glContextHandle);
+			ComputeContextProperty p2 = new ComputeContextProperty(ComputeContextPropertyName.CL_WGL_HDC_KHR, deviceContextHandle);
+			ComputeContextProperty p3 = new ComputeContextProperty(ComputeContextPropertyName.Platform, platform.Handle.Value);
+			List<ComputeContextProperty> rawPropertyList = new List<ComputeContextProperty>() { p1, p2, p3 };
+			ComputeContextPropertyList Properties = new ComputeContextPropertyList(rawPropertyList);
 
 			_computeContext = new ComputeContext(ComputeDeviceTypes.Gpu, Properties, null, IntPtr.Zero);
 
@@ -447,10 +460,6 @@ namespace Raytracing.Driver
 			{
 				System.Diagnostics.Trace.WriteLine("Breakpoint hit");
 			}
-
-#if DEBUG
-			//_gridCamera.DebugPixel = new GridCamera.Pixel(Mouse.X, ClientRectangle.Height-Mouse.Y);
-#endif
 
 			// Allows the game to exit
 			if (Keyboard[Key.Escape])
