@@ -1,19 +1,4 @@
-﻿//#define DEBUG
-
-typedef struct {
-	float4 rayOrigin;
-	float4 rayDirection;
-	float4 gridSpaceCoordinates;
-	float4 frac;
-	float4 tMax;
-	float4 tDelta;
-	float4 cellData;
-	float4 index;
-	float4 step;
-	float4 mask;
-	float4 collisionPoint;
-} debugStruct;
-
+﻿
 typedef struct{
 	float4 position;
 	float4 colorAndIntensity;
@@ -24,6 +9,8 @@ typedef struct {
 	float4 direction;
 } Ray;
 
+// Fix rounding bugs in default remquo implementation. This version always rounds down, where as
+// the default version rounds to the nearest integer.
 float4
 myRemquo(float4 x, float4 y, int4* quo)
 {
@@ -139,20 +126,12 @@ findNearestIntersection(
 				const		float		cellSize,
 			
 	__global	read_only	float4*		geometryArray,		// Geometry data
-				const		int			vectorsPerVoxel,
-
-			// Debug structs
-	__global	write_only	debugStruct* debug,
-							int			debugSetCount,
-							bool		debugPixel)
+				const		int			vectorsPerVoxel)
 {
 	const sampler_t smp = 
 		CLK_NORMALIZED_COORDS_FALSE | //Natural coordinates
 		CLK_ADDRESS_CLAMP | //Clamp to zeros
 		CLK_FILTER_NEAREST; //Don't interpolate
-
-/**** Traverse the grid and find the nearest occupied cell ****/
-	int debugIndex = 0;
 
 	// setup up traversel variables
 
@@ -229,19 +208,6 @@ findNearestIntersection(
 		rayHalted = minDistence < HUGE_VALF;
 
 	} // End checking geometry.
-
-#ifdef DEBUG
-	// Record constant values
-	if (debugPixel && debugIndex < debugSetCount)
-	{
-		debug[0].rayOrigin = ray->origin;
-		debug[0].rayDirection = ray->direction;
-		debug[0].frac = frac;
-		debug[0].gridSpaceCoordinates = gridSpaceCoordinates;
-		debug[0].tDelta = tDelta;
-		debug[0].step = convert_float4(step);
-	}
-#endif
 	
 	int4 mask;
 	while (!rayHalted)
@@ -268,18 +234,6 @@ findNearestIntersection(
 		cellData = read_imagei(voxelGrid, smp, index);
 		containsGeometry = cellData.x > 0 || cellData.y > 0 || cellData.z > 0 || cellData.w > 0;
 
-#ifdef DEBUG
-		if (debugPixel && debugIndex < debugSetCount)
-		{
-			debug[debugIndex].frac = frac;
-			debug[debugIndex].tMax = tMax;
-			debug[debugIndex].tDelta = tDelta;
-			debug[debugIndex].index = convert_float4(index);
-			debug[debugIndex].mask = convert_float4(mask);
-			debugIndex += 1;
-		}
-#endif
-
 		if (containsGeometry)
 		{
 			// check for intersection with geometry in the current cell
@@ -292,23 +246,6 @@ findNearestIntersection(
 
 		} // End checking geometry.
 	} // End voxel traversel loop
-
-#ifdef DEBUG
-	if (debugPixel && debugIndex < debugSetCount)
-	{
-		float4 stopValue = (float4)(9999);
-		debug[debugIndex].rayOrigin = stopValue;
-		debug[debugIndex].rayDirection = stopValue;
-		debug[debugIndex].gridSpaceCoordinates = stopValue;
-		debug[debugIndex].frac = stopValue;
-		debug[debugIndex].tMax = stopValue;
-		debug[debugIndex].tDelta = stopValue;
-		debug[debugIndex].cellData = stopValue;
-		//debug[debugIndex].index = stopValue;
-		debug[debugIndex].step = stopValue;
-		debug[debugIndex].mask = stopValue;
-	}
-#endif
 
 	//return minDistence;
 	return (float4)(0.0f, 0.0f, 0.0f, minDistence);
@@ -360,24 +297,10 @@ __global	read_only	float4 *	geometryArray,
 
 			// Lights
 __global	read_only	float8*		pointLights,
-			const		int			pointLightCount,
-
-			// Debug structs
-__global	write_only	debugStruct* debug,
-						int			debugSetCount,
-						int2		debugPixelLocation
-			)
+			const		int			pointLightCount)
 {
 	int2 coord = (int2)(get_global_id(0), get_global_id(1));
 	int2 size = get_image_dim(outputImage);
-
-	///// DEBUG VALUES /////
-#ifdef DEBUG
-	bool debugPixel = (coord.x == debugPixelLocation.x) && (coord.y == debugPixelLocation.y);
-	int debugIndex = 0;
-#else
-	bool debugPixel = false;
-#endif
 
 	// Create a ray in world coordinates
 	Ray primaryRay = unprojectPrimaryRay(coord, size, cameraPosition, unprojectionMatrix);
@@ -390,17 +313,11 @@ __global	write_only	debugStruct* debug,
 
 	// find the nearest intersected object
 	float4 distence = findNearestIntersection(&primaryRay, &collisionPoint, &surfaceNormal,
-												voxelGrid, cellSize, geometryArray, vectorsPerVoxel,
-												debug, debugSetCount, debugPixel);
+												voxelGrid, cellSize, geometryArray, vectorsPerVoxel);
 
 	// If the ray has hit somthing, draw the color of that object.
 	if (distence.w < HUGE_VALF)
 	{
-#ifdef DEBUG
-		debug[0].collisionPoint = collisionPoint;
-		debug[0].collisionPoint.w = distence.w;
-#endif
-
 		color = (float4)(0.0f);
 
 		float4 objectColor = (float4)(0.5f, 0.0f, 0.0f, 0.0f);	// Use generic color for testing.
@@ -425,8 +342,7 @@ __global	write_only	debugStruct* debug,
 			float4 shadowCollisionPoint, shadowSurfaceNormal;
 			float4 shadowRayDistence = findNearestIntersection(	&shadowRay, 
 																&shadowCollisionPoint, &shadowSurfaceNormal,
-																voxelGrid, cellSize, geometryArray, vectorsPerVoxel,
-																debug, debugSetCount, debugPixel);
+																voxelGrid, cellSize, geometryArray, vectorsPerVoxel);
 
 			bool isInShadow = shadowRayDistence.w < lightDistence;
 
@@ -441,13 +357,6 @@ __global	write_only	debugStruct* debug,
 			color += lightContrib * !isInShadow;
 		}
 	}
-
-#ifdef DEBUG
-	if (debugPixel)
-	{
-		color = (float4)(1.0f);
-	}
-#endif
 	
 	// Write the resulting color to the camera texture.
 	write_imagef(outputImage, coord, color);

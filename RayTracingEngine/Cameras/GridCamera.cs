@@ -166,9 +166,9 @@ namespace Raytracing.CL
 			_renderKernel.SetValueArgument<int>(argi++, _voxelGrid.PointLightCount);
 
 			// Pass in debug arrays.
-			_renderKernel.SetMemoryArgument(argi++, _debugBuffer, false);
-			_renderKernel.SetValueArgument<int>(argi++, _debugSetCount);
-			_renderKernel.SetValueArgument<Pixel>(argi++, DebugPixel);
+			//_renderKernel.SetMemoryArgument(argi++, _debugBuffer, false);
+			//_renderKernel.SetValueArgument<int>(argi++, _debugSetCount);
+			//_renderKernel.SetValueArgument<Pixel>(argi++, DebugPixel);
 
 			// Add render task to the device queue.
 			_commandQueue.Execute(_renderKernel, null, globalWorkSize, localWorkSize, null);
