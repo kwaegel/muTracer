@@ -29,7 +29,7 @@ namespace Raytracing.CL
 		public Color4 cellData;
 	}
 
-	abstract class ClTextureCamera : MuxEngine.Movables.Camera
+	abstract class ClTextureCamera : MuxEngine.Movables.Camera, IDisposable
 	{
 
 #region Fields
@@ -155,12 +155,21 @@ namespace Raytracing.CL
 
 #endregion
 
-		public void Dispose()
+		public virtual void Dispose()
 		{
 			_renderTarget.Dispose();
 			_renderKernel.Dispose();
 			_renderProgram.Dispose();
 		}
+
+        /// <summary>
+        /// Print the device build log to the Trace stream.
+        /// </summary>
+        protected void printBuildLog()
+        {
+            String buildLog = _renderProgram.GetBuildLog(_commandQueue.Device);
+            System.Diagnostics.Trace.WriteLine("\n********** Build Log **********\n" + buildLog + "\n*************************");
+        }
 
 #region Render
 

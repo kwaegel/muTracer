@@ -77,7 +77,7 @@ namespace Raytracing.CL
 			_debugBuffer = new ComputeBuffer<float4>(commandQueue.Context, ComputeMemoryFlags.ReadWrite | ComputeMemoryFlags.CopyHostPointer, _debugValues);
 		}
 
-        public void Dispose()
+        public override void Dispose()
         {
             _debugBuffer.Dispose();
 
@@ -101,29 +101,28 @@ namespace Raytracing.CL
 			try
 			{
 				// build the program
-				_renderProgram.Build(null, null, null, IntPtr.Zero);
+                _renderProgram.Build(null, "-cl-nv-verbose", null, IntPtr.Zero);
+
+                //printBuildLog();
 
 				// create a reference a kernel function
 				_renderKernel = _renderProgram.CreateKernel("render");
 			}
 			catch (BuildProgramFailureComputeException e)
 			{
-				String buildLog = _renderProgram.GetBuildLog(_commandQueue.Device);
-				System.Diagnostics.Trace.WriteLine(buildLog);
+                printBuildLog();
 
 				throw e;
 			}
 			catch (InvalidBuildOptionsComputeException e)
 			{
-				String buildLog = _renderProgram.GetBuildLog(_commandQueue.Device);
-				System.Diagnostics.Trace.WriteLine(buildLog);
+                printBuildLog();
 
 				throw e;
 			}
 			catch (InvalidBinaryComputeException e)
 			{
-				String buildLog = _renderProgram.GetBuildLog(_commandQueue.Device);
-				System.Diagnostics.Trace.WriteLine(buildLog);
+                printBuildLog();
 				throw e;
 			}
 		}
@@ -142,7 +141,7 @@ namespace Raytracing.CL
 
 			// pick work group sizes;
 			long[] globalWorkSize = new long[] { ClientBounds.Width, ClientBounds.Height };
-			long[] localWorkSize = new long[] { 8,8 };
+			long[] localWorkSize = new long[] { 8, 8 };
 
 			float cellSize = _voxelGrid.CellSize;
 
