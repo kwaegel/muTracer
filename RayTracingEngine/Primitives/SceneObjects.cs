@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 
 using OpenTK;
@@ -10,12 +10,14 @@ using Raytracing.BoundingVolumes;
 
 namespace Raytracing.Primitives
 {
+    [StructLayout(LayoutKind.Sequential)]
 	public struct Material
 	{
-		public Color4 color;
-		public float reflectivity;
-		public float transparency;
-		public float n;
+		public Color4 Color;
+		public float Reflectivity;
+		public float Transparency;
+		public float RefractiveIndex;
+        private float paddingTo16Bytes;  // Not used for now.
 
 		public Material(Color4 c)
 			:this(c, 0, 0, 0)
@@ -28,20 +30,22 @@ namespace Raytracing.Primitives
 
 		public Material(Color4 c, float reflectivity, float transparency, float n)
 		{
-			this.color = c;
-			this.n = n;
+			this.Color = c;
+			this.RefractiveIndex = n;
 
 			float partialSum = reflectivity + transparency;
 			if (partialSum > 1.0f)
 			{
-				this.reflectivity = reflectivity / partialSum;
-				this.transparency = transparency / partialSum;
+				this.Reflectivity = reflectivity / partialSum;
+				this.Transparency = transparency / partialSum;
 			}
 			else
 			{
-				this.reflectivity = reflectivity;
-				this.transparency = transparency;
+				this.Reflectivity = reflectivity;
+				this.Transparency = transparency;
 			}
+
+            this.paddingTo16Bytes = 0.0f;
 		}
 	}
 

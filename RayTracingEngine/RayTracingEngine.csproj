@@ -64,6 +64,8 @@
     <Compile Include="BoundingVolumes\AxisAlignedBoundingBox.cs" />
     <Compile Include="BoundingVolumes\Frustum.cs" />
     <Compile Include="Cameras\ClTextureCamera.cs" />
+    <Compile Include="SceneStructures\MaterialCache.cs" />
+    <Compile Include="SceneStructures\Scene.cs" />
     <Compile Include="SceneStructures\VoxelGrid.cs" />
     <Compile Include="Cameras\GridCamera.cs" />
     <Compile Include="Math\Vector4i.cs" />

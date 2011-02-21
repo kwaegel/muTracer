@@ -69,7 +69,8 @@ namespace Raytracing.Driver
 		#endregion
 
 		GridCamera _gridCamera = null;	// Camera using voxel traversal
-		VoxelGrid _voxelGrid;	// used for the grid camera;
+		VoxelGrid _voxelGrid;	        // used for the grid camera;
+        MaterialCache _materialCache;
 
 		/// <summary>Creates a window with the specified title.</summary>
         public Game()
@@ -104,9 +105,8 @@ namespace Raytracing.Driver
 
 			openCLSharedInit();
 
-            // Create the scene.
-            // Use a simple voxel grid for testing
-            _voxelGrid = createVoxelGrid(16, 10); 
+            // Create the scene. Use a simple voxel grid for testing
+            _voxelGrid = createExampleVoxelGrid(16, 10); 
 
 			// create the camera
 			// looking down the Z-axis into the scene
@@ -170,7 +170,7 @@ namespace Raytracing.Driver
 		/// <param name="gridWidth">How wide the grid is in world units.</param>
 		/// <param name="gridResolution">How many cells wide the grid is.</param>
 		/// <returns></returns>
-		private VoxelGrid createVoxelGrid(float gridWidth, int gridResolution)
+		private VoxelGrid createExampleVoxelGrid(float gridWidth, int gridResolution)
 		{
 			VoxelGrid grid = new VoxelGrid(_commandQueue, 16, 16);
 
@@ -202,7 +202,7 @@ namespace Raytracing.Driver
 			grid.addSphere(new Vector3(0, 1.5f, 0), 0.05f, Color4.Red);
 
 			// Create a large number of spheres to stress the memory system.
-			int min = 2;
+			int min = 3;
 			int max = 3;
 			for (int x = min; x <= max; x++)
 			{
@@ -214,7 +214,9 @@ namespace Raytracing.Driver
 					}
 				}
 			}
-			float mid = min+(max - min) / 2.0f;
+
+            // Add a light to cast shadows.
+			float mid = min + (max - min) / 2.0f;
 			grid.addPointLight(new Vector3(mid,mid,mid), Color4.White, 2.0f);
 
 			return grid;

@@ -34,52 +34,27 @@ namespace Raytracing.CL
 			}
 		}
 
-
-		// Debugging buffers. Used to get data out of the kernel.
-		private static Pixel _defaultDebugPixel = new Pixel(100, 200);
-		//private static Pixel _defaultDebugPixel = new Pixel(50, 200);
-		public Pixel DebugPixel {get; set;}
-		private static readonly int _debugSetLength = 11;
-		private static readonly int _debugSetCount = 20;
-		private float4[] _debugValues;
-		private ComputeBuffer<float4> _debugBuffer;
-
         private VoxelGrid _voxelGrid;
 
 
 		public GridCamera(Rectangle clientBounds, ComputeCommandQueue commandQueue)
 			: base(clientBounds, commandQueue, MuxEngine.LinearAlgebra.Matrix4.Identity)
 		{
-			debugInit(commandQueue);
 		}
 
 		public GridCamera(Rectangle clientBounds, ComputeCommandQueue commandQueue, MuxEngine.LinearAlgebra.Matrix4 transform)
 			: base(clientBounds, commandQueue, transform)
 		{
-			debugInit(commandQueue);
 		}
 
 		public GridCamera(Rectangle clientBounds, ComputeCommandQueue commandQueue, 
 			Vector3 forward, Vector3 up, Vector3 position)
 			: base (clientBounds, commandQueue, forward, up, position)
 		{
-			debugInit(commandQueue);
-		}
-
-		private void debugInit(ComputeCommandQueue commandQueue)
-		{
-#if DEBUG
-			DebugPixel = _defaultDebugPixel;
-#else
-			DebugPixel = new Pixel(900000, 900000);
-#endif
-			_debugValues = new float4[_debugSetCount * _debugSetLength];
-			_debugBuffer = new ComputeBuffer<float4>(commandQueue.Context, ComputeMemoryFlags.ReadWrite | ComputeMemoryFlags.CopyHostPointer, _debugValues);
 		}
 
         public override void Dispose()
         {
-            _debugBuffer.Dispose();
 
             base.Dispose();
         }
@@ -142,6 +117,7 @@ namespace Raytracing.CL
 			// pick work group sizes;
 			long[] globalWorkSize = new long[] { ClientBounds.Width, ClientBounds.Height };
 			long[] localWorkSize = new long[] { 8, 8 };
+            long threadCount = localWorkSize[0] * localWorkSize[1];
 
 			float cellSize = _voxelGrid.CellSize;
 
@@ -165,100 +141,17 @@ namespace Raytracing.CL
 			_renderKernel.SetMemoryArgument(argi++, _voxelGrid.PointLights);
 			_renderKernel.SetValueArgument<int>(argi++, _voxelGrid.PointLightCount);
 
-			// Pass in debug arrays.
-			//_renderKernel.SetMemoryArgument(argi++, _debugBuffer, false);
-			//_renderKernel.SetValueArgument<int>(argi++, _debugSetCount);
-			//_renderKernel.SetValueArgument<Pixel>(argi++, DebugPixel);
+            // thread count * 16 bytes per float4 * 2 float4's per Ray * size for each rays stack.
+            int stackSize = 2;
+            long stackArraySize = threadCount * 16 * 2 * stackSize;
+            _renderKernel.SetLocalArgument(argi++, stackArraySize);
 
 			// Add render task to the device queue.
 			_commandQueue.Execute(_renderKernel, null, globalWorkSize, localWorkSize, null);
 
 			// Enqueue releasing OpenGL objects and block until calls are finished.
 			_commandQueue.ReleaseGLObjects(_sharedObjects, null);
-			_commandQueue.Finish();
-
-			
-//#if DEBUG
-//            // Print debug information from kernel call.
-//            _commandQueue.ReadFromBuffer<float4>(_debugBuffer, ref _debugValues, true, null);
-//            unpackDebugValues(_debugValues);
-//            //showFinalGridCell(_debugValues);
-//            System.Diagnostics.Trace.Write("");
-//#endif
-			 
-		}
-
-		/// <summary>
-		/// float4 rayOrigin;
-		/// float4 rayDirection;
-		/// float4 gridSpaceCoordinates;
-		/// float4 frac;
-		/// float4 tMax;
-		/// float4 tDelta;
-		/// float4 cellData;
-		/// </summary>
-		/// <param name="debugValues"></param>
-		private void unpackDebugValues(float4[] debugValues)
-		{
-			int debugSets = debugValues.Length % _debugSetLength;
-
-			System.Diagnostics.Trace.WriteLine("Constant data");
-			System.Diagnostics.Trace.WriteLine("\t ray origin: " +	debugValues[0]);
-			System.Diagnostics.Trace.WriteLine("\t ray direction: " + debugValues[1]);
-			System.Diagnostics.Trace.WriteLine("\t frac: " +			debugValues[3]);
-			System.Diagnostics.Trace.WriteLine("\t GridSpace coords: " + debugValues[2]);
-			System.Diagnostics.Trace.WriteLine("\t tDelta: " +		debugValues[5]);
-			System.Diagnostics.Trace.WriteLine("\t step direction: " + debugValues[8]);
-			//System.Diagnostics.Trace.WriteLine("\t distence: " + debugValues[10].W);
-			System.Diagnostics.Trace.WriteLine("");
-
-			Vector4 stopValue = new Vector4(9999.0f, 9999.0f, 9999.0f, 9999.0f);
-			for (int setBase = 0; setBase < debugValues.Length; setBase += _debugSetLength)
-			{
-				
-
-				int debugSetIndex = setBase / _debugSetLength;
-				System.Diagnostics.Trace.WriteLine("Debug step " +	debugSetIndex);
-				System.Diagnostics.Trace.WriteLine("\t tMax: " +		debugValues[setBase + 4]);
-				System.Diagnostics.Trace.WriteLine("\t index: " +	debugValues[setBase + 7]);
-				System.Diagnostics.Trace.WriteLine("\t mask: " +		debugValues[setBase + 9]);
-				System.Diagnostics.Trace.WriteLine("\t distence: " + debugValues[10]);
-				System.Diagnostics.Trace.WriteLine("");
-
-				if (debugValues[setBase] == stopValue)
-				{
-					break;	// assume the ray terminated and there is no more data to print.
-				}
-			}
-			System.Diagnostics.Trace.WriteLine("");
-		}
-
-		/// <summary>
-		/// float4 rayOrigin;
-		/// float4 rayDirection;
-		/// float4 gridSpaceCoordinates;
-		/// float4 frac;
-		/// float4 tMax;
-		/// float4 tDelta;
-		/// float4 cellData;
-		/// </summary>
-		/// <param name="debugValues"></param>
-		private void showFinalGridCell(float4[] debugValues)
-		{
-			Vector4 stopValue = new Vector4(9999.0f, 9999.0f, 9999.0f, 9999.0f);
-			for (int setBase = 0; setBase < debugValues.Length; setBase += _debugSetLength)
-			{
-				int debugSetIndex = setBase / _debugSetLength;
-				//System.Diagnostics.Trace.WriteLine("Debug step " + debugSetIndex);
-				//System.Diagnostics.Trace.WriteLine("index: " + debugValues[setBase + 7]);
-
-				if (debugValues[setBase] == stopValue)
-				{
-					System.Diagnostics.Trace.WriteLine("index: " + debugValues[setBase + 7]);
-					break;	// assume the ray terminated and there is no more data to print.
-				}
-				
-			}
+            _commandQueue.Finish();
 		}
 
 	}
