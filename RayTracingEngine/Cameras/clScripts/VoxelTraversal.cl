@@ -320,14 +320,14 @@ __global	read_only	float8*		pointLights,
 
 	// set the default background color
 	float4 color = backgroundColor;
-
+	
 	float4 collisionPoint, surfaceNormal;
 	
-	while (stackHeight > 0 && raysCast < 1)
+	while (stackHeight > 0 && raysCast < 2)
 	{
 		stackHeight--;
 		Ray currentRay = rayStack[stackHeight];
-		float currentWeight = rayWeights[stackHeight];
+		float currentRayWeight = rayWeights[stackHeight];
 
 		float distence = findNearestIntersection(&currentRay, &collisionPoint, &surfaceNormal, voxelGrid, cellSize, geometryArray, vectorsPerVoxel);
 		
@@ -336,7 +336,21 @@ __global	read_only	float8*		pointLights,
 		{
 			color = (float4)(0.0f);
 
-			float4 objectColor = (float4)(0.7f, 0.0f, 0.0f, 0.0f);	// Use generic color for testing.
+			// use generic material for testing
+			float4 objectColor = (float4)(0.7f, 0.0f, 0.0f, 0.0f);
+			float reflectivity = 0.25f;
+			float transparency = 0.0f;
+			float diffusion = 1.0f - reflectivity - transparency;
+
+			// Add reflection ray to stack
+			Ray reflectionRay;
+			float cosTheta = dot(currentRay.direction, surfaceNormal);
+			
+			rayStack[stackHeight].origin = collisionPoint - currentRay.direction * distence*0.0004f;
+			rayStack[stackHeight].direction= currentRay.direction - (2 * cosTheta * surfaceNormal);
+			rayWeights[stackHeight] = reflectivity;
+			stackHeight++;
+
 
 			// Sum up contributions of all light sources
 			for (int lightIndex = 0; lightIndex < pointLightCount; lightIndex++)
@@ -354,7 +368,6 @@ __global	read_only	float8*		pointLights,
 
 				// check for shadowing. Reuse collisionPoint and surfaceNormal as they are no longer needed.
 				Ray shadowRay = {collisionPoint, lightDirection};
-				collisionPoint = surfaceNormal = (float4)(0.0f);
 				float4 shadowCollisionPoint, shadowSurfaceNormal;
 				float shadowRayDistence = findNearestIntersection(	&shadowRay, &shadowCollisionPoint, &shadowSurfaceNormal, 
 																	voxelGrid, cellSize, geometryArray, vectorsPerVoxel);
@@ -366,6 +379,7 @@ __global	read_only	float8*		pointLights,
 				lightContrib *= (float4)(shade);
 				lightContrib *= lightIntensity;
 				lightContrib *= native_recip(lightDistence*lightDistence);	// Inverse square law
+				lightContrib *= currentRayWeight * diffusion;
 			
 				// Add light contribution to total color.
 				// Multiply by shadow factor to ignore contributions of hidden lights.
@@ -374,54 +388,6 @@ __global	read_only	float8*		pointLights,
 		}
 		raysCast++;
 	}
-
-	/*
-	// find the nearest intersected object
-	float distence = findNearestIntersection(&rayStack[0], &collisionPoint, &surfaceNormal, voxelGrid, cellSize, geometryArray, vectorsPerVoxel);
-
-	// If the ray has hit somthing, draw the color of that object.
-	if (distence < HUGE_VALF)
-	{
-		color = (float4)(0.0f);
-
-		float4 objectColor = (float4)(0.5f, 0.0f, 0.0f, 0.0f);	// Use generic color for testing.
-
-		// Sum up contributions of all light sources
-		for (int lightIndex = 0; lightIndex < pointLightCount; lightIndex++)
-		{
-			// test cosine shading
-			float4 lightPosition = pointLights[lightIndex].s0123;
-			float4 lightColor = pointLights[lightIndex].s4567;
-			float lightIntensity = lightColor.w;
-
-			float4 lightVector = lightPosition - collisionPoint;
-			float lightDistence = length(lightVector);
-			float4 lightDirection = fast_normalize(lightVector);
-
-			float shade = clamp(dot(surfaceNormal, lightDirection),0.0f,1.0f);	// Clamped cosine shading
-
-			// check for shadowing. Reuse collisionPoint and surfaceNormal as they are no longer needed.
-			Ray shadowRay = {collisionPoint, lightDirection};
-
-			float4 shadowCollisionPoint, shadowSurfaceNormal;
-			float4 shadowRayDistence = findNearestIntersection(	&shadowRay, 
-																&shadowCollisionPoint, &shadowSurfaceNormal,
-																voxelGrid, cellSize, geometryArray, vectorsPerVoxel);
-
-			bool isInShadow = shadowRayDistence.w < lightDistence;
-
-			// Apply shading modifiers.
-			float4 lightContrib = objectColor;
-			lightContrib *= (float4)(shade);
-			lightContrib *= lightIntensity;
-			lightContrib *= native_recip(lightDistence*lightDistence);	// Inverse square law
-			
-			// Add light contribution to total color.
-			// Multiply by shadow factor to ignore contributions of hidden lights.
-			color += lightContrib * !isInShadow;
-		}
-	}
-	*/
 	
 	// Write the resulting color to the camera texture.
 	write_imagef(outputImage, coord, color);
