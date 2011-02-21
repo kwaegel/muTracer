@@ -302,9 +302,7 @@ __global	read_only	float4 *	geometryArray,
 
 			// Lights
 __global	read_only	float8*		pointLights,
-			const		int			pointLightCount,
-			
-__local					Ray*		stackArray)
+			const		int			pointLightCount)
 {
 	int2 coord = (int2)(get_global_id(0), get_global_id(1));
 	int2 size = get_image_dim(outputImage);

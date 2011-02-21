@@ -117,7 +117,6 @@ namespace Raytracing.CL
 			// pick work group sizes;
 			long[] globalWorkSize = new long[] { ClientBounds.Width, ClientBounds.Height };
 			long[] localWorkSize = new long[] { 8, 8 };
-            long threadCount = localWorkSize[0] * localWorkSize[1];
 
 			float cellSize = _voxelGrid.CellSize;
 
@@ -140,11 +139,6 @@ namespace Raytracing.CL
 			// Pass in lights
 			_renderKernel.SetMemoryArgument(argi++, _voxelGrid.PointLights);
 			_renderKernel.SetValueArgument<int>(argi++, _voxelGrid.PointLightCount);
-
-            // thread count * 16 bytes per float4 * 2 float4's per Ray * size for each rays stack.
-            int stackSize = 2;
-            long stackArraySize = threadCount * 16 * 2 * stackSize;
-            _renderKernel.SetLocalArgument(argi++, stackArraySize);
 
 			// Add render task to the device queue.
 			_commandQueue.Execute(_renderKernel, null, globalWorkSize, localWorkSize, null);
