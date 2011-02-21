@@ -9,6 +9,14 @@ typedef struct {
 	float4 direction;
 } Ray;
 
+typedef struct {
+	float4 color;
+	float reflectivity;
+	float transparency;
+	float refractiveIndex;
+	float padding;
+} Material;
+
 // Fix rounding bugs in default remquo implementation. This version always rounds down, where as
 // the default version rounds to the nearest integer.
 float4
@@ -116,7 +124,7 @@ intersectCellContents(			float4		rayOrigin,
 }
 
 
-float4
+float
 findNearestIntersection(	
 							Ray*		ray,
 							float4*		collisionPoint,		// Output collision point and surface normal
@@ -128,10 +136,8 @@ findNearestIntersection(
 	__global	read_only	float4*		geometryArray,		// Geometry data
 				const		int			vectorsPerVoxel)
 {
-	const sampler_t smp = 
-		CLK_NORMALIZED_COORDS_FALSE | //Natural coordinates
-		CLK_ADDRESS_CLAMP | //Clamp to zeros
-		CLK_FILTER_NEAREST; //Don't interpolate
+	//Natural coordinates, clamp to zeros, don't interpolate.
+	const sampler_t smp = CLK_NORMALIZED_COORDS_FALSE | CLK_ADDRESS_CLAMP | CLK_FILTER_NEAREST;
 
 	// setup up traversel variables
 
@@ -164,8 +170,7 @@ findNearestIntersection(
 		index.y < 0 || index.y >= gridWidth ||
 		index.z < 0 || index.z >= gridWidth)
 	{
-		//return HUGE_VALF;
-		return (float4)(0.0f, 0.0f, 0.0f, HUGE_VALF);
+		return HUGE_VALF;
 	}
 
 	// MSB of a float is the sign bit, so the select call can switch based on the sign bit.
@@ -248,7 +253,7 @@ findNearestIntersection(
 	} // End voxel traversel loop
 
 	//return minDistence;
-	return (float4)(0.0f, 0.0f, 0.0f, minDistence);
+	return minDistence;
 }
 
 Ray
@@ -297,26 +302,87 @@ __global	read_only	float4 *	geometryArray,
 
 			// Lights
 __global	read_only	float8*		pointLights,
-			const		int			pointLightCount)
+			const		int			pointLightCount,
+			
+__local					Ray*		stackArray)
 {
 	int2 coord = (int2)(get_global_id(0), get_global_id(1));
 	int2 size = get_image_dim(outputImage);
 
-	// Create a ray in world coordinates
-	Ray primaryRay = unprojectPrimaryRay(coord, size, cameraPosition, unprojectionMatrix);
+	// Create a local stack to hold recursive rays
+	Ray rayStack[4];
+	float rayWeights[4];
+	int stackHeight = 0;
+	int raysCast = 0;	// used to prevent infinate recursion.
+
+	// Create the primary ray in world coordinates
+	rayStack[0] = unprojectPrimaryRay(coord, size, cameraPosition, unprojectionMatrix);
+	rayWeights[0] = 1.0f;
+	stackHeight++;
 
 	// set the default background color
 	float4 color = backgroundColor;
 
-	float4 collisionPoint;
-	float4 surfaceNormal;
+	float4 collisionPoint, surfaceNormal;
+	
+	while (stackHeight > 0 && raysCast < 1)
+	{
+		stackHeight--;
+		Ray currentRay = rayStack[stackHeight];
+		float currentWeight = rayWeights[stackHeight];
 
+		float distence = findNearestIntersection(&currentRay, &collisionPoint, &surfaceNormal, voxelGrid, cellSize, geometryArray, vectorsPerVoxel);
+		
+		// If the ray has hit somthing, draw the color of that object.
+		if (distence < HUGE_VALF)
+		{
+			color = (float4)(0.0f);
+
+			float4 objectColor = (float4)(0.7f, 0.0f, 0.0f, 0.0f);	// Use generic color for testing.
+
+			// Sum up contributions of all light sources
+			for (int lightIndex = 0; lightIndex < pointLightCount; lightIndex++)
+			{
+				// test cosine shading
+				float4 lightPosition = pointLights[lightIndex].s0123;
+				float4 lightColor = pointLights[lightIndex].s4567;
+				float lightIntensity = lightColor.w;
+
+				float4 lightVector = lightPosition - collisionPoint;
+				float lightDistence = length(lightVector);
+				float4 lightDirection = fast_normalize(lightVector);
+
+				float shade = clamp(dot(surfaceNormal, lightDirection), 0.0f, 1.0f);	// Clamped cosine shading
+
+				// check for shadowing. Reuse collisionPoint and surfaceNormal as they are no longer needed.
+				Ray shadowRay = {collisionPoint, lightDirection};
+				collisionPoint = surfaceNormal = (float4)(0.0f);
+				float4 shadowCollisionPoint, shadowSurfaceNormal;
+				float shadowRayDistence = findNearestIntersection(	&shadowRay, &shadowCollisionPoint, &shadowSurfaceNormal, 
+																	voxelGrid, cellSize, geometryArray, vectorsPerVoxel);
+
+				bool isInShadow = shadowRayDistence < lightDistence;
+
+				// Apply shading modifiers.
+				float4 lightContrib = objectColor;
+				lightContrib *= (float4)(shade);
+				lightContrib *= lightIntensity;
+				lightContrib *= native_recip(lightDistence*lightDistence);	// Inverse square law
+			
+				// Add light contribution to total color.
+				// Multiply by shadow factor to ignore contributions of hidden lights.
+				color += lightContrib * !isInShadow;
+			}
+		}
+		raysCast++;
+	}
+
+	/*
 	// find the nearest intersected object
-	float4 distence = findNearestIntersection(&primaryRay, &collisionPoint, &surfaceNormal,
-												voxelGrid, cellSize, geometryArray, vectorsPerVoxel);
+	float distence = findNearestIntersection(&rayStack[0], &collisionPoint, &surfaceNormal, voxelGrid, cellSize, geometryArray, vectorsPerVoxel);
 
 	// If the ray has hit somthing, draw the color of that object.
-	if (distence.w < HUGE_VALF)
+	if (distence < HUGE_VALF)
 	{
 		color = (float4)(0.0f);
 
@@ -357,6 +423,7 @@ __global	read_only	float8*		pointLights,
 			color += lightContrib * !isInShadow;
 		}
 	}
+	*/
 	
 	// Write the resulting color to the camera texture.
 	write_imagef(outputImage, coord, color);
