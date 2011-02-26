@@ -323,7 +323,7 @@ __global	read_only	float8*		pointLights,
 	
 	float4 collisionPoint, surfaceNormal;
 	
-	while (stackHeight > 0 && raysCast < 2)
+	while (stackHeight > 0 && raysCast < 3)
 	{
 		stackHeight--;
 		Ray currentRay = rayStack[stackHeight];

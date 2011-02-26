@@ -18,7 +18,7 @@ using float4 = OpenTK.Vector4;
 namespace Raytracing.CL
 {
 
-	class GridCamera : ClTextureCamera
+	public class GridCamera : ClTextureCamera
 	{
 
 		[StructLayout(LayoutKind.Sequential)]

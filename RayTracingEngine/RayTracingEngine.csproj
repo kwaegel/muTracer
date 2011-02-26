@@ -6,7 +6,7 @@
     <ProductVersion>8.0.30703</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{EE3AFA0B-E1C2-4468-B042-FBBF71D4F483}</ProjectGuid>
-    <OutputType>Exe</OutputType>
+    <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>Raytracing</RootNamespace>
     <AssemblyName>RayTracingEngine</AssemblyName>
@@ -37,7 +37,8 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup>
-    <StartupObject>Raytracing.Driver.Game</StartupObject>
+    <StartupObject>
+    </StartupObject>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="OpenTK, Version=1.0.0.201, Culture=neutral, PublicKeyToken=bad199fe84eb3df4, processorArchitecture=MSIL">
@@ -70,7 +71,6 @@
     <Compile Include="Cameras\GridCamera.cs" />
     <Compile Include="Math\Vector4i.cs" />
     <Compile Include="Primitives\PrimitiveStructs.cs" />
-    <Compile Include="Driver\Game.cs" />
     <None Include="Cameras\clScripts\clCameraCode.cl">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

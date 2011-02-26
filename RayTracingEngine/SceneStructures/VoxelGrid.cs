@@ -27,7 +27,7 @@ namespace Raytracing.SceneStructures
 		
 	}
 
-	class VoxelGrid
+	public class VoxelGrid
 	{
 		// Compute queue
 		ComputeCommandQueue _commandQueue;

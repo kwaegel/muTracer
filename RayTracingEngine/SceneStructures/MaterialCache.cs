@@ -7,7 +7,7 @@ using Raytracing.Primitives;
 
 namespace Raytracing.SceneStructures
 {
-    class MaterialCache
+    public class MaterialCache
     {
         private static int CacheSize;
 

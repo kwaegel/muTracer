@@ -29,7 +29,7 @@ namespace Raytracing.CL
 		public Color4 cellData;
 	}
 
-	abstract class ClTextureCamera : MuxEngine.Movables.Camera, IDisposable
+	public abstract class ClTextureCamera : MuxEngine.Movables.Camera, IDisposable
 	{
 
 #region Fields
