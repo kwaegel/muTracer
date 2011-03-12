@@ -17,18 +17,6 @@ using float4 = OpenTK.Vector4;
 
 namespace Raytracing.CL
 {
-	[StructLayout(LayoutKind.Sequential, Pack = 16)]
-	unsafe public struct DebugStruct
-	{
-		public float4 rayOrigin;
-		public float4 rayDirection;
-		public float4 gridSpaceCoordinates;
-		public float4 frac;
-		public float4 tMax;
-		public float4 tDelta;
-		public Color4 cellData;
-	}
-
 	public abstract class ClTextureCamera : MuxEngine.Movables.Camera, IDisposable
 	{
 
@@ -224,22 +212,11 @@ namespace Raytracing.CL
 			return _screenToWorldMatrix;
 		}
 
-		public void render()
-		{
-			this.computeView();
-
-			// Raytrace the scene and render it to a textured quad.
-			renderSceneToTexture();
-
-			// Draw the texture to the screen using OpenGL calls.
-			drawTextureToScreen();
-		}
-
-		protected abstract void renderSceneToTexture();
-
 		/// <summary>
-		/// Draw the texture that OpenCL renders into using a full-viewport quad. Drawn 
+		/// Draw the rendered image to the screen using a full-viewport quad. Drawn 
 		/// at z=1 so it is behind all other elements.
+        /// 
+        /// The image must be rendered before this is called, or nothing will be drawn.
 		/// </summary>
 		internal void drawTextureToScreen()
 		{

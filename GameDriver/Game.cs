@@ -69,8 +69,7 @@ namespace Raytracing.Driver
 		#endregion
 
 		GridCamera _gridCamera = null;	// Camera using voxel traversal
-		VoxelGrid _voxelGrid;	        // used for the grid camera;
-        Scene _world;
+        Scene _world;                   // The scene to render
 
 		/// <summary>Creates a window with the specified title.</summary>
         public Game()
@@ -84,7 +83,6 @@ namespace Raytracing.Driver
 			_commandQueue.Finish();
 			
 			_gridCamera.Dispose();
-			_voxelGrid.Dispose();
             _world.Dispose();
 
             _commandQueue.Dispose();
@@ -107,10 +105,7 @@ namespace Raytracing.Driver
 			openCLSharedInit();
 
             _world = new Scene(_commandQueue);
-            fillScene(_world);
-
-            // Create the scene. Use a simple voxel grid for testing
-            _voxelGrid = createExampleVoxelGrid(16, 10); 
+            buildScene(_world);
 
 			// create the camera
 			// looking down the Z-axis into the scene
@@ -124,7 +119,6 @@ namespace Raytracing.Driver
 			try
 			{
 				_gridCamera = new GridCamera(this.ClientRectangle, _commandQueue, -Vector3.UnitZ, Vector3.UnitY, cameraPosition);
-                _gridCamera.setScene(_voxelGrid);
 				_gridCamera.VerticalFieldOfView = vFOV;
 				_gridCamera.NearPlane = nearClip;
 				_gridCamera.computeProjection();
@@ -169,7 +163,7 @@ namespace Raytracing.Driver
 		}
 
 
-        private void fillScene(Scene s)
+        private void buildScene(Scene s)
         {
             Material shinyRed = new Material(Color4.Red, 0.5f);
             Material flatRed = new Material(Color4.Red);
@@ -202,67 +196,25 @@ namespace Raytracing.Driver
             s.addSphere(new Vector3(0, 0, 1f), 0.25f, flatBlue);
 
             s.addSphere(new Vector3(0, 1.5f, 0), 0.05f, shinyRed);
-        }
 
-
-		/// <summary>
-		/// 
-		/// </summary>
-		/// <param name="gridWidth">How wide the grid is in world units.</param>
-		/// <param name="gridResolution">How many cells wide the grid is.</param>
-		/// <returns></returns>
-		private VoxelGrid createExampleVoxelGrid(float gridWidth, int gridResolution)
-		{
-			VoxelGrid grid = new VoxelGrid(_commandQueue, 16, 16);
-
-			// Add test light
-			grid.addPointLight(new Vector3(0,4,0), Color4.White, 20.0f);
-			grid.addPointLight(new Vector3(0,0,0), Color4.White, 2.0f);
-
-			// Add test data.
-
-			// Create sphere that crosses voxel bounderies
-			grid.addSphere(new Vector3(3f, 0, 0), 1.0f, Color4.Black);
-
-			// Create multiple spheres in the same voxel
-			grid.addSphere(new Vector3(0.2f, 0.2f, 0.2f), 0.05f, Color4.Black);
-			grid.addSphere(new Vector3(0.2f, 0.2f, -0.2f), 0.05f, Color4.Black);
-			grid.addSphere(new Vector3(0.2f, -0.2f, 0.2f), 0.05f, Color4.Black);
-			grid.addSphere(new Vector3(0.2f, -0.2f, -0.2f), 0.05f, Color4.Black);
-			
-			grid.addSphere(new Vector3(-0.2f, 0.2f, 0.2f), 0.05f, Color4.Black);
-			grid.addSphere(new Vector3(-0.2f, 0.2f, -0.2f), 0.05f, Color4.Black);
-			grid.addSphere(new Vector3(-0.2f, -0.2f, 0.2f), 0.05f, Color4.Black);
-			grid.addSphere(new Vector3(-0.2f, -0.2f, -0.2f), 0.05f, Color4.Black);
-
-			// Create spheres along the major axies.
-			grid.addSphere(new Vector3(1f, 0, 0), 0.25f, Color4.Red);
-			grid.addSphere(new Vector3(0, 1f, 0), 0.25f, Color4.Green);
-			grid.addSphere(new Vector3(0, 0, 1f), 0.25f, Color4.Blue);
-
-			grid.addSphere(new Vector3(0, 1.5f, 0), 0.05f, Color4.Red);
-
-			// Create a large number of spheres to stress the memory system.
-			int min = 3;
-			int max = 3;
-			for (int x = min; x <= max; x++)
-			{
-				for (int y = min; y <= max; y++)
-				{
-					for (int z = min; z <= max; z++)
-					{
-						grid.addSphere(new Vector3(x,y,z), 0.1f, Color4.Blue);
-					}
-				}
-			}
+            // Create a large number of spheres to stress the memory system.
+            int min = 3;
+            int max = 3;
+            for (int x = min; x <= max; x++)
+            {
+                for (int y = min; y <= max; y++)
+                {
+                    for (int z = min; z <= max; z++)
+                    {
+                        s.addSphere(new Vector3(x, y, z), 0.1f, shinyRed);
+                    }
+                }
+            }
 
             // Add a light to cast shadows.
-			float mid = min + (max - min) / 2.0f;
-			grid.addPointLight(new Vector3(mid,mid,mid), Color4.White, 2.0f);
-
-			return grid;
-		}
-
+            float mid = min + (max - min) / 2.0f;
+            s.addLight(new Vector3(mid, mid, mid), Color4.White, 2.0f);
+        }
 		#endregion
 
 		/// <summary>
@@ -411,10 +363,6 @@ namespace Raytracing.Driver
 
 			// clear the screen
 			GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
-
-			// Render the scene
-			//_voxelGrid.syncBuffers();
-			//_gridCamera.render();
 
             _world.render(_commandQueue, _gridCamera);
 

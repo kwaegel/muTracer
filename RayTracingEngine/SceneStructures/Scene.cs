@@ -23,13 +23,11 @@ namespace Raytracing.SceneStructures
         VoxelGrid _voxelGrid;
         MaterialCache _materialCache;
 
-        public Color4 BackgroundColor;
+        public Color4 BackgroundColor = Color4.CornflowerBlue;
 
         public Scene(ComputeCommandQueue commandQueue)
         {
             _commandQueue = commandQueue;
-
-            BackgroundColor = Color4.Black;
 
             _voxelGrid = new VoxelGrid(commandQueue, DefaultGridWidth, DefaultGridResolution);
             _materialCache = new MaterialCache(commandQueue);

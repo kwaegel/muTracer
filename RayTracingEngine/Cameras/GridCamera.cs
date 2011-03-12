@@ -34,9 +34,6 @@ namespace Raytracing.CL
 			}
 		}
 
-        private VoxelGrid _voxelGrid;
-
-
 		public GridCamera(Rectangle clientBounds, ComputeCommandQueue commandQueue)
 			: base(clientBounds, commandQueue, MuxEngine.LinearAlgebra.Matrix4.Identity)
 		{
@@ -57,11 +54,6 @@ namespace Raytracing.CL
         {
 
             base.Dispose();
-        }
-
-        public void setScene(VoxelGrid grid)
-        {
-            _voxelGrid = grid;
         }
 
 		protected override void buildOpenCLProgram()
@@ -102,11 +94,6 @@ namespace Raytracing.CL
 			}
 		}
 
-		protected override void renderSceneToTexture()
-		{
-            renderSceneToTexture(_voxelGrid, null, Color4.CornflowerBlue);
-		}
-
         // Version to be used with a scene object.
         internal void renderSceneToTexture(VoxelGrid voxelGrid, MaterialCache matCache, Color4 backgroundColor)
         {
@@ -124,7 +111,7 @@ namespace Raytracing.CL
             long[] globalWorkSize = new long[] { ClientBounds.Width, ClientBounds.Height };
             long[] localWorkSize = new long[] { 8, 8 };
 
-            float cellSize = _voxelGrid.CellSize;
+            float cellSize = voxelGrid.CellSize;
 
             // Set kernel arguments.
             int argi = 0;
