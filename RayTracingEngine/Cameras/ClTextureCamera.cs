@@ -241,7 +241,7 @@ namespace Raytracing.CL
 		/// Draw the texture that OpenCL renders into using a full-viewport quad. Drawn 
 		/// at z=1 so it is behind all other elements.
 		/// </summary>
-		private void drawTextureToScreen()
+		internal void drawTextureToScreen()
 		{
 			GL.Color4(Color4.Transparent);		// No blend Color.
 
@@ -255,6 +255,7 @@ namespace Raytracing.CL
 			GL.Enable(EnableCap.Texture2D);
 			GL.BindTexture(TextureTarget.Texture2D, _renderTextureID);
 
+            // TODO: this is absurd. Need a way to write directly to the back buffer.
 			GL.Begin(BeginMode.Quads);
 
 				GL.TexCoord2(0, 0);

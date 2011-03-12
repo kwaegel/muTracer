@@ -47,6 +47,18 @@ namespace Raytracing.Primitives
 
             this.paddingTo16Bytes = 0.0f;
 		}
+
+        public static bool operator ==(Material m1, Material m2)
+        {
+            return  m1.Color == m2.Color && m1.Reflectivity == m2.Reflectivity && 
+                    m1.Transparency == m2.Transparency && m1.RefractiveIndex == m2.RefractiveIndex;
+        }
+
+        public static bool operator !=(Material m1, Material m2)
+        {
+            // TODO: rewrite to use short-circuit eval.
+            return !(m1 == m2);
+        }
 	}
 
 	public class PointLight

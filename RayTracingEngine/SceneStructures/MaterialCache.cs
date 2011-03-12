@@ -7,11 +7,11 @@ using Raytracing.Primitives;
 
 namespace Raytracing.SceneStructures
 {
-    public class MaterialCache
+    internal class MaterialCache : IDisposable
     {
-        private static int CacheSize;
+        private const int DefaultCacheSize = 10;
 
-        ComputeContext _context;
+        ComputeCommandQueue _commandQueue;
         private ComputeImageFormat _imageFormat = new ComputeImageFormat(ComputeImageChannelOrder.Rgba, ComputeImageChannelType.UnsignedInt32);
 
         Material[] _materialArray;
@@ -19,12 +19,17 @@ namespace Raytracing.SceneStructures
 
         public ComputeBuffer<Material> Buffer { get; private set; }
 
-        public MaterialCache(ComputeContext context)
+        public MaterialCache(ComputeCommandQueue commandQueue)
         {
-            _context = context;
+            _commandQueue = commandQueue;
 
-            _materialArray = new Material[10];
-            Buffer = new ComputeBuffer<Material>(_context, ComputeMemoryFlags.ReadOnly | ComputeMemoryFlags.UseHostPointer, _materialArray);
+            _materialArray = new Material[DefaultCacheSize];
+            Buffer = new ComputeBuffer<Material>(commandQueue.Context, ComputeMemoryFlags.ReadOnly | ComputeMemoryFlags.UseHostPointer, _materialArray);
+        }
+
+        public void Dispose()
+        {
+            Buffer.Dispose();
         }
 
         /// <summary>
@@ -33,28 +38,35 @@ namespace Raytracing.SceneStructures
         /// <param name="commandQueue"></param>
         public void syncBuffer(ComputeCommandQueue commandQueue)
         {
-            commandQueue.WriteToBuffer<Material>(_materialArray, Buffer, false, null);
+            // TODO: try non-blocking sends.
+            commandQueue.WriteToBuffer<Material>(_materialArray, Buffer, true, null);
         }
 
-        // Add a material and return the index of the new material.
-        public int addMaterial(Material mat)
+        public int getMaterialIndex(Material material)
         {
-            if (_nextOpening < _materialArray.Length)
-            {
-                _materialArray[_nextOpening] = mat;
-                return _nextOpening++;
-            }
-            else
-            {
-                throw new Exception("Material cache full. Can't add: " + mat.ToString());
-            }
-        }
+            int materialIndex = _nextOpening;
 
-        // Get the index of the given material.
-        public int getMaterialIndex(Material mat)
-        {
-            return -1;
-        }
 
+            for (int i=0; i< _nextOpening; i++)
+            {
+                Material mat = _materialArray[i];
+
+                if (mat == material)
+                {
+                    materialIndex = i;
+                    break;
+                }
+            }
+
+            System.Diagnostics.Debug.Assert(materialIndex < _materialArray.Length, "Maxium number of materials exceeded.");
+
+            if (materialIndex == _nextOpening)
+            {
+                _materialArray[materialIndex] = material;
+                _nextOpening++;
+            }
+
+            return materialIndex;
+        }
     }
 }

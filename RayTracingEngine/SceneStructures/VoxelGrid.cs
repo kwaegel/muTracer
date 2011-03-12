@@ -35,7 +35,7 @@ namespace Raytracing.SceneStructures
 		// Grid buffer.
 		private ComputeImageFormat _imageFormat = new ComputeImageFormat(ComputeImageChannelOrder.Rgba, ComputeImageChannelType.UnsignedInt32);
 		private Voxel[] _voxelArray;
-		internal ComputeImage3D _voxelGrid;
+		internal ComputeImage3D _grid;
 
 		// Primitive buffer
 		private Vector4[] _geometryArray;
@@ -99,7 +99,7 @@ namespace Raytracing.SceneStructures
             {
                 fixed (Voxel* gridData = _voxelArray)
                 {
-                    _voxelGrid = new ComputeImage3D(_commandQueue.Context,
+                    _grid = new ComputeImage3D(_commandQueue.Context,
                         ComputeMemoryFlags.CopyHostPointer | ComputeMemoryFlags.ReadOnly,
                         _imageFormat,
                         GridResolution, GridResolution, GridResolution,
@@ -123,7 +123,7 @@ namespace Raytracing.SceneStructures
 
 		public void Dispose()
 		{
-			_voxelGrid.Dispose();
+			_grid.Dispose();
             Geometry.Dispose();
             _pointLightBuffer.Dispose();
 		}
@@ -167,6 +167,44 @@ namespace Raytracing.SceneStructures
 		}
 
 
+        public void addSphere(Vector3 center, float radius, int materialIndex)
+        {
+            // Pack sphere into a Vector4
+            Vector4 packedSphere = new Vector4(center, radius);
+
+            // Translate to grid space.
+            Vector3 gridCenter = center - _gridOrigin;
+
+            int minX = (int)((gridCenter.X - radius) / CellSize);
+            int minY = (int)((gridCenter.Y - radius) / CellSize);
+            int minZ = (int)((gridCenter.Z - radius) / CellSize);
+            int maxX = (int)((gridCenter.X + radius) / CellSize);
+            int maxY = (int)((gridCenter.Y + radius) / CellSize);
+            int maxZ = (int)((gridCenter.Z + radius) / CellSize);
+
+            int cellCount = 0;
+
+            // Add a reference to model to every cell the bounding box intesects
+            for (int x = minX; x <= maxX; x++)
+            {
+                for (int y = minY; y <= maxY; y++)
+                {
+                    for (int z = minZ; z <= maxZ; z++)
+                    {
+                        Voxel voxelData = this[x, y, z];
+
+                        int geometryIndex = (x * GridResolution * GridResolution + y * GridResolution + z) * VectorsPerVoxel;
+                        _geometryArray[geometryIndex + voxelData.PrimitiveCount] = packedSphere;
+
+                        voxelData.PrimitiveCount += 1;
+                        this[x, y, z] = voxelData;
+                        cellCount++;
+                    }
+                }
+            }
+        }
+
+
 		public void addPointLight(Vector3 position, Color4 color, float intensity)
 		{
 			if (PointLightCount < _pointLightArray.Length - 1)
@@ -191,7 +229,7 @@ namespace Raytracing.SceneStructures
 			{
 				fixed (Voxel* gridData = _voxelArray)
 				{
-                    _commandQueue.WriteToImage((IntPtr)gridData, _voxelGrid, true, null);
+                    _commandQueue.WriteToImage((IntPtr)gridData, _grid, true, null);
 				}
 			}
 

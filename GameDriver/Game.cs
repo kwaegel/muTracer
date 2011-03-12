@@ -70,11 +70,11 @@ namespace Raytracing.Driver
 
 		GridCamera _gridCamera = null;	// Camera using voxel traversal
 		VoxelGrid _voxelGrid;	        // used for the grid camera;
-        MaterialCache _materialCache;
+        Scene _world;
 
 		/// <summary>Creates a window with the specified title.</summary>
         public Game()
-            : base(600, 600, GraphicsMode.Default, "Raytracing tester")
+            : base(512, 512, GraphicsMode.Default, "Raytracing tester")
         {
             VSync = VSyncMode.Off;
         }
@@ -85,6 +85,7 @@ namespace Raytracing.Driver
 			
 			_gridCamera.Dispose();
 			_voxelGrid.Dispose();
+            _world.Dispose();
 
             _commandQueue.Dispose();
             _computeContext.Dispose();
@@ -104,6 +105,9 @@ namespace Raytracing.Driver
             GL.Enable(EnableCap.DepthTest);
 
 			openCLSharedInit();
+
+            _world = new Scene(_commandQueue);
+            fillScene(_world);
 
             // Create the scene. Use a simple voxel grid for testing
             _voxelGrid = createExampleVoxelGrid(16, 10); 
@@ -164,6 +168,43 @@ namespace Raytracing.Driver
 			_commandQueue = new ComputeCommandQueue(_computeContext, device, ComputeCommandQueueFlags.None);
 		}
 
+
+        private void fillScene(Scene s)
+        {
+            Material shinyRed = new Material(Color4.Red, 0.5f);
+            Material flatRed = new Material(Color4.Red);
+            Material flatGreen = new Material(Color4.Green);
+            Material flatBlue = new Material(Color4.Blue);
+
+            // Add test light
+            s.addLight(new Vector3(0, 4, 0), Color4.White, 20.0f);
+            s.addLight(new Vector3(0, 0, 0), Color4.White, 2.0f);
+
+            // Add test data.
+
+            // Create sphere that crosses voxel bounderies
+            s.addSphere(new Vector3(3f, 0, 0), 1.0f, shinyRed);
+
+            // Create multiple spheres in the same voxel
+            s.addSphere(new Vector3(0.2f, 0.2f, 0.2f), 0.05f, shinyRed);
+            s.addSphere(new Vector3(0.2f, 0.2f, -0.2f), 0.05f, shinyRed);
+            s.addSphere(new Vector3(0.2f, -0.2f, 0.2f), 0.05f, shinyRed);
+            s.addSphere(new Vector3(0.2f, -0.2f, -0.2f), 0.05f, shinyRed);
+
+            s.addSphere(new Vector3(-0.2f, 0.2f, 0.2f), 0.05f, shinyRed);
+            s.addSphere(new Vector3(-0.2f, 0.2f, -0.2f), 0.05f, shinyRed);
+            s.addSphere(new Vector3(-0.2f, -0.2f, 0.2f), 0.05f, shinyRed);
+            s.addSphere(new Vector3(-0.2f, -0.2f, -0.2f), 0.05f, shinyRed);
+
+            // Create spheres along the major axies.
+            s.addSphere(new Vector3(1f, 0, 0), 0.25f, flatRed);
+            s.addSphere(new Vector3(0, 1f, 0), 0.25f, flatGreen);
+            s.addSphere(new Vector3(0, 0, 1f), 0.25f, flatBlue);
+
+            s.addSphere(new Vector3(0, 1.5f, 0), 0.05f, shinyRed);
+        }
+
+
 		/// <summary>
 		/// 
 		/// </summary>
@@ -220,15 +261,6 @@ namespace Raytracing.Driver
 			grid.addPointLight(new Vector3(mid,mid,mid), Color4.White, 2.0f);
 
 			return grid;
-		}
-
-		private Color4 getColor(int start, int end, int x, int y, int z)
-		{
-			float percentX = (float)(x - start) / (float)(end - start);
-			float percentY = (float)(y - start) / (float)(end - start);
-			float percentZ = (float)(z - start) / (float)(end - start);
-
-			return new Color4(percentX, percentY, percentZ, 0);
 		}
 
 		#endregion
@@ -289,12 +321,10 @@ namespace Raytracing.Driver
 			}
 
 
-			// move both cameras
+			// move the camera
 			processCameraMovement(_gridCamera, (float)e.Time, false);
 
-			// DEBUG: print the camera location
-			//System.Console.WriteLine(_gridCamera.Position);
-
+            // Exit if escape is pressed.
             if (Keyboard[Key.Escape])
                 Exit();
         }
@@ -383,8 +413,10 @@ namespace Raytracing.Driver
 			GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
 
 			// Render the scene
-			_voxelGrid.syncBuffers();
-			_gridCamera.render();
+			//_voxelGrid.syncBuffers();
+			//_gridCamera.render();
+
+            _world.render(_commandQueue, _gridCamera);
 
 			// Display the frame that was just rendered.
 			SwapBuffers();
@@ -421,7 +453,8 @@ namespace Raytracing.Driver
             // RenderFrame events (as fast as the computer can handle).
             using (Game game = new Game())
             {
-				game.Run(30.0);	// this causes two updates per draw call when draw is slow.
+				//game.Run(30.0);	// this causes two updates per draw call when draw is slow.
+                game.Run(30.0, 60.0);
             }
         }
     }
