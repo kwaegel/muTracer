@@ -70,8 +70,6 @@ namespace Raytracing.CL
 				// build the program
                 _renderProgram.Build(null, "-cl-nv-verbose", null, IntPtr.Zero);
 
-                //printBuildLog();
-
 				// create a reference a kernel function
 				_renderKernel = _renderProgram.CreateKernel("render");
 			}
@@ -79,18 +77,19 @@ namespace Raytracing.CL
 			{
                 printBuildLog();
 
-				throw e;
+                Environment.Exit(-1);
 			}
 			catch (InvalidBuildOptionsComputeException e)
 			{
                 printBuildLog();
 
-				throw e;
+                Environment.Exit(-1);
 			}
 			catch (InvalidBinaryComputeException e)
 			{
                 printBuildLog();
-				throw e;
+
+                Environment.Exit(-1);
 			}
 		}
 
@@ -132,6 +131,9 @@ namespace Raytracing.CL
             // Pass in lights
             _renderKernel.SetMemoryArgument(argi++, voxelGrid.PointLights);
             _renderKernel.SetValueArgument<int>(argi++, voxelGrid.PointLightCount);
+
+            // Pass in materials
+            _renderKernel.SetMemoryArgument(argi++, matCache.Buffer);
 
             // Add render task to the device queue.
             _commandQueue.Execute(_renderKernel, null, globalWorkSize, localWorkSize, null);

@@ -75,7 +75,7 @@
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Include="Cameras\clScripts\VoxelTraversal.cl">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <Compile Include="Math\Vector3i.cs" />
     <None Include="MuxEngineGL\Movables\Bone.cs" />

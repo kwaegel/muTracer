@@ -10,6 +10,7 @@ using Raytracing.BoundingVolumes;
 
 namespace Raytracing.Primitives
 {
+
     [StructLayout(LayoutKind.Sequential)]
 	public struct Material
 	{
@@ -60,6 +61,8 @@ namespace Raytracing.Primitives
             return !(m1 == m2);
         }
 	}
+
+
 
 	public class PointLight
 	{

@@ -43,16 +43,15 @@ transformVector(	const	float16		transform,
 }
 
 float
-raySphereIntersect(	private float4	origin, 
-					private float4	direction, 
+raySphereIntersect(	private	Ray*	ray, 
 					private float4	center, 
 					private float	radius,
 					private float4*	collisionPoint,
 					private float4* surfaceNormal)
 {
-	float4 originSubCenter = origin - center;
+	float4 originSubCenter = ray->origin - center;
 
-	float b = dot(direction, originSubCenter);
+	float b = dot(ray->direction, originSubCenter);
 	float c = dot(originSubCenter, originSubCenter) - radius * radius;
 	
 	float bSqrSubC = fma(b,b,-c);	// bSqrSUbC = b * b - c;
@@ -79,7 +78,7 @@ raySphereIntersect(	private float4	origin,
 		return HUGE_VALF;	// Error condition: ray misses sphere.
 	}
 
-	(*collisionPoint) = origin + distence * direction;
+	(*collisionPoint) = ray->origin + distence * ray->direction;
 	(*surfaceNormal) = fast_normalize( (*collisionPoint) - center );
 	return distence;
 }
@@ -89,13 +88,13 @@ raySphereIntersect(	private float4	origin,
 	no intersection is found.
 */
 float
-intersectCellContents(			float4		rayOrigin, 
-								float4		rayDirection,
+intersectCellContents(			Ray*		ray,
 						const	int			vectorsPerVoxel,
 								int			geometryBaseIndex,
 		__global	read_only	float4*		geometryArray,
 						private float4*		collisionPoint,
-						private float4*		surfaceNormal)
+						private float4*		surfaceNormal,
+								int*		materialIndex)
 {
 	float minDistence = HUGE_VALF;
 	float4 tempCP, tempSN;
@@ -110,13 +109,14 @@ intersectCellContents(			float4		rayOrigin,
 		float radius = sphere.w;
 
 		// calculate intersection distance. Returns HUGE_VALF if ray misses sphere.
-		float distence = raySphereIntersect(rayOrigin, rayDirection, center, radius, &tempCP, &tempSN);
+		float distence = raySphereIntersect(ray, center, radius, &tempCP, &tempSN);
 
 		if (distence < minDistence)
 		{
 			minDistence = distence;
 			*collisionPoint = tempCP;
 			*surfaceNormal = tempSN;
+			*materialIndex = (geometryBaseIndex+i) % 4;
 		}
 	}
 	
@@ -129,6 +129,8 @@ findNearestIntersection(
 							Ray*		ray,
 							float4*		collisionPoint,		// Output collision point and surface normal
 							float4*		surfaceNormal,		// and return the distence.
+
+							int*		materialIndex,		// Index of the material to use
 			
 	__global	read_only	image3d_t	voxelGrid,			// Voxel data
 				const		float		cellSize,
@@ -165,7 +167,7 @@ findNearestIntersection(
 	
 	// Don't draw anything if the camera is outside the grid.
 	// This prevents indexOutOfBounds exceptions during testing.
-	// TODO: change to a box intersection test and allow drawing outside the grid.
+	// TODO: change to a box intersection test to allow a camera outside the grid.
 	if (index.x < 0 || index.x >= gridWidth ||
 		index.y < 0 || index.y >= gridWidth ||
 		index.z < 0 || index.z >= gridWidth)
@@ -188,11 +190,6 @@ findNearestIntersection(
 	tDelta = copysign(tDelta, (float4)1.0f);	// ensure tDelta is positive.
 
 	// begin grid traversel
-	/*
-	 * Might want to change this to a while() loop to test the current voxel first,
-	 * before moving to the next one. I am not sure why this seems to be working in
-	 * the C# version.
-	* */
 	bool containsGeometry = false;
 	bool rayHalted = false;
 	float minDistence = HUGE_VALF;
@@ -207,7 +204,7 @@ findNearestIntersection(
 		// check for intersection with geometry in the current cell
 		int geometryIndex = (index.x * gridWidth * gridWidth + index.y * gridWidth + index.z) * vectorsPerVoxel;
 			
-		minDistence = intersectCellContents(ray->origin, ray->direction, cellData.x, geometryIndex, geometryArray, collisionPoint, surfaceNormal);
+		minDistence = intersectCellContents(ray, cellData.x, geometryIndex, geometryArray, collisionPoint, surfaceNormal, materialIndex);
 
 		// Halt ray progress if it collides with anything.
 		rayHalted = minDistence < HUGE_VALF;
@@ -244,7 +241,7 @@ findNearestIntersection(
 			// check for intersection with geometry in the current cell
 			int geometryIndex = (index.x * gridWidth * gridWidth + index.y * gridWidth + index.z) * vectorsPerVoxel;
 			
-			minDistence = intersectCellContents(ray->origin, ray->direction, cellData.x, geometryIndex, geometryArray, collisionPoint, surfaceNormal);
+			minDistence = intersectCellContents(ray, cellData.x, geometryIndex, geometryArray, collisionPoint, surfaceNormal, materialIndex);
 
 			// Halt ray progress if it collides with anything.
 			rayHalted = minDistence < HUGE_VALF;
@@ -252,7 +249,6 @@ findNearestIntersection(
 		} // End checking geometry.
 	} // End voxel traversel loop
 
-	//return minDistence;
 	return minDistence;
 }
 
@@ -302,7 +298,9 @@ __global	read_only	float4 *	geometryArray,
 
 			// Lights
 __global	read_only	float8*		pointLights,
-			const		int			pointLightCount)
+			const		int			pointLightCount,
+
+__global	read_only	Material*		materials)
 {
 	int2 coord = (int2)(get_global_id(0), get_global_id(1));
 	int2 size = get_image_dim(outputImage);
@@ -329,27 +327,30 @@ __global	read_only	float8*		pointLights,
 		Ray currentRay = rayStack[stackHeight];
 		float currentRayWeight = rayWeights[stackHeight];
 
-		float distence = findNearestIntersection(&currentRay, &collisionPoint, &surfaceNormal, voxelGrid, cellSize, geometryArray, vectorsPerVoxel);
+		int materialIndex = 1;
+		float distence = findNearestIntersection(&currentRay, &collisionPoint, &surfaceNormal, &materialIndex, voxelGrid, cellSize, geometryArray, vectorsPerVoxel);
 		
 		// If the ray has hit somthing, draw the color of that object.
 		if (distence < HUGE_VALF)
 		{
 			color = (float4)(0.0f);
 
-			// use generic material for testing
-			float4 objectColor = (float4)(0.7f, 0.0f, 0.0f, 0.0f);
-			float reflectivity = 0.25f;
-			float transparency = 0.0f;
-			float diffusion = 1.0f - reflectivity - transparency;
+			// Get the material properties.
+			Material mat = materials[materialIndex];
+			float4 objectColor = mat.color;
+			float diffusion = 1.0f - mat.reflectivity - mat.transparency;
+
+			// Calculate the cos of theta for both reflecton and refraction
+			float cosTheta = dot(currentRay.direction, surfaceNormal);
 
 			// Add reflection ray to stack
-			Ray reflectionRay;
-			float cosTheta = dot(currentRay.direction, surfaceNormal);
-			
-			rayStack[stackHeight].origin = collisionPoint - currentRay.direction * distence*0.0004f;
-			rayStack[stackHeight].direction= currentRay.direction - (2 * cosTheta * surfaceNormal);
-			rayWeights[stackHeight] = reflectivity;
-			stackHeight++;
+			if (mat.reflectivity > 0)
+			{			
+				rayStack[stackHeight].origin = collisionPoint - currentRay.direction * distence*0.0004f;
+				rayStack[stackHeight].direction= currentRay.direction - (2 * cosTheta * surfaceNormal);
+				rayWeights[stackHeight] = mat.reflectivity;
+				stackHeight++;
+			}
 
 
 			// Sum up contributions of all light sources
@@ -369,7 +370,7 @@ __global	read_only	float8*		pointLights,
 				// check for shadowing. Reuse collisionPoint and surfaceNormal as they are no longer needed.
 				Ray shadowRay = {collisionPoint, lightDirection};
 				float4 shadowCollisionPoint, shadowSurfaceNormal;
-				float shadowRayDistence = findNearestIntersection(	&shadowRay, &shadowCollisionPoint, &shadowSurfaceNormal, 
+				float shadowRayDistence = findNearestIntersection(	&shadowRay, &shadowCollisionPoint, &shadowSurfaceNormal, &materialIndex, 
 																	voxelGrid, cellSize, geometryArray, vectorsPerVoxel);
 
 				bool isInShadow = shadowRayDistence < lightDistence;
@@ -382,9 +383,13 @@ __global	read_only	float8*		pointLights,
 				lightContrib *= currentRayWeight * diffusion;
 			
 				// Add light contribution to total color.
-				// Multiply by shadow factor to ignore contributions of hidden lights.
+				// Multiply by shadow factor to ignore the contribution of hidden lights.
 				color += lightContrib * !isInShadow;
 			}
+		}
+		else
+		{
+			color += backgroundColor * currentRayWeight;
 		}
 		raysCast++;
 	}

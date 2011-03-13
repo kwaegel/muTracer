@@ -232,7 +232,7 @@ namespace Raytracing.CL
 			GL.Enable(EnableCap.Texture2D);
 			GL.BindTexture(TextureTarget.Texture2D, _renderTextureID);
 
-            // TODO: this is absurd. Need a way to write directly to the back buffer.
+            // TODO: Using quads is absurd. Need a way to write directly to the back buffer.
 			GL.Begin(BeginMode.Quads);
 
 				GL.TexCoord2(0, 0);

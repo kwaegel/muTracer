@@ -76,6 +76,7 @@ namespace Raytracing.Driver
             : base(512, 512, GraphicsMode.Default, "Raytracing tester")
         {
             VSync = VSyncMode.Off;
+            
         }
 
 		protected override void Dispose(bool manual)
@@ -165,10 +166,10 @@ namespace Raytracing.Driver
 
         private void buildScene(Scene s)
         {
-            Material shinyRed = new Material(Color4.Red, 0.5f);
-            Material flatRed = new Material(Color4.Red);
-            Material flatGreen = new Material(Color4.Green);
-            Material flatBlue = new Material(Color4.Blue);
+            Material shinyRed = new Material(new Color4(0.25f, 0,0,0), 0.20f);
+            Material flatRed = new Material(Color4.DarkRed);
+            Material flatGreen = new Material(Color4.DarkGreen);
+            Material shinyBlue = new Material(Color4.DarkBlue, 0.25f);
 
             // Add test light
             s.addLight(new Vector3(0, 4, 0), Color4.White, 20.0f);
@@ -193,7 +194,7 @@ namespace Raytracing.Driver
             // Create spheres along the major axies.
             s.addSphere(new Vector3(1f, 0, 0), 0.25f, flatRed);
             s.addSphere(new Vector3(0, 1f, 0), 0.25f, flatGreen);
-            s.addSphere(new Vector3(0, 0, 1f), 0.25f, flatBlue);
+            s.addSphere(new Vector3(0, 0, 1f), 0.25f, shinyBlue);
 
             s.addSphere(new Vector3(0, 1.5f, 0), 0.05f, shinyRed);
 
