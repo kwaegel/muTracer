@@ -279,7 +279,8 @@ __global	read_only	Material*		materials)
 			if (mat.transparency > 0)
 			{
 				// if we are moving from a dense medium to a less dense one, reverse the surface normal
-				if (currentRay.currentN > 1)
+				//if (currentRay.currentN > 1)
+				if (cosTheta > 0)	// If we intersected the inside of an edge, flip the surface normal.
 				{
 					surfaceNormal = -surfaceNormal;
 					// cosTheta is based on the surface normal and must also be negated
