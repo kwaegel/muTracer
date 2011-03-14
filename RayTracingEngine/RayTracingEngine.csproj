@@ -71,9 +71,6 @@
     <Compile Include="Cameras\GridCamera.cs" />
     <Compile Include="Math\Vector4i.cs" />
     <Compile Include="Primitives\PrimitiveStructs.cs" />
-    <None Include="Cameras\clScripts\clCameraCode.cl">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
     <None Include="Cameras\clScripts\VoxelTraversal.cl">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>

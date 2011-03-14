@@ -7,6 +7,7 @@ typedef struct{
 typedef struct {
 	float4 origin;
 	float4 direction;
+	float currentN;	// The index of refraction of the material the ray is currently in.
 } Ray;
 
 typedef struct {
@@ -276,6 +277,8 @@ unprojectPrimaryRay(	int2		screenCoords,
 
 	ray.direction = normalize(ray.origin - cameraPosition);
 
+	ray.currentN = 1.0f;	// Index of refraction of vacuum.
+
 	return ray;
 }
 
@@ -316,8 +319,8 @@ __global	read_only	Material*		materials)
 	rayWeights[0] = 1.0f;
 	stackHeight++;
 
-	// set the default background color
-	float4 color = backgroundColor;
+	// Vector to hold the final output color.
+	float4 color;
 	
 	float4 collisionPoint, surfaceNormal;
 	
@@ -327,7 +330,7 @@ __global	read_only	Material*		materials)
 		Ray currentRay = rayStack[stackHeight];
 		float currentRayWeight = rayWeights[stackHeight];
 
-		int materialIndex = 1;
+		int materialIndex;
 		float distence = findNearestIntersection(&currentRay, &collisionPoint, &surfaceNormal, &materialIndex, voxelGrid, cellSize, geometryArray, vectorsPerVoxel);
 		
 		// If the ray has hit somthing, draw the color of that object.
@@ -341,14 +344,43 @@ __global	read_only	Material*		materials)
 			float diffusion = 1.0f - mat.reflectivity - mat.transparency;
 
 			// Calculate the cos of theta for both reflecton and refraction
+			// TODO: This might need to be dot(normal, -rayDir) for refraction...
 			float cosTheta = dot(currentRay.direction, surfaceNormal);
+
 
 			// Add reflection ray to stack
 			if (mat.reflectivity > 0)
 			{			
 				rayStack[stackHeight].origin = collisionPoint - currentRay.direction * distence*0.0004f;
 				rayStack[stackHeight].direction= currentRay.direction - (2 * cosTheta * surfaceNormal);
+				rayStack[stackHeight].currentN = currentRay.currentN;
 				rayWeights[stackHeight] = mat.reflectivity;
+				stackHeight++;
+			}
+
+
+			// Add refracted ray to stack;
+			// NOTE: based on C# code from SimpleScene.cs (from initial import, rev 087a9e15)
+			if (mat.transparency > 0)
+			{
+				// if we are moving from a dense medium to a less dense one, reverse the surface normal
+				if (currentRay.currentN > 1)
+				{
+					surfaceNormal = -surfaceNormal;
+					// cosTheta is based on the surface normal and must also be negated
+					cosTheta = -cosTheta;
+				}
+
+				float n = currentRay.currentN / mat.refractiveIndex;
+				float sinThetaSquared = n * n * (1 - cosTheta * cosTheta);
+
+				float4 transDir = n * currentRay.direction - ( n * cosTheta + native_sqrt(1-sinThetaSquared) )*surfaceNormal;
+				
+				// Create refracted ray to stack
+				rayStack[stackHeight].origin = collisionPoint + currentRay.direction * distence*0.0004f;
+				rayStack[stackHeight].direction= transDir;
+				rayStack[stackHeight].currentN = mat.refractiveIndex;
+				rayWeights[stackHeight] = mat.transparency;
 				stackHeight++;
 			}
 
@@ -389,6 +421,7 @@ __global	read_only	Material*		materials)
 		}
 		else
 		{
+			// if the ray hits nothing, add in the background color.
 			color += backgroundColor * currentRayWeight;
 		}
 		raysCast++;

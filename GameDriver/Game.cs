@@ -166,7 +166,7 @@ namespace Raytracing.Driver
 
         private void buildScene(Scene s)
         {
-            Material shinyRed = new Material(new Color4(0.25f, 0,0,0), 0.20f);
+            Material shinyRed = new Material(new Color4(0.25f, 0,0,0), 0.0f, 0.5f, 1.2f);
             Material flatRed = new Material(Color4.DarkRed);
             Material flatGreen = new Material(Color4.DarkGreen);
             Material shinyBlue = new Material(Color4.DarkBlue, 0.25f);
@@ -402,7 +402,6 @@ namespace Raytracing.Driver
             // RenderFrame events (as fast as the computer can handle).
             using (Game game = new Game())
             {
-				//game.Run(30.0);	// this causes two updates per draw call when draw is slow.
                 game.Run(30.0, 60.0);
             }
         }
