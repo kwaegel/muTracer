@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 using Cloo;
 
@@ -44,8 +45,10 @@ namespace Raytracing.SceneStructures
 
         public int getMaterialIndex(Material material)
         {
-            int materialIndex = _nextOpening;
+            Debug.Assert(material.Reflectivity >= 0 && material.Reflectivity <= 1.0f);
+            Debug.Assert(material.Transparency >= 0 && material.Transparency <= 1.0f);
 
+            int materialIndex = _nextOpening;
 
             for (int i=0; i< _nextOpening; i++)
             {
