@@ -20,6 +20,7 @@ namespace Raytracing.CL
 
 	public class GridCamera : ClTextureCamera
 	{
+        private readonly string[] _sourcePaths = { "gpuScripts/clDataStructs.cl", "gpuScripts/clMathHelper.cl", "gpuScripts/clIntersectionTests.cl", "gpuScripts/VoxelTraversal.cl" };
 
 		[StructLayout(LayoutKind.Sequential)]
 		public struct Pixel
@@ -58,13 +59,25 @@ namespace Raytracing.CL
 
 		protected override void buildOpenCLProgram()
 		{
-			// Load the OpenCL clSource code
-			StreamReader sourceReader = new StreamReader("gpuScripts/VoxelTraversal.cl");
-			String clSource = sourceReader.ReadToEnd();
+            String[] sourceArray = new String[_sourcePaths.Length];
+            try
+            {
+                
+                for (int i = 0; i < _sourcePaths.Length; i++)
+                {
+                    StreamReader sourceReader = new StreamReader(_sourcePaths[i]);
+                    sourceArray[i] = sourceReader.ReadToEnd();
+                }
+            }
+            catch (FileNotFoundException e)
+            {
+                System.Diagnostics.Trace.Write("Can't find: " + e.FileName + "\n");
+                Environment.Exit(-1);
+            }
 
 			// Build and compile the OpenCL program
 			_renderKernel = null;
-			_renderProgram = new ComputeProgram(_commandQueue.Context, clSource);
+			_renderProgram = new ComputeProgram(_commandQueue.Context, sourceArray);
 			try
 			{
 				// build the program

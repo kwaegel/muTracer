@@ -71,6 +71,15 @@
     <Compile Include="Cameras\GridCamera.cs" />
     <Compile Include="Math\Vector4i.cs" />
     <Compile Include="Primitives\PrimitiveStructs.cs" />
+    <None Include="gpuScripts\clDataStructs.cl">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="gpuScripts\clIntersectionTests.cl">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="gpuScripts\clMathHelper.cl">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Include="gpuScripts\VoxelTraversal.cl">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
