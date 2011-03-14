@@ -11,7 +11,7 @@ raySphereIntersect(	private	Ray*	ray,
 	float b = dot(ray->direction, originSubCenter);
 	float c = dot(originSubCenter, originSubCenter) - radius * radius;
 	
-	float bSqrSubC = fma(b,b,-c);	// bSqrSUbC = b * b - c;
+	float bSqrSubC = fma(b,b,-c);	// bSqrSubC = b * b - c;
 	// if (b*b-c) < 0, ray misses sphere
 	if (bSqrSubC < 0)
 		return HUGE_VALF;
@@ -21,21 +21,22 @@ raySphereIntersect(	private	Ray*	ray,
 	float tPos = -b + sqrtBC;
 	float tNeg = -b - sqrtBC;
 
-	float distence = HUGE_VALF;
-	if (tPos < tNeg && tPos > 0)
-	{
-		distence = tPos;
-	}
-	else if (tNeg > 0)
-	{
-		distence  = tNeg;
-	}
+	float distance = HUGE_VALF;
+
+	if (tPos > 0 && tNeg > 0)
+    {
+        distance = (tPos < tNeg ? tPos : tNeg);
+    }
+    else if (tPos > 0 || tNeg > 0)
+    {
+        distance = (tPos > 0 ? tPos : tNeg);
+    }
 	else
 	{
-		return HUGE_VALF;	// Error condition: ray misses sphere.
+		return HUGE_VALF;
 	}
 
-	(*collisionPoint) = ray->origin + distence * ray->direction;
+	(*collisionPoint) = ray->origin + distance * ray->direction;
 	(*surfaceNormal) = fast_normalize( (*collisionPoint) - center );
-	return distence;
+	return distance;
 }

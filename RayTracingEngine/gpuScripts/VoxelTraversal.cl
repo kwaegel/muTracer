@@ -315,7 +315,7 @@ __global	read_only	Material*		materials)
 				float shade = clamp(dot(surfaceNormal, lightDirection), 0.0f, 1.0f);	// Clamped cosine shading
 
 				// check for shadowing. Reuse collisionPoint and surfaceNormal as they are no longer needed.
-				Ray shadowRay = {collisionPoint, lightDirection};
+				Ray shadowRay = {collisionPoint - currentRay.direction * distence*0.0004f, lightDirection};
 				float4 shadowCollisionPoint, shadowSurfaceNormal;
 				float shadowRayDistence = findNearestIntersection(	&shadowRay, &shadowCollisionPoint, &shadowSurfaceNormal, &materialIndex, 
 																	voxelGrid, cellSize, geometryArray, vectorsPerVoxel);
