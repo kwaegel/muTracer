@@ -324,7 +324,7 @@ __global	read_only	Material*		materials)
 	
 	float4 collisionPoint, surfaceNormal;
 	
-	while (stackHeight > 0 && raysCast < 3)
+	while (stackHeight > 0 && raysCast < 4)
 	{
 		stackHeight--;
 		Ray currentRay = rayStack[stackHeight];

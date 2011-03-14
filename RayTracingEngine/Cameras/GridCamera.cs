@@ -59,7 +59,7 @@ namespace Raytracing.CL
 		protected override void buildOpenCLProgram()
 		{
 			// Load the OpenCL clSource code
-			StreamReader sourceReader = new StreamReader("Cameras/clScripts/VoxelTraversal.cl");
+			StreamReader sourceReader = new StreamReader("gpuScripts/VoxelTraversal.cl");
 			String clSource = sourceReader.ReadToEnd();
 
 			// Build and compile the OpenCL program

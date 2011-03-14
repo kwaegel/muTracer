@@ -71,7 +71,7 @@
     <Compile Include="Cameras\GridCamera.cs" />
     <Compile Include="Math\Vector4i.cs" />
     <Compile Include="Primitives\PrimitiveStructs.cs" />
-    <None Include="Cameras\clScripts\VoxelTraversal.cl">
+    <None Include="gpuScripts\VoxelTraversal.cl">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <Compile Include="Math\Vector3i.cs" />
