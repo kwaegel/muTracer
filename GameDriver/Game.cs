@@ -41,7 +41,7 @@ namespace Raytracing.Driver
 		public static readonly Vector3 Up = Vector3.UnitY;
 		public static readonly Vector3 Down = -Vector3.UnitY;
 
-		private static float CameraMovementSpeed = 0.05f;	// in units
+		private static float CameraMovementSpeed = 0.025f;	// in units
 		private static float CameraRotationSpeed = 2.0f;	// in degrees
 
 		public static readonly Color4 DefaultBackgroundColor = Color4.DarkBlue;
@@ -166,10 +166,10 @@ namespace Raytracing.Driver
 
         private void buildScene(Scene s)
         {
-            Material shinyRed = new Material(new Color4(0.25f, 0,0,0), 0.0f, 0.5f, 1.2f);
-            Material flatRed = new Material(Color4.DarkRed);
-            Material flatGreen = new Material(Color4.DarkGreen);
-            Material shinyBlue = new Material(Color4.DarkBlue, 0.25f);
+            Material redGlass = new Material(Color4.Gray, 0, 0.97f, 1.52f);
+            Material shinyRed = new Material(Color4.DarkRed, 0.25f);
+            Material shinyGreen = new Material(Color4.DarkGreen, 0.50f);
+            Material shinyBlue = new Material(Color4.DarkBlue, 0.75f);
 
             // Add test light
             s.addLight(new Vector3(0, 4, 0), Color4.White, 20.0f);
@@ -178,28 +178,28 @@ namespace Raytracing.Driver
             // Add test data.
 
             // Create sphere that crosses voxel bounderies
-            s.addSphere(new Vector3(3f, 0, 0), 1.0f, shinyRed);
+            s.addSphere(new Vector3(3f, 0, 0), 1.0f, redGlass);
 
             // Create multiple spheres in the same voxel
-            s.addSphere(new Vector3(0.2f, 0.2f, 0.2f), 0.05f, shinyRed);
-            s.addSphere(new Vector3(0.2f, 0.2f, -0.2f), 0.05f, shinyRed);
-            s.addSphere(new Vector3(0.2f, -0.2f, 0.2f), 0.05f, shinyRed);
-            s.addSphere(new Vector3(0.2f, -0.2f, -0.2f), 0.05f, shinyRed);
+            s.addSphere(new Vector3(0.2f, 0.2f, 0.2f), 0.05f, redGlass);
+            s.addSphere(new Vector3(0.2f, 0.2f, -0.2f), 0.05f, redGlass);
+            s.addSphere(new Vector3(0.2f, -0.2f, 0.2f), 0.05f, redGlass);
+            s.addSphere(new Vector3(0.2f, -0.2f, -0.2f), 0.05f, redGlass);
 
-            s.addSphere(new Vector3(-0.2f, 0.2f, 0.2f), 0.05f, shinyRed);
-            s.addSphere(new Vector3(-0.2f, 0.2f, -0.2f), 0.05f, shinyRed);
-            s.addSphere(new Vector3(-0.2f, -0.2f, 0.2f), 0.05f, shinyRed);
-            s.addSphere(new Vector3(-0.2f, -0.2f, -0.2f), 0.05f, shinyRed);
+            s.addSphere(new Vector3(-0.2f, 0.2f, 0.2f), 0.05f, redGlass);
+            s.addSphere(new Vector3(-0.2f, 0.2f, -0.2f), 0.05f, redGlass);
+            s.addSphere(new Vector3(-0.2f, -0.2f, 0.2f), 0.05f, redGlass);
+            s.addSphere(new Vector3(-0.2f, -0.2f, -0.2f), 0.05f, redGlass);
 
             // Create spheres along the major axies.
-            s.addSphere(new Vector3(1f, 0, 0), 0.25f, flatRed);
-            s.addSphere(new Vector3(0, 1f, 0), 0.25f, flatGreen);
+            s.addSphere(new Vector3(1f, 0, 0), 0.25f, shinyRed);
+            s.addSphere(new Vector3(0, 1f, 0), 0.25f, shinyGreen);
             s.addSphere(new Vector3(0, 0, 1f), 0.25f, shinyBlue);
 
-            s.addSphere(new Vector3(0, 1.5f, 0), 0.05f, shinyRed);
+            s.addSphere(new Vector3(0, 1.5f, 0), 0.05f, redGlass);
 
             // Create a large number of spheres to stress the memory system.
-            int min = 3;
+            int min = 2;
             int max = 3;
             for (int x = min; x <= max; x++)
             {
@@ -207,7 +207,7 @@ namespace Raytracing.Driver
                 {
                     for (int z = min; z <= max; z++)
                     {
-                        s.addSphere(new Vector3(x, y, z), 0.1f, shinyRed);
+                        s.addSphere(new Vector3(x, y, z), 0.1f, redGlass);
                     }
                 }
             }
