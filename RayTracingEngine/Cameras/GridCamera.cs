@@ -86,19 +86,19 @@ namespace Raytracing.CL
 				// create a reference a kernel function
 				_renderKernel = _renderProgram.CreateKernel("render");
 			}
-			catch (BuildProgramFailureComputeException e)
+			catch (BuildProgramFailureComputeException)
 			{
                 printBuildLog();
 
                 Environment.Exit(-1);
 			}
-			catch (InvalidBuildOptionsComputeException e)
+			catch (InvalidBuildOptionsComputeException)
 			{
                 printBuildLog();
 
                 Environment.Exit(-1);
 			}
-			catch (InvalidBinaryComputeException e)
+			catch (InvalidBinaryComputeException)
 			{
                 printBuildLog();
 
