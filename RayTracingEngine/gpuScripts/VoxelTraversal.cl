@@ -7,7 +7,7 @@ float
 intersectCellContents(			Ray*		ray,
 						const	int			vectorsPerVoxel,
 								int			geometryBaseIndex,
-		__global	read_only	float4*		geometryArray,
+		__global	read_only	Sphere*		geometryArray,
 						private float4*		collisionPoint,
 						private float4*		surfaceNormal,
 								int*		materialIndex)
@@ -17,22 +17,22 @@ intersectCellContents(			Ray*		ray,
 	for (int i=0; i<vectorsPerVoxel; i++)
 	{
 		// Get the sphere data.
-		float4 sphere = geometryArray[geometryBaseIndex+i];
+		Sphere sphere = geometryArray[geometryBaseIndex+i];
 
 		// Unpack sphere data.
-		float4 center = sphere;
-		center.w=1;
-		float radius = sphere.w;
+		//float4 center = sphere;
+		//center.w=1;
+		//float radius = sphere.w;
 
 		// calculate intersection distance. Returns HUGE_VALF if ray misses sphere.
-		float distence = raySphereIntersect(ray, center, radius, &tempCP, &tempSN);
+		float distence = raySphereIntersect(ray, sphere, &tempCP, &tempSN);
 
 		if (distence < minDistence)
 		{
 			minDistence = distence;
 			*collisionPoint = tempCP;
 			*surfaceNormal = tempSN;
-			*materialIndex = (geometryBaseIndex+i) % 4;
+			*materialIndex = sphere.material;//(geometryBaseIndex+i) % 4;
 		}
 	}
 	
@@ -51,7 +51,7 @@ findNearestIntersection(
 	__global	read_only	image3d_t	voxelGrid,			// Voxel data
 				const		float		cellSize,
 			
-	__global	read_only	float4*		geometryArray,		// Geometry data
+	__global	read_only	Sphere*		geometryArray,		// Geometry data
 				const		int			vectorsPerVoxel)
 {
 	//Natural coordinates, clamp to zeros, don't interpolate.
@@ -211,14 +211,14 @@ render (	const		float4		cameraPosition,
 			const		float		cellSize,
 
 			// Geometry
-__global	read_only	float4 *	geometryArray,
+__global	read_only	Sphere*		geometryArray,
 			const		int			vectorsPerVoxel,
 
 			// Lights
 __global	read_only	float8*		pointLights,
 			const		int			pointLightCount,
 
-__global	read_only	Material*		materials)
+__global	read_only	Material*	materials)
 {
 	int2 coord = (int2)(get_global_id(0), get_global_id(1));
 	int2 size = get_image_dim(outputImage);
