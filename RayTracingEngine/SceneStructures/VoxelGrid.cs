@@ -7,6 +7,7 @@ using OpenTK.Graphics;
 using Cloo;
 
 using Raytracing.Math;
+using Raytracing.Primitives;
 
 namespace Raytracing.SceneStructures
 {
@@ -38,10 +39,10 @@ namespace Raytracing.SceneStructures
 		internal ComputeImage3D _grid;
 
 		// Primitive buffer
-		private Vector4[] _geometryArray;
+		private SphereStruct[] _geometryArray;
 		public int VectorsPerVoxel { get; private set; }
 
-        internal ComputeBuffer<Vector4> Geometry { get; private set; }
+        internal ComputeBuffer<SphereStruct> Geometry { get; private set; }
 
 		// Light buffer
 		private static int InitialPointLightArraySize = 4;
@@ -110,8 +111,8 @@ namespace Raytracing.SceneStructures
 
 			// Create array to hold primitives.
 			VectorsPerVoxel = 16;	// Low value for testing;
-			_geometryArray = new Vector4[cellCount * VectorsPerVoxel];
-            Geometry = new ComputeBuffer<Vector4>(_commandQueue.Context, ComputeMemoryFlags.ReadWrite | ComputeMemoryFlags.UseHostPointer, _geometryArray);
+			_geometryArray = new SphereStruct[cellCount * VectorsPerVoxel];
+            Geometry = new ComputeBuffer<SphereStruct>(_commandQueue.Context, ComputeMemoryFlags.ReadWrite | ComputeMemoryFlags.UseHostPointer, _geometryArray);
 
 			// Create array for lights
 			_pointLightArray = new SimplePointLight[InitialPointLightArraySize];
@@ -128,49 +129,12 @@ namespace Raytracing.SceneStructures
             _pointLightBuffer.Dispose();
 		}
 
-
-		public void addSphere(Vector3 center, float radius, Color4 color)
-		{
-			// Pack sphere into a Vector4
-			Vector4 packedSphere = new Vector4(center, radius);
-
-			// Translate to grid space.
-			Vector3 gridCenter = center - _gridOrigin;
-
-			int minX = (int)((gridCenter.X - radius) / CellSize);
-			int minY = (int)((gridCenter.Y - radius) / CellSize);
-			int minZ = (int)((gridCenter.Z - radius) / CellSize);
-			int maxX = (int)((gridCenter.X + radius) / CellSize);
-			int maxY = (int)((gridCenter.Y + radius) / CellSize);
-			int maxZ = (int)((gridCenter.Z + radius) / CellSize);
-
-			int cellCount = 0;
-
-			// Add a reference to model to every cell the bounding box intesects
-			for (int x = minX; x <= maxX; x++)
-			{
-				for (int y = minY; y <= maxY; y++)
-				{
-					for (int z = minZ; z <= maxZ; z++)
-					{
-						Voxel voxelData = this[x, y, z];
-
-						int geometryIndex = (x * GridResolution * GridResolution + y * GridResolution + z) * VectorsPerVoxel;
-						_geometryArray[geometryIndex + voxelData.PrimitiveCount] = packedSphere;
-
-						voxelData.PrimitiveCount += 1;
-						this[x, y, z] = voxelData;
-						cellCount++;
-					}
-				}
-			}
-		}
-
-
         public void addSphere(Vector3 center, float radius, int materialIndex)
         {
             // Pack sphere into a Vector4
-            Vector4 packedSphere = new Vector4(center, radius);
+            //Vector4 packedSphere = new Vector4(center, radius);
+
+            SphereStruct packedSphere = new SphereStruct(center, radius, materialIndex);
 
             // Translate to grid space.
             Vector3 gridCenter = center - _gridOrigin;
@@ -235,7 +199,7 @@ namespace Raytracing.SceneStructures
 
 			// Copy pinned geometry data to device memory.
             // NOTE: using the unblocking version creates hundreds of ComputeEvents.
-			_commandQueue.WriteToBuffer<Vector4>(_geometryArray, Geometry, true, null);
+			_commandQueue.WriteToBuffer<SphereStruct>(_geometryArray, Geometry, true, null);
 
 			// Copy pinned light data to device memory.
 			_commandQueue.WriteToBuffer<SimplePointLight>(_pointLightArray, _pointLightBuffer, true, null);

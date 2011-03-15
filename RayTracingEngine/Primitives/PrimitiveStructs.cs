@@ -6,18 +6,22 @@ using OpenTK.Graphics;
 
 namespace Raytracing.Primitives
 {
-	[StructLayout(LayoutKind.Sequential, Pack=16)]
+	[StructLayout(LayoutKind.Sequential)]
 	unsafe struct SphereStruct
 	{
-		public Vector3 Center;
-		public float Radius;	// In OpenCL, get the radius using Center.w
-		public Color4 Color;
+		public Vector4 Center;
+		public float Radius;
+        public int MaterialIndex;
+        int pad1;
+        int pad2;
 
-		public SphereStruct(Vector3 center, float radius, Color4 color)
+		public SphereStruct(Vector3 center, float radius, int materialIndex)
 		{
-			Center = center;
+			Center = new Vector4(center, 1.0f);
 			Radius = radius;
-			Color = color;
+			MaterialIndex = materialIndex;
+            pad1 = 0;
+            pad2 = 0;
 		}
 	};
 

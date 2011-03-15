@@ -1,15 +1,16 @@
 ﻿
 float
 raySphereIntersect(	private	Ray*	ray, 
-					private float4	center, 
-					private float	radius,
+					private Sphere	sphere,
+					//private float4	center, 
+					//private float	radius,
 					private float4*	collisionPoint,
 					private float4* surfaceNormal)
 {
-	float4 originSubCenter = ray->origin - center;
+	float4 originSubCenter = ray->origin - sphere.center;
 
 	float b = dot(ray->direction, originSubCenter);
-	float c = dot(originSubCenter, originSubCenter) - radius * radius;
+	float c = dot(originSubCenter, originSubCenter) - sphere.radius * sphere.radius;
 	
 	float bSqrSubC = fma(b,b,-c);	// bSqrSubC = b * b - c;
 	// if (b*b-c) < 0, ray misses sphere
@@ -37,6 +38,6 @@ raySphereIntersect(	private	Ray*	ray,
 	}
 
 	(*collisionPoint) = ray->origin + distance * ray->direction;
-	(*surfaceNormal) = fast_normalize( (*collisionPoint) - center );
+	(*surfaceNormal) = fast_normalize( (*collisionPoint) - sphere.center );
 	return distance;
 }
