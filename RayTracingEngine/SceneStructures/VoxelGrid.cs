@@ -130,18 +130,18 @@ namespace Raytracing.SceneStructures
             _pointLightBuffer.Dispose();
 		}
 
-		public void addTriangle(Vector3 p0, Vector3 p1, Vector3 p2, int materialIndex)
+		public void addTriangle(Vector3 point0, Vector3 point1, Vector3 point2, int materialIndex)
 		{
 			// Pack triangle
-			Triangle tri = new Triangle(p0, p1, p2, materialIndex);
+			Triangle tri = new Triangle(point0, point1, point2, materialIndex);
 
-			_geometryArray[numTris++] = tri;
+			//_geometryArray[numTris++] = tri;
 
-			/*
+			
 			// Translate to grid space.
-			p0 -= _gridOrigin;
-			p1 -= _gridOrigin;
-			p2 -= _gridOrigin;
+			Vector3 p0 = point0 - _gridOrigin;
+			Vector3 p1 = point1 - _gridOrigin;
+			Vector3 p2 = point2 - _gridOrigin;
 
 			int minX = (int)( System.Math.Min(p0.X, System.Math.Min(p1.X, p2.X))  / CellSize);
 			int minY = (int)(System.Math.Min(p0.Y, System.Math.Min(p1.Y, p2.Y)) / CellSize);
@@ -168,12 +168,10 @@ namespace Raytracing.SceneStructures
 						voxelData.PrimitiveCount += 1;
 						this[x, y, z] = voxelData;
 						cellCount++;
-
-						//System.Diagnostics.Debug.WriteLine("["+x+","+y+","+z+"]=+1");
 					}
 				}
 			}
-			*/
+			
 			
 		}
 		

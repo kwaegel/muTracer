@@ -39,6 +39,11 @@ namespace Raytracing.SceneStructures
             _materialCache.Dispose();
         }
 
+		public void addTriangle(Vector3[] vertices, Material mat)
+		{
+			addTriangle(vertices[0], vertices[1], vertices[2], mat);
+		}
+
 		public void addTriangle(Vector3 p0, Vector3 p1, Vector3 p2, Material mat)
 		{
 			int materialIndex = _materialCache.getMaterialIndex(mat);

@@ -73,7 +73,7 @@ namespace Raytracing.Driver
 
 		/// <summary>Creates a window with the specified title.</summary>
         public Game()
-            : base(512, 512, GraphicsMode.Default, "Raytracing tester")
+            : base(1024, 1024, GraphicsMode.Default, "Raytracing tester")
         {
             VSync = VSyncMode.Off;
             
@@ -123,7 +123,6 @@ namespace Raytracing.Driver
 				_gridCamera.VerticalFieldOfView = vFOV;
 				_gridCamera.NearPlane = nearClip;
 				_gridCamera.computeProjection();
-				//_gridCamera.rotateWorldY(-90.0f);
 			}
 			catch (Exception)
 			{
@@ -168,56 +167,54 @@ namespace Raytracing.Driver
         {
 			Ray r = new Ray(new Vector3(0.1f,0.1f,3.0f), new Vector3(0,0,-1.0f));
 
-			
+			/*
 			Triangle test = new Triangle(	new Vector3(0,0,0f),
 											new Vector3(0,1,0),
 											new Vector3(1,0,0),
 											0);
 
 			float testDist = test.rayTriIntersect(r);
-			
+			*/
 
 			s.BackgroundColor = Color4.CornflowerBlue;
 
             Material redGlass = new Material(Color4.Gray, 0, 0.97f, 1.52f);
             Material shinyRed = new Material(Color4.DarkRed, 0.25f);
-            Material shinyGreen = new Material(Color4.DarkGreen, 0.50f);
+            Material shinyGreen = new Material(Color4.DarkGreen, 0.30f);
             Material shinyBlue = new Material(Color4.DarkBlue, 0.75f);
 
 			Material matteGray = new Material(Color4.Gray);
 
             // Add test light
-            s.addLight(new Vector3(0, 4, 1), Color4.White, 20.0f);
-            //s.addLight(new Vector3(0, 0, 0), Color4.White, 2.0f);
+            s.addLight(new Vector3(0, 3, 1), Color4.White, 20.0f);
+            s.addLight(new Vector3(0, 0, 0), Color4.White, 2.0f);
 
             // Add test data.
-			s.addTriangle(	new Vector3(0,0,0f),
-							new Vector3(0,1,0),
-							new Vector3(1,0,0),
+			s.addTriangle(	new Vector3(0, 1, 0.6f),
+							new Vector3(1, 1, 0.6f),
+							new Vector3(0, 2, 0.5f),
 							shinyRed);
 
-			//// Create sphere that crosses voxel bounderies
-			//s.addSphere(new Vector3(3f, 0, 0), 1.0f, redGlass);
+			bool nextVertexTop = false;
+			Vector3[] vertices = new Vector3[3];
+			int numVertices = 0;
+			for(float x=-4f; x <= 4f; x+=0.7f)
+			{
+				float z = (float)System.Math.Sin(x*2.0f)*0.2f;
+				float y = (nextVertexTop) ? 1.0f : 0f;
 
-			//// Create multiple spheres in the same voxel
-			//s.addSphere(new Vector3(0.2f, 0.2f, 0.2f), 0.05f, shinyRed);
-			//s.addSphere(new Vector3(0.2f, 0.2f, -0.2f), 0.05f, shinyGreen);
-			//s.addSphere(new Vector3(0.2f, -0.2f, 0.2f), 0.05f, shinyBlue);
-			//s.addSphere(new Vector3(0.2f, -0.2f, -0.2f), 0.05f, matteGray);
+				Vector3 newVertex = new Vector3(x,y,z);
+				vertices[numVertices++ % 3] = newVertex;
 
-			//s.addSphere(new Vector3(-0.2f, 0.2f, 0.2f), 0.05f, redGlass);
-			//s.addSphere(new Vector3(-0.2f, 0.2f, -0.2f), 0.05f, redGlass);
-			//s.addSphere(new Vector3(-0.2f, -0.2f, 0.2f), 0.05f, redGlass);
-			//s.addSphere(new Vector3(-0.2f, -0.2f, -0.2f), 0.05f, redGlass);
+				if(numVertices >= 3)
+				{
+					s.addTriangle(vertices, shinyGreen);
+				}
 
-			//// Create spheres along the major axies.
-			//s.addSphere(new Vector3(1f, 0, 0), 0.25f, shinyRed);
-			//s.addSphere(new Vector3(0, 1f, 0), 0.25f, shinyGreen);
-			//s.addSphere(new Vector3(0, 0, 1f), 0.25f, shinyBlue);
+				nextVertexTop = !nextVertexTop;
+			}
 
-			//s.addSphere(new Vector3(0, 1.5f, 0), 0.05f, redGlass);
-
-			//// Create a large number of spheres to stress the memory system.
+			//// Create a large number of triangles to stress the memory system.
 			//int min = 2;
 			//int max = 3;
 			//for (int x = min; x <= max; x++)

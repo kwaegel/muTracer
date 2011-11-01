@@ -5,8 +5,7 @@ rayTriIntersect(	private Ray*		ray,
 					private float*		u,
 					private float*		v,
 					private float4*		collisionPoint,
-					private float4*		surfaceNormal,
-							float4*		debug)
+					private float4*		surfaceNormal)
 {
 	float EPSILON = 10e-5;	// epsilon
 

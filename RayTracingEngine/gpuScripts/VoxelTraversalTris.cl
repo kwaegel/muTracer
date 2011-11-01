@@ -23,10 +23,8 @@ intersectCellContents(			Ray*		ray,
 		// Unpack triangle data.
 		//int materialIndex = as_int(tri.p2.w);
 
-		float4 debug;
-
 		// calculate intersection distance. Returns HUGE_VALF if ray misses triangle.
-		float distence = rayTriIntersect(ray, tri, &tempU, &tempV, &tempCP, &tempSN, &debug);
+		float distence = rayTriIntersect(ray, tri, &tempU, &tempV, &tempCP, &tempSN);
 
 		if (distence < minDistence)
 		{
@@ -47,8 +45,7 @@ findNearestIntersectionSimple(	Ray*		ray,
 		__global	read_only	Triangle*	geometryArray,
 						private float4*		collisionPoint,
 						private float4*		surfaceNormal,
-								int*		materialIndex,
-								float4*		debug)
+								int*		materialIndex)
 {
 	float minDistence = HUGE_VALF;
 	float4 tempCP, tempSN;
@@ -59,7 +56,7 @@ findNearestIntersectionSimple(	Ray*		ray,
 		Triangle tri = geometryArray[i];
 
 		// calculate intersection distance. Returns HUGE_VALF if ray misses triangle.
-		float distence = rayTriIntersect(ray, tri, &tempU, &tempV, &tempCP, &tempSN, debug);
+		float distence = rayTriIntersect(ray, tri, &tempU, &tempV, &tempCP, &tempSN);
 
 		if (distence < minDistence)
 		{
@@ -69,8 +66,6 @@ findNearestIntersectionSimple(	Ray*		ray,
 			*materialIndex = as_int(tri.p2.w);
 		}
 	}
-
-	//*debug = ray->direction;
 	
 	return minDistence;
 }
@@ -153,20 +148,13 @@ findNearestIntersection(
 
 	if (containsGeometry)
 	{
-		// DEBUGGING
-		minDistence = (float)(cellData.x/255.0f);
-		*collisionPoint = (float4)( ray->origin + minDistence * ray->direction);
-		*surfaceNormal = (float4)( fast_normalize((float4)(0.5f,0.5f,0,0)) );
-		rayHalted = true;
-
-
 		// check for intersection with geometry in the current cell
-		//int geometryIndex = (index.x * gridWidth * gridWidth + index.y * gridWidth + index.z) * vectorsPerVoxel;
+		int geometryIndex = (index.x * gridWidth * gridWidth + index.y * gridWidth + index.z) * vectorsPerVoxel;
 			
-		//minDistence = intersectCellContents(ray, cellData.x, geometryIndex, geometryArray, collisionPoint, surfaceNormal, materialIndex);
+		minDistence = intersectCellContents(ray, cellData.x, geometryIndex, geometryArray, collisionPoint, surfaceNormal, materialIndex);
 
 		// Halt ray progress if it collides with anything.
-		//rayHalted = minDistence < HUGE_VALF;
+		rayHalted = minDistence < HUGE_VALF;
 
 	} // End checking geometry.
 	
@@ -199,12 +187,12 @@ findNearestIntersection(
 		{
 
 			// check for intersection with geometry in the current cell
-			//int geometryIndex = (index.x * gridWidth * gridWidth + index.y * gridWidth + index.z) * vectorsPerVoxel;
+			int geometryIndex = (index.x * gridWidth * gridWidth + index.y * gridWidth + index.z) * vectorsPerVoxel;
 			
-			//minDistence = intersectCellContents(ray, cellData.x, geometryIndex, geometryArray, collisionPoint, surfaceNormal, materialIndex);
+			minDistence = intersectCellContents(ray, cellData.x, geometryIndex, geometryArray, collisionPoint, surfaceNormal, materialIndex);
 
 			// Halt ray progress if it collides with anything.
-			//rayHalted = minDistence < HUGE_VALF;
+			rayHalted = minDistence < HUGE_VALF;
 
 		} // End checking geometry.
 	} // End voxel traversel loop
@@ -304,9 +292,9 @@ __global	read_only	Material*	materials)
 		float currentRayWeight = rayWeights[stackHeight];
 
 		int materialIndex;
-		//float distence = findNearestIntersection(&currentRay, &collisionPoint, &surfaceNormal, &materialIndex, voxelGrid, cellSize, geometryArray, vectorsPerVoxel);
+		float distence = findNearestIntersection(&currentRay, &collisionPoint, &surfaceNormal, &materialIndex, voxelGrid, cellSize, geometryArray, vectorsPerVoxel);
 
-		float distence = findNearestIntersectionSimple(&currentRay, 1, geometryArray, &collisionPoint, &surfaceNormal, &materialIndex, &debug);
+		//float distence = findNearestIntersectionSimple(&currentRay, 1, geometryArray, &collisionPoint, &surfaceNormal, &materialIndex);
 		
 		
 		// If the ray has hit somthing, draw the color of that object.
