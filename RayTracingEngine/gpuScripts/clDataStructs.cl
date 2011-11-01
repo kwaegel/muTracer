@@ -28,3 +28,10 @@ typedef struct {
 	int pad1;
 	int pad2
 } Sphere;
+
+typedef struct {
+	float4 p0;
+	float4 p1;
+	float4 p2;
+	int material;
+} Triangle;

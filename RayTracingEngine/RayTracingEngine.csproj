@@ -80,6 +80,9 @@
     <None Include="gpuScripts\clMathHelper.cl">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Include="gpuScripts\VoxelTraversalTris.cl">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Include="gpuScripts\VoxelTraversal.cl">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
