@@ -23,7 +23,7 @@ namespace Raytracing.Driver
 {
     class Game : GameWindow
     {
-		private static Vector3 InitialCameraPosition = new Vector3(-0.15f,0.25f,0.4f);
+		private static Vector3 InitialCameraPosition = new Vector3(0, 0, 3.0f);
 
 #if DEBUG
 		private static readonly bool limitFrames = false;
@@ -166,55 +166,72 @@ namespace Raytracing.Driver
 
         private void buildScene(Scene s)
         {
+			Ray r = new Ray(new Vector3(0,0,3.0f), new Vector3(0,0,-1.0f));
+
+			Triangle test = new Triangle(	new Vector3(-5.0f, -5.0f,  0),
+											new Vector3( 5.0f, -5.0f,  0),
+											new Vector3(   0f,  5.0f,  0),
+											0);
+
+			float testDist = test.rayTriIntersect(r);
+
+			s.BackgroundColor = Color4.CornflowerBlue;
+
             Material redGlass = new Material(Color4.Gray, 0, 0.97f, 1.52f);
             Material shinyRed = new Material(Color4.DarkRed, 0.25f);
             Material shinyGreen = new Material(Color4.DarkGreen, 0.50f);
             Material shinyBlue = new Material(Color4.DarkBlue, 0.75f);
 
+			Material matteGray = new Material(Color4.Gray);
+
             // Add test light
-            s.addLight(new Vector3(0, 4, 0), Color4.White, 20.0f);
-            s.addLight(new Vector3(0, 0, 0), Color4.White, 2.0f);
+            s.addLight(new Vector3(0, 4, 1), Color4.White, 20.0f);
+            //s.addLight(new Vector3(0, 0, 0), Color4.White, 2.0f);
 
             // Add test data.
+			s.addTriangle(	new Vector3(-5.0f, -5.0f,  0),
+							new Vector3( 5.0f, -5.0f,  0),
+							new Vector3(   0f,  5.0f,  0),
+							shinyRed);
 
-            // Create sphere that crosses voxel bounderies
-            s.addSphere(new Vector3(3f, 0, 0), 1.0f, redGlass);
+			//// Create sphere that crosses voxel bounderies
+			//s.addSphere(new Vector3(3f, 0, 0), 1.0f, redGlass);
 
-            // Create multiple spheres in the same voxel
-            s.addSphere(new Vector3(0.2f, 0.2f, 0.2f), 0.05f, redGlass);
-            s.addSphere(new Vector3(0.2f, 0.2f, -0.2f), 0.05f, redGlass);
-            s.addSphere(new Vector3(0.2f, -0.2f, 0.2f), 0.05f, redGlass);
-            s.addSphere(new Vector3(0.2f, -0.2f, -0.2f), 0.05f, redGlass);
+			//// Create multiple spheres in the same voxel
+			//s.addSphere(new Vector3(0.2f, 0.2f, 0.2f), 0.05f, shinyRed);
+			//s.addSphere(new Vector3(0.2f, 0.2f, -0.2f), 0.05f, shinyGreen);
+			//s.addSphere(new Vector3(0.2f, -0.2f, 0.2f), 0.05f, shinyBlue);
+			//s.addSphere(new Vector3(0.2f, -0.2f, -0.2f), 0.05f, matteGray);
 
-            s.addSphere(new Vector3(-0.2f, 0.2f, 0.2f), 0.05f, redGlass);
-            s.addSphere(new Vector3(-0.2f, 0.2f, -0.2f), 0.05f, redGlass);
-            s.addSphere(new Vector3(-0.2f, -0.2f, 0.2f), 0.05f, redGlass);
-            s.addSphere(new Vector3(-0.2f, -0.2f, -0.2f), 0.05f, redGlass);
+			//s.addSphere(new Vector3(-0.2f, 0.2f, 0.2f), 0.05f, redGlass);
+			//s.addSphere(new Vector3(-0.2f, 0.2f, -0.2f), 0.05f, redGlass);
+			//s.addSphere(new Vector3(-0.2f, -0.2f, 0.2f), 0.05f, redGlass);
+			//s.addSphere(new Vector3(-0.2f, -0.2f, -0.2f), 0.05f, redGlass);
 
-            // Create spheres along the major axies.
-            s.addSphere(new Vector3(1f, 0, 0), 0.25f, shinyRed);
-            s.addSphere(new Vector3(0, 1f, 0), 0.25f, shinyGreen);
-            s.addSphere(new Vector3(0, 0, 1f), 0.25f, shinyBlue);
+			//// Create spheres along the major axies.
+			//s.addSphere(new Vector3(1f, 0, 0), 0.25f, shinyRed);
+			//s.addSphere(new Vector3(0, 1f, 0), 0.25f, shinyGreen);
+			//s.addSphere(new Vector3(0, 0, 1f), 0.25f, shinyBlue);
 
-            s.addSphere(new Vector3(0, 1.5f, 0), 0.05f, redGlass);
+			//s.addSphere(new Vector3(0, 1.5f, 0), 0.05f, redGlass);
 
-            // Create a large number of spheres to stress the memory system.
-            int min = 2;
-            int max = 3;
-            for (int x = min; x <= max; x++)
-            {
-                for (int y = min; y <= max; y++)
-                {
-                    for (int z = min; z <= max; z++)
-                    {
-                        s.addSphere(new Vector3(x, y, z), 0.1f, redGlass);
-                    }
-                }
-            }
+			//// Create a large number of spheres to stress the memory system.
+			//int min = 2;
+			//int max = 3;
+			//for (int x = min; x <= max; x++)
+			//{
+			//    for (int y = min; y <= max; y++)
+			//    {
+			//        for (int z = min; z <= max; z++)
+			//        {
+			//            s.addSphere(new Vector3(x, y, z), 0.1f, shinyGreen);
+			//        }
+			//    }
+			//}
 
             // Add a light to cast shadows.
-            float mid = min + (max - min) / 2.0f;
-            s.addLight(new Vector3(mid, mid, mid), Color4.White, 2.0f);
+            //float mid = min + (max - min) / 2.0f;
+           // s.addLight(new Vector3(mid, mid, mid), Color4.White, 2.0f);
         }
 		#endregion
 

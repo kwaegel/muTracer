@@ -29,9 +29,9 @@ typedef struct {
 	int pad2
 } Sphere;
 
+// The material index is packed into p2.w
 typedef struct {
 	float4 p0;
 	float4 p1;
-	float4 p2;
-	int material;
+	float4 p2;	// Last point plus packed material index
 } Triangle;

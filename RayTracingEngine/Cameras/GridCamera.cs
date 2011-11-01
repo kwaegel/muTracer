@@ -20,7 +20,7 @@ namespace Raytracing.CL
 
 	public class GridCamera : ClTextureCamera
 	{
-        private readonly string[] _sourcePaths = { "gpuScripts/clDataStructs.cl", "gpuScripts/clMathHelper.cl", "gpuScripts/clIntersectionTests.cl", "gpuScripts/VoxelTraversal.cl" };
+        private readonly string[] _sourcePaths = { "gpuScripts/clDataStructs.cl", "gpuScripts/clMathHelper.cl", "gpuScripts/clIntersectionTests.cl", "gpuScripts/VoxelTraversalTris.cl" };
 
 		[StructLayout(LayoutKind.Sequential)]
 		public struct Pixel
@@ -130,8 +130,8 @@ namespace Raytracing.CL
             _renderKernel.SetValueArgument<Vector4>(argi++, homogeneousPosition);
             _renderKernel.SetValueArgument<Matrix4>(argi++, _screenToWorldMatrix);
 
-            _renderKernel.SetValueArgument<Color4>(argi++, backgroundColor);  // Frame background color.
-            _renderKernel.SetMemoryArgument(argi++, _renderTarget);                 // Image to render to
+            _renderKernel.SetValueArgument<Color4>(argi++, backgroundColor);	// Frame background color.
+            _renderKernel.SetMemoryArgument(argi++, _renderTarget);				// Image to render to
 
             // Voxel grid arguments
             _renderKernel.SetMemoryArgument(argi++, voxelGrid._grid, false);

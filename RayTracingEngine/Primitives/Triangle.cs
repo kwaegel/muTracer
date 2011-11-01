@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Runtime.InteropServices;
 
 using OpenTK;
 
@@ -8,20 +9,143 @@ namespace Raytracing.Primitives
 {
 	// Uses clockwise winding like XNA
 	[StructLayout(LayoutKind.Sequential)]
-	public struct Triangle
+	unsafe public struct Triangle
 	{
-		private static float epsilon = 0.001f;
-
-		public Vector3 Point1;
-		public Vector3 Point2;
-		public Vector3 Point3;
-		public int MaterialIndex;
+		public Vector4 p0;
+		public Vector4 p1;
+		public Vector4 p2;
 
 		public Triangle(Vector3 point1, Vector3 point2, Vector3 point3, int materialIndex)
 		{
-			Point1 = point1;
-			Point2 = point2;
-			Point3 = point3;
+			// Since all the vectors have w=1, we can pack the material index into the last w coordinate
+			float matAsFloat = BitConverter.ToSingle(BitConverter.GetBytes(materialIndex), 0);
+
+			p0 = new Vector4(point1, 1.0f);
+			p1 = new Vector4(point2, 1.0f);
+			p2 = new Vector4(point3, matAsFloat);
+
+			
+		}
+
+		public Triangle(Vector4 point1, Vector4 point2, Vector4 point3, int materialIndex)
+		{
+			p0 = point1;
+			p1 = point2;
+			p2 = point3;
+
+			// Since all the vectors have w=1, we can pack the material index into the last w coordinate
+			p2.W = BitConverter.ToSingle(BitConverter.GetBytes(materialIndex), 0);
+		}
+
+		// Code from: http://web.archive.org/web/20040629174917/http://www.acm.org/jgt/papers/MollerTrumbore97/code.html
+		public float rayTriIntersect(Ray ray)
+		{
+			bool testCull = true;
+			float EPSILON = 10e-5f;
+			Vector3 dir = ray.Direction;
+			Vector3 orig = ray.Position;
+			Vector3 vert0 = new Vector3(p0);
+			Vector3 vert1 = new Vector3(p1);
+			Vector3 vert2 = new Vector3(p2);
+			//double edge1[3], edge2[3], tvec[3], pvec[3], qvec[3];
+			//double det,inv_det;
+
+			/* find vectors for two edges sharing vert0 */
+			Vector3 edge1 = vert1 - vert0;					//SUB(edge1, vert1, vert0);
+			Vector3 edge2 = vert2 - vert0;					//SUB(edge2, vert2, vert0);
+
+			/* begin calculating determinant - also used to calculate U parameter */
+			Vector3 pvec = Vector3.Cross(dir, edge2);		//CROSS(pvec, dir, edge2);
+
+			/* if determinant is near zero, ray lies in plane of triangle */
+			float det = Vector3.Dot(edge1, pvec);			//det = DOT(edge1, pvec);
+
+
+			if(testCull)
+			{
+				if (det < EPSILON)
+					return 0;
+
+				/* calculate distance from vert0 to ray origin */
+				Vector3 tvec = orig - vert0;				//SUB(tvec, orig, vert0);
+
+				/* calculate U parameter and test bounds */
+				float u = Vector3.Dot(tvec, pvec);			//*u = DOT(tvec, pvec);
+				if (u < 0.0 || u > det)
+					return 0;
+
+				/* prepare to test V parameter */
+				Vector3 qvec = Vector3.Cross(tvec, edge1);	//CROSS(qvec, tvec, edge1);
+
+				/* calculate V parameter and test bounds */
+				float v = Vector3.Dot(dir, qvec);			//*v = DOT(dir, qvec);
+				if (v < 0.0 || u + v > det)
+					return 0;
+
+				/* calculate t, scale parameters, ray intersects triangle */
+				float t = Vector3.Dot(edge2, qvec);					//*t = DOT(edge2, qvec);
+				float inv_det = 1.0f / det;
+				t *= inv_det;
+				u *= inv_det;
+				v *= inv_det;
+			}
+			else
+			{
+				if (det > -EPSILON && det < EPSILON)
+					return 0;
+
+				float inv_det = 1.0f / det;
+
+				/* calculate distance from vert0 to ray origin */
+				Vector3 tvec = orig - vert0;					//SUB(tvec, orig, vert0);
+
+				/* calculate U parameter and test bounds */
+				float u = Vector3.Dot(tvec, pvec) * inv_det;	//*u = DOT(tvec, pvec) * inv_det;
+				if (u < 0.0 || u > 1.0)
+					return 0;
+
+				/* prepare to test V parameter */
+				Vector3 qvec = Vector3.Cross(tvec, edge1);		//CROSS(qvec, tvec, edge1);
+
+				/* calculate V parameter and test bounds */
+				float v = Vector3.Dot(dir, qvec);				//*v = DOT(dir, qvec) * inv_det;
+				if (v < 0.0 || u + v > 1.0)
+					return 0;
+
+				/* calculate t, ray intersects triangle */
+				float t = Vector3.Dot(edge2, qvec);				//*t = DOT(edge2, qvec) * inv_det;
+			}
+			return 1;
+
+			/*
+			Triangle tri = this;
+			float eps = 10e-5F;	// epsilon
+
+			Vector3 o = ray.Position;
+			Vector3 d = ray.Direction;
+
+			Vector3 e1 = new Vector3(tri.p1 - tri.p0);
+			Vector3 e2 = new Vector3(tri.p2 - tri.p0);
+			Vector3 q = Vector3.Cross(d,e2);
+			float a = Vector3.Dot(e1,q);
+
+			if(a > -eps && a < eps) return float.PositiveInfinity;
+			float f = 1/a;
+			Vector3 s = o- new Vector3(tri.p0);
+			float u = f*Vector3.Dot(s,q);
+			if(u<0.0f) return float.PositiveInfinity;
+			Vector3 r = Vector3.Cross(s,e1);
+			float v = f*Vector3.Dot(d,r);
+			if(v<0.0f || u+v > 1.0f) return float.PositiveInfinity;
+			float t = f*Vector3.Dot(e2,q);
+			System.Diagnostics.Debug.WriteLine("t="+t);
+
+			Vector3 collisionPoint = ray.Position + t * ray.Direction;
+			Vector3 surfaceNormal = Vector3.Cross(e1,e2);
+			surfaceNormal.Normalize();
+
+			return t;
+			*/
 		}
 
 		//public Vector3 computeNormal()

@@ -106,7 +106,7 @@
     <Compile Include="Primitives\Ray.cs" />
     <Compile Include="Primitives\SceneObjects.cs" />
     <Compile Include="Primitives\Sphere.cs" />
-    <None Include="Primitives\Triangle.cs" />
+    <Compile Include="Primitives\Triangle.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

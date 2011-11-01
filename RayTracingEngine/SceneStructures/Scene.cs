@@ -39,13 +39,19 @@ namespace Raytracing.SceneStructures
             _materialCache.Dispose();
         }
 
+		public void addTriangle(Vector3 p0, Vector3 p1, Vector3 p2, Material mat)
+		{
+			int materialIndex = _materialCache.getMaterialIndex(mat);
 
-        public void addSphere(Vector3 center, float radius, Material mat)
-        {
-            int materialIndex = _materialCache.getMaterialIndex(mat);
+			_voxelGrid.addTriangle(p0, p1, p2, materialIndex);
+		}
 
-            _voxelGrid.addSphere(center, radius, materialIndex);
-        }
+		//public void addSphere(Vector3 center, float radius, Material mat)
+		//{
+		//    int materialIndex = _materialCache.getMaterialIndex(mat);
+
+		//    _voxelGrid.addSphere(center, radius, materialIndex);
+		//}
 
         /// <summary>
         /// Adds a new point light.

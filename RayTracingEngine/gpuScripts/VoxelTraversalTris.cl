@@ -7,32 +7,63 @@ float
 intersectCellContents(			Ray*		ray,
 						const	int			vectorsPerVoxel,
 								int			geometryBaseIndex,
-		__global	read_only	Sphere*		geometryArray,
+		__global	read_only	Triangle*	geometryArray,
 						private float4*		collisionPoint,
 						private float4*		surfaceNormal,
 								int*		materialIndex)
 {
 	float minDistence = HUGE_VALF;
 	float4 tempCP, tempSN;
+	float tempU, tempV;
 	for (int i=0; i<vectorsPerVoxel; i++)
 	{
-		// Get the sphere data.
-		Sphere sphere = geometryArray[geometryBaseIndex+i];
+		// Get the triangle data.
+		Triangle tri = geometryArray[geometryBaseIndex+i];
 
-		// Unpack sphere data.
-		//float4 center = sphere;
-		//center.w=1;
-		//float radius = sphere.w;
+		// Unpack triangle data.
+		//int materialIndex = as_int(tri.p2.w);
 
-		// calculate intersection distance. Returns HUGE_VALF if ray misses sphere.
-		float distence = raySphereIntersect(ray, sphere, &tempCP, &tempSN);
+		// calculate intersection distance. Returns HUGE_VALF if ray misses triangle.
+		float distence = rayTriIntersect(ray, tri, &tempU, &tempV, &tempCP, &tempSN);
 
 		if (distence < minDistence)
 		{
 			minDistence = distence;
 			*collisionPoint = tempCP;
 			*surfaceNormal = tempSN;
-			*materialIndex = sphere.material;//(geometryBaseIndex+i) % 4;
+			*materialIndex = as_int(tri.p2.w);
+		}
+	}
+	
+	return minDistence;
+}
+
+
+float
+findNearestIntersectionSimple(	Ray*		ray,
+						const	int			numTris,
+		__global	read_only	Triangle*	geometryArray,
+						private float4*		collisionPoint,
+						private float4*		surfaceNormal,
+								int*		materialIndex)
+{
+	float minDistence = HUGE_VALF;
+	float4 tempCP, tempSN;
+	float tempU, tempV;
+	for (int i=0; i<numTris; i++)
+	{
+		// Get the triangle data.
+		Triangle tri = geometryArray[i];
+
+		// calculate intersection distance. Returns HUGE_VALF if ray misses triangle.
+		float distence = rayTriIntersect(ray, tri, &tempU, &tempV, &tempCP, &tempSN);
+
+		if (distence < minDistence)
+		{
+			minDistence = distence;
+			*collisionPoint = tempCP;
+			*surfaceNormal = tempSN;
+			*materialIndex = as_int(tri.p2.w);
 		}
 	}
 	
@@ -51,7 +82,7 @@ findNearestIntersection(
 	__global	read_only	image3d_t	voxelGrid,			// Voxel data
 				const		float		cellSize,
 			
-	__global	read_only	Sphere*		geometryArray,		// Geometry data
+	__global	read_only	Triangle*	geometryArray,		// Geometry data
 				const		int			vectorsPerVoxel)
 {
 	//Natural coordinates, clamp to zeros, don't interpolate.
@@ -117,13 +148,20 @@ findNearestIntersection(
 
 	if (containsGeometry)
 	{
+		// DEBUGGING
+		minDistence = (float)(cellData.x/255.0f);
+		*collisionPoint = (float4)( ray->origin + minDistence * ray->direction);
+		*surfaceNormal = (float4)( fast_normalize((float4)(0.5f,0.5f,0,0)) );
+		rayHalted = true;
+
+
 		// check for intersection with geometry in the current cell
-		int geometryIndex = (index.x * gridWidth * gridWidth + index.y * gridWidth + index.z) * vectorsPerVoxel;
+		//int geometryIndex = (index.x * gridWidth * gridWidth + index.y * gridWidth + index.z) * vectorsPerVoxel;
 			
-		minDistence = intersectCellContents(ray, cellData.x, geometryIndex, geometryArray, collisionPoint, surfaceNormal, materialIndex);
+		//minDistence = intersectCellContents(ray, cellData.x, geometryIndex, geometryArray, collisionPoint, surfaceNormal, materialIndex);
 
 		// Halt ray progress if it collides with anything.
-		rayHalted = minDistence < HUGE_VALF;
+		//rayHalted = minDistence < HUGE_VALF;
 
 	} // End checking geometry.
 	
@@ -154,13 +192,14 @@ findNearestIntersection(
 
 		if (containsGeometry)
 		{
+
 			// check for intersection with geometry in the current cell
-			int geometryIndex = (index.x * gridWidth * gridWidth + index.y * gridWidth + index.z) * vectorsPerVoxel;
+			//int geometryIndex = (index.x * gridWidth * gridWidth + index.y * gridWidth + index.z) * vectorsPerVoxel;
 			
-			minDistence = intersectCellContents(ray, cellData.x, geometryIndex, geometryArray, collisionPoint, surfaceNormal, materialIndex);
+			//minDistence = intersectCellContents(ray, cellData.x, geometryIndex, geometryArray, collisionPoint, surfaceNormal, materialIndex);
 
 			// Halt ray progress if it collides with anything.
-			rayHalted = minDistence < HUGE_VALF;
+			//rayHalted = minDistence < HUGE_VALF;
 
 		} // End checking geometry.
 	} // End voxel traversel loop
@@ -211,7 +250,7 @@ render (	const		float4		cameraPosition,
 			const		float		cellSize,
 
 			// Geometry
-__global	read_only	Sphere*		geometryArray,
+__global	read_only	Triangle*	geometryArray,
 			const		int			vectorsPerVoxel,
 
 			// Lights
@@ -238,7 +277,15 @@ __global	read_only	Material*	materials)
 	float4 color;
 	
 	float4 collisionPoint, surfaceNormal;
+	int materialIndex;
+
+	float distence = findNearestIntersectionSimple(&rayStack[stackHeight], 1, geometryArray, &collisionPoint, &surfaceNormal, &materialIndex);
+	if (distence < HUGE_VALF)
+	{
+		color = (float4)(coord.y,0,coord.x,0);
+	}
 	
+	/*
 	while (stackHeight > 0 && raysCast < 4)
 	{
 		stackHeight--;
@@ -246,8 +293,25 @@ __global	read_only	Material*	materials)
 		float currentRayWeight = rayWeights[stackHeight];
 
 		int materialIndex;
-		float distence = findNearestIntersection(&currentRay, &collisionPoint, &surfaceNormal, &materialIndex, voxelGrid, cellSize, geometryArray, vectorsPerVoxel);
+		//float distence = findNearestIntersection(&currentRay, &collisionPoint, &surfaceNormal, &materialIndex, voxelGrid, cellSize, geometryArray, vectorsPerVoxel);
+
+		float distence = findNearestIntersectionSimple(&currentRay, 1, geometryArray, &collisionPoint, &surfaceNormal, &materialIndex);
+
 		
+		findNearestIntersectionSimple(	Ray*		ray,
+								const	int			numTris,
+				__global	read_only	Triangle*	geometryArray,
+								private float4*		collisionPoint,
+								private float4*		surfaceNormal,
+										int*		materialIndex)
+		
+
+		if (distence < HUGE_VALF)
+		{
+			color = (float4)(1.0f/distence,0,0,0);
+		}
+		
+		/*
 		// If the ray has hit somthing, draw the color of that object.
 		if (distence < HUGE_VALF)
 		{
@@ -340,8 +404,11 @@ __global	read_only	Material*	materials)
 			// if the ray hits nothing, add in the background color.
 			color += backgroundColor * currentRayWeight;
 		}
+		
+
 		raysCast++;
 	}
+	*/
 	
 	// Write the resulting color to the camera texture.
 	write_imagef(outputImage, coord, color);
