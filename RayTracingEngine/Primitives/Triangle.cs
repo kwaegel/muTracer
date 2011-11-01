@@ -23,8 +23,6 @@ namespace Raytracing.Primitives
 			p0 = new Vector4(point1, 1.0f);
 			p1 = new Vector4(point2, 1.0f);
 			p2 = new Vector4(point3, matAsFloat);
-
-			
 		}
 
 		public Triangle(Vector4 point1, Vector4 point2, Vector4 point3, int materialIndex)
@@ -40,7 +38,7 @@ namespace Raytracing.Primitives
 		// Code from: http://web.archive.org/web/20040629174917/http://www.acm.org/jgt/papers/MollerTrumbore97/code.html
 		public float rayTriIntersect(Ray ray)
 		{
-			bool testCull = true;
+			bool testCull = false;
 			float EPSILON = 10e-5f;
 			Vector3 dir = ray.Direction;
 			Vector3 orig = ray.Position;
@@ -88,6 +86,12 @@ namespace Raytracing.Primitives
 				t *= inv_det;
 				u *= inv_det;
 				v *= inv_det;
+
+				Vector3 collisionPoint = ray.Position + t * ray.Direction;
+				Vector3 surfaceNormal = Vector3.Cross(edge1, edge2);
+				surfaceNormal.Normalize();
+
+				return t;
 			}
 			else
 			{
@@ -108,14 +112,19 @@ namespace Raytracing.Primitives
 				Vector3 qvec = Vector3.Cross(tvec, edge1);		//CROSS(qvec, tvec, edge1);
 
 				/* calculate V parameter and test bounds */
-				float v = Vector3.Dot(dir, qvec);				//*v = DOT(dir, qvec) * inv_det;
+				float v = Vector3.Dot(dir, qvec) * inv_det;				//*v = DOT(dir, qvec) * inv_det;
 				if (v < 0.0 || u + v > 1.0)
 					return 0;
 
 				/* calculate t, ray intersects triangle */
-				float t = Vector3.Dot(edge2, qvec);				//*t = DOT(edge2, qvec) * inv_det;
+				float t = Vector3.Dot(edge2, qvec) * inv_det;				//*t = DOT(edge2, qvec) * inv_det;
+
+				Vector3 collisionPoint = ray.Position + t * ray.Direction;
+				Vector3 surfaceNormal = Vector3.Cross(edge1, edge2);
+				surfaceNormal.Normalize();
+
+				return t;
 			}
-			return 1;
 
 			/*
 			Triangle tri = this;
@@ -139,9 +148,10 @@ namespace Raytracing.Primitives
 			if(v<0.0f || u+v > 1.0f) return float.PositiveInfinity;
 			float t = f*Vector3.Dot(e2,q);
 			System.Diagnostics.Debug.WriteLine("t="+t);
+			
 
 			Vector3 collisionPoint = ray.Position + t * ray.Direction;
-			Vector3 surfaceNormal = Vector3.Cross(e1,e2);
+			Vector3 surfaceNormal = Vector3.Cross(edge1,edge2);
 			surfaceNormal.Normalize();
 
 			return t;

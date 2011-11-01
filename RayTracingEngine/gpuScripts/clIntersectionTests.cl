@@ -5,7 +5,8 @@ rayTriIntersect(	private Ray*		ray,
 					private float*		u,
 					private float*		v,
 					private float4*		collisionPoint,
-					private float4*		surfaceNormal)
+					private float4*		surfaceNormal,
+							float4*		debug)
 {
 	float EPSILON = 10e-5;	// epsilon
 
@@ -25,64 +26,45 @@ rayTriIntersect(	private Ray*		ray,
 	float4 edge1 = vert1 - vert0;			//SUB(edge1, vert1, vert0);
 	float4 edge2 = vert2 - vert0;			//SUB(edge2, vert2, vert0);
 
+	//*debug = orig;
+
 	/* begin calculating determinant - also used to calculate U parameter */
 	float4 pvec = cross(dir, edge2);		//CROSS(pvec, dir, edge2);
 
 	/* if determinant is near zero, ray lies in plane of triangle */
 	float det = dot(edge1, pvec);			//det = DOT(edge1, pvec);
 
-	if (det < EPSILON)
-		return 0;
+	if (det > -EPSILON && det < EPSILON)
+		return HUGE_VALF;
+
+	float inv_det = 1.0f / det;
 
 	/* calculate distance from vert0 to ray origin */
-	float4 tvec = orig - vert0;				//SUB(tvec, orig, vert0);
+	float4 tvec = orig - vert0;					//SUB(tvec, orig, vert0);
 
 	/* calculate U parameter and test bounds */
-	*u = dot(tvec, pvec);					//*u = DOT(tvec, pvec);
-	if (*u < 0.0 || *u > det)
-		return 0;
+	*u = dot(tvec, pvec) * inv_det;	//*u = DOT(tvec, pvec) * inv_det;
+	if (*u < 0.0 || *u > 1.0)
+		return HUGE_VALF;
 
 	/* prepare to test V parameter */
 	float4 qvec = cross(tvec, edge1);		//CROSS(qvec, tvec, edge1);
 
 	/* calculate V parameter and test bounds */
-	*v = dot(dir, qvec);					//*v = DOT(dir, qvec);
-	if (*v < 0.0 || *u + *v > det)
-		return 0;
+	*v = dot(dir, qvec) * inv_det;				//*v = DOT(dir, qvec) * inv_det;
+	if (*v < 0.0 || *u + *v > 1.0f)
+		return HUGE_VALF;
 
-	/* calculate t, scale parameters, ray intersects triangle */
-	float t = dot(edge2, qvec);				//*t = DOT(edge2, qvec);
-	float inv_det = 1.0f / det;
-	t *= inv_det;
-	*u *= inv_det;
-	*v *= inv_det;
+	/* calculate t, ray intersects triangle */
+	float t = dot(edge2, qvec) * inv_det;				//*t = DOT(edge2, qvec) * inv_det;
+
+	if (t < 0)
+		return HUGE_VALF;
 
 	*collisionPoint = ray->origin + t * ray->direction;
 	*surfaceNormal = fast_normalize( cross(edge1, edge2) );
 
 	return t;
-
-	/*
-	float4 e1 = tri.p1 - tri.p0;
-	float4 e2 = tri.p2 - tri.p0;
-	e2.w=0;
-	float4 q = cross(d,e2);
-	float a = dot(e1,q);
-	if(a > -eps && a < eps) return HUGE_VALF;
-	float f = 1/a;
-	float4 s = o-tri.p0;
-	*u = f*dot(s,q);
-	if(*u<0.0f) return HUGE_VALF;
-	float4 r = cross(s,e1);
-	*v = f*dot(d,r);
-	if(*v<0.0f || *u+*v > 1.0f) return HUGE_VALF;
-	float t = f*dot(e2,q);
-
-	(*collisionPoint) = ray->origin + t * ray->direction;
-	(*surfaceNormal) = fast_normalize( cross(e1,e2) );
-
-	return t;
-	*/
 }
 
 

@@ -168,9 +168,9 @@ namespace Raytracing.Driver
         {
 			Ray r = new Ray(new Vector3(0,0,3.0f), new Vector3(0,0,-1.0f));
 
-			Triangle test = new Triangle(	new Vector3(-5.0f, -5.0f,  0),
-											new Vector3( 5.0f, -5.0f,  0),
-											new Vector3(   0f,  5.0f,  0),
+			Triangle test = new Triangle(	new Vector3(-1.0f, -1.0f,  0.5f),
+											new Vector3(1.0f, -1.0f, 0.5f),
+											new Vector3(0f, 1.0f, 0.5f),
 											0);
 
 			float testDist = test.rayTriIntersect(r);
@@ -189,9 +189,9 @@ namespace Raytracing.Driver
             //s.addLight(new Vector3(0, 0, 0), Color4.White, 2.0f);
 
             // Add test data.
-			s.addTriangle(	new Vector3(-5.0f, -5.0f,  0),
-							new Vector3( 5.0f, -5.0f,  0),
-							new Vector3(   0f,  5.0f,  0),
+			s.addTriangle(	new Vector3(-5.0f, -5.0f, 0.5f),
+							new Vector3(5.0f, -5.0f, 0.5f),
+							new Vector3(0f, 5.0f, 0.5f),
 							shinyRed);
 
 			//// Create sphere that crosses voxel bounderies

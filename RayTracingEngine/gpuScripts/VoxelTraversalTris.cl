@@ -23,8 +23,10 @@ intersectCellContents(			Ray*		ray,
 		// Unpack triangle data.
 		//int materialIndex = as_int(tri.p2.w);
 
+		float4 debug;
+
 		// calculate intersection distance. Returns HUGE_VALF if ray misses triangle.
-		float distence = rayTriIntersect(ray, tri, &tempU, &tempV, &tempCP, &tempSN);
+		float distence = rayTriIntersect(ray, tri, &tempU, &tempV, &tempCP, &tempSN, &debug);
 
 		if (distence < minDistence)
 		{
@@ -45,7 +47,8 @@ findNearestIntersectionSimple(	Ray*		ray,
 		__global	read_only	Triangle*	geometryArray,
 						private float4*		collisionPoint,
 						private float4*		surfaceNormal,
-								int*		materialIndex)
+								int*		materialIndex,
+								float4*		debug)
 {
 	float minDistence = HUGE_VALF;
 	float4 tempCP, tempSN;
@@ -56,7 +59,7 @@ findNearestIntersectionSimple(	Ray*		ray,
 		Triangle tri = geometryArray[i];
 
 		// calculate intersection distance. Returns HUGE_VALF if ray misses triangle.
-		float distence = rayTriIntersect(ray, tri, &tempU, &tempV, &tempCP, &tempSN);
+		float distence = rayTriIntersect(ray, tri, &tempU, &tempV, &tempCP, &tempSN, debug);
 
 		if (distence < minDistence)
 		{
@@ -66,6 +69,8 @@ findNearestIntersectionSimple(	Ray*		ray,
 			*materialIndex = as_int(tri.p2.w);
 		}
 	}
+
+	//*debug = ray->direction;
 	
 	return minDistence;
 }
@@ -273,19 +278,25 @@ __global	read_only	Material*	materials)
 	rayWeights[0] = 1.0f;
 	stackHeight++;
 
+	float4 debug = (float4)(0);
+
 	// Vector to hold the final output color.
-	float4 color;
+	float4 color = (float4)(0,0,0,0);
 	
 	float4 collisionPoint, surfaceNormal;
 	int materialIndex;
 
-	float distence = findNearestIntersectionSimple(&rayStack[stackHeight], 1, geometryArray, &collisionPoint, &surfaceNormal, &materialIndex);
+	/*
+	Ray currentRay = rayStack[0];
+	float distence = findNearestIntersectionSimple(&currentRay, 1, geometryArray, &collisionPoint, &surfaceNormal, &materialIndex, &debug);
 	if (distence < HUGE_VALF)
 	{
-		color = (float4)(coord.y,0,coord.x,0);
+		color = (float4)(0,1,0,0);
 	}
+	//color = debug;
+	*/
 	
-	/*
+	
 	while (stackHeight > 0 && raysCast < 4)
 	{
 		stackHeight--;
@@ -295,23 +306,9 @@ __global	read_only	Material*	materials)
 		int materialIndex;
 		//float distence = findNearestIntersection(&currentRay, &collisionPoint, &surfaceNormal, &materialIndex, voxelGrid, cellSize, geometryArray, vectorsPerVoxel);
 
-		float distence = findNearestIntersectionSimple(&currentRay, 1, geometryArray, &collisionPoint, &surfaceNormal, &materialIndex);
-
+		float distence = findNearestIntersectionSimple(&currentRay, 1, geometryArray, &collisionPoint, &surfaceNormal, &materialIndex, &debug);
 		
-		findNearestIntersectionSimple(	Ray*		ray,
-								const	int			numTris,
-				__global	read_only	Triangle*	geometryArray,
-								private float4*		collisionPoint,
-								private float4*		surfaceNormal,
-										int*		materialIndex)
 		
-
-		if (distence < HUGE_VALF)
-		{
-			color = (float4)(1.0f/distence,0,0,0);
-		}
-		
-		/*
 		// If the ray has hit somthing, draw the color of that object.
 		if (distence < HUGE_VALF)
 		{
@@ -404,11 +401,9 @@ __global	read_only	Material*	materials)
 			// if the ray hits nothing, add in the background color.
 			color += backgroundColor * currentRayWeight;
 		}
-		
-
 		raysCast++;
 	}
-	*/
+	
 	
 	// Write the resulting color to the camera texture.
 	write_imagef(outputImage, coord, color);
