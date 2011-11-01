@@ -123,7 +123,7 @@ namespace Raytracing.Driver
 				_gridCamera.VerticalFieldOfView = vFOV;
 				_gridCamera.NearPlane = nearClip;
 				_gridCamera.computeProjection();
-				_gridCamera.rotateWorldY(-90.0f);
+				//_gridCamera.rotateWorldY(-90.0f);
 			}
 			catch (Exception)
 			{
@@ -166,14 +166,16 @@ namespace Raytracing.Driver
 
         private void buildScene(Scene s)
         {
-			Ray r = new Ray(new Vector3(0,0,3.0f), new Vector3(0,0,-1.0f));
+			Ray r = new Ray(new Vector3(0.1f,0.1f,3.0f), new Vector3(0,0,-1.0f));
 
-			Triangle test = new Triangle(	new Vector3(-1.0f, -1.0f,  0.5f),
-											new Vector3(1.0f, -1.0f, 0.5f),
-											new Vector3(0f, 1.0f, 0.5f),
+			
+			Triangle test = new Triangle(	new Vector3(0,0,0f),
+											new Vector3(0,1,0),
+											new Vector3(1,0,0),
 											0);
 
 			float testDist = test.rayTriIntersect(r);
+			
 
 			s.BackgroundColor = Color4.CornflowerBlue;
 
@@ -189,9 +191,9 @@ namespace Raytracing.Driver
             //s.addLight(new Vector3(0, 0, 0), Color4.White, 2.0f);
 
             // Add test data.
-			s.addTriangle(	new Vector3(-5.0f, -5.0f, 0.5f),
-							new Vector3(5.0f, -5.0f, 0.5f),
-							new Vector3(0f, 5.0f, 0.5f),
+			s.addTriangle(	new Vector3(0,0,0f),
+							new Vector3(0,1,0),
+							new Vector3(1,0,0),
 							shinyRed);
 
 			//// Create sphere that crosses voxel bounderies

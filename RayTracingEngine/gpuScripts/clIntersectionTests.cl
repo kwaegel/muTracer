@@ -26,8 +26,6 @@ rayTriIntersect(	private Ray*		ray,
 	float4 edge1 = vert1 - vert0;			//SUB(edge1, vert1, vert0);
 	float4 edge2 = vert2 - vert0;			//SUB(edge2, vert2, vert0);
 
-	//*debug = orig;
-
 	/* begin calculating determinant - also used to calculate U parameter */
 	float4 pvec = cross(dir, edge2);		//CROSS(pvec, dir, edge2);
 

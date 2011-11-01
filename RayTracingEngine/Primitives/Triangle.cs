@@ -58,104 +58,35 @@ namespace Raytracing.Primitives
 			/* if determinant is near zero, ray lies in plane of triangle */
 			float det = Vector3.Dot(edge1, pvec);			//det = DOT(edge1, pvec);
 
+			if (det > -EPSILON && det < EPSILON)
+				return 0;
 
-			if(testCull)
-			{
-				if (det < EPSILON)
-					return 0;
+			float inv_det = 1.0f / det;
 
-				/* calculate distance from vert0 to ray origin */
-				Vector3 tvec = orig - vert0;				//SUB(tvec, orig, vert0);
+			/* calculate distance from vert0 to ray origin */
+			Vector3 tvec = orig - vert0;					//SUB(tvec, orig, vert0);
 
-				/* calculate U parameter and test bounds */
-				float u = Vector3.Dot(tvec, pvec);			//*u = DOT(tvec, pvec);
-				if (u < 0.0 || u > det)
-					return 0;
+			/* calculate U parameter and test bounds */
+			float u = Vector3.Dot(tvec, pvec) * inv_det;	//*u = DOT(tvec, pvec) * inv_det;
+			if (u < 0.0 || u > 1.0)
+				return 0;
 
-				/* prepare to test V parameter */
-				Vector3 qvec = Vector3.Cross(tvec, edge1);	//CROSS(qvec, tvec, edge1);
+			/* prepare to test V parameter */
+			Vector3 qvec = Vector3.Cross(tvec, edge1);		//CROSS(qvec, tvec, edge1);
 
-				/* calculate V parameter and test bounds */
-				float v = Vector3.Dot(dir, qvec);			//*v = DOT(dir, qvec);
-				if (v < 0.0 || u + v > det)
-					return 0;
+			/* calculate V parameter and test bounds */
+			float v = Vector3.Dot(dir, qvec) * inv_det;				//*v = DOT(dir, qvec) * inv_det;
+			if (v < 0.0 || u + v > 1.0)
+				return 0;
 
-				/* calculate t, scale parameters, ray intersects triangle */
-				float t = Vector3.Dot(edge2, qvec);					//*t = DOT(edge2, qvec);
-				float inv_det = 1.0f / det;
-				t *= inv_det;
-				u *= inv_det;
-				v *= inv_det;
-
-				Vector3 collisionPoint = ray.Position + t * ray.Direction;
-				Vector3 surfaceNormal = Vector3.Cross(edge1, edge2);
-				surfaceNormal.Normalize();
-
-				return t;
-			}
-			else
-			{
-				if (det > -EPSILON && det < EPSILON)
-					return 0;
-
-				float inv_det = 1.0f / det;
-
-				/* calculate distance from vert0 to ray origin */
-				Vector3 tvec = orig - vert0;					//SUB(tvec, orig, vert0);
-
-				/* calculate U parameter and test bounds */
-				float u = Vector3.Dot(tvec, pvec) * inv_det;	//*u = DOT(tvec, pvec) * inv_det;
-				if (u < 0.0 || u > 1.0)
-					return 0;
-
-				/* prepare to test V parameter */
-				Vector3 qvec = Vector3.Cross(tvec, edge1);		//CROSS(qvec, tvec, edge1);
-
-				/* calculate V parameter and test bounds */
-				float v = Vector3.Dot(dir, qvec) * inv_det;				//*v = DOT(dir, qvec) * inv_det;
-				if (v < 0.0 || u + v > 1.0)
-					return 0;
-
-				/* calculate t, ray intersects triangle */
-				float t = Vector3.Dot(edge2, qvec) * inv_det;				//*t = DOT(edge2, qvec) * inv_det;
-
-				Vector3 collisionPoint = ray.Position + t * ray.Direction;
-				Vector3 surfaceNormal = Vector3.Cross(edge1, edge2);
-				surfaceNormal.Normalize();
-
-				return t;
-			}
-
-			/*
-			Triangle tri = this;
-			float eps = 10e-5F;	// epsilon
-
-			Vector3 o = ray.Position;
-			Vector3 d = ray.Direction;
-
-			Vector3 e1 = new Vector3(tri.p1 - tri.p0);
-			Vector3 e2 = new Vector3(tri.p2 - tri.p0);
-			Vector3 q = Vector3.Cross(d,e2);
-			float a = Vector3.Dot(e1,q);
-
-			if(a > -eps && a < eps) return float.PositiveInfinity;
-			float f = 1/a;
-			Vector3 s = o- new Vector3(tri.p0);
-			float u = f*Vector3.Dot(s,q);
-			if(u<0.0f) return float.PositiveInfinity;
-			Vector3 r = Vector3.Cross(s,e1);
-			float v = f*Vector3.Dot(d,r);
-			if(v<0.0f || u+v > 1.0f) return float.PositiveInfinity;
-			float t = f*Vector3.Dot(e2,q);
-			System.Diagnostics.Debug.WriteLine("t="+t);
-			
+			/* calculate t, ray intersects triangle */
+			float t = Vector3.Dot(edge2, qvec) * inv_det;				//*t = DOT(edge2, qvec) * inv_det;
 
 			Vector3 collisionPoint = ray.Position + t * ray.Direction;
-			Vector3 surfaceNormal = Vector3.Cross(edge1,edge2);
+			Vector3 surfaceNormal = Vector3.Cross(edge1, edge2);
 			surfaceNormal.Normalize();
 
 			return t;
-			*/
 		}
 
 		//public Vector3 computeNormal()
