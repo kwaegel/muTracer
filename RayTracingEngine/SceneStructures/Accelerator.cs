@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-using SimpleTracer.RayTracing;
+using Raytracing.Primitives;
 
-namespace KDTreeTracer.RayTracing
+namespace Raytracing
 {
 	abstract class Accelerator
 	{

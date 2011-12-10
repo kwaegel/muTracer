@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Runtime.InteropServices;
-
 using OpenTK;
 
 using Raytracing.BoundingVolumes;
@@ -35,13 +34,23 @@ namespace Raytracing.Primitives
 			p2.W = BitConverter.ToSingle(BitConverter.GetBytes(materialIndex), 0);
 		}
 
+		public BBox getBounds()
+		{
+			float minX = Math.Min(p0.X, Math.Min(p1.X, p2.X));
+			float minY = Math.Min(p0.Y, Math.Min(p1.Y, p2.Y));
+			float minZ = Math.Min(p0.Z, Math.Min(p1.Z, p2.Z));
+			float maxX = Math.Max(p0.X, Math.Max(p1.X, p2.X));
+			float maxY = Math.Max(p0.Y, Math.Max(p1.Y, p2.Y));
+			float maxZ = Math.Max(p0.Z, Math.Max(p1.Z, p2.Z));
+			return new BBox(minX, maxX, minY, maxY, minZ, maxZ);
+		}
+
 		// Code from: http://web.archive.org/web/20040629174917/http://www.acm.org/jgt/papers/MollerTrumbore97/code.html
 		public float rayTriIntersect(Ray ray)
 		{
-			bool testCull = false;
 			float EPSILON = 10e-5f;
 			Vector3 dir = ray.Direction;
-			Vector3 orig = ray.Position;
+			Vector3 orig = ray.Origin;
 			Vector3 vert0 = new Vector3(p0);
 			Vector3 vert1 = new Vector3(p1);
 			Vector3 vert2 = new Vector3(p2);
@@ -82,7 +91,7 @@ namespace Raytracing.Primitives
 			/* calculate t, ray intersects triangle */
 			float t = Vector3.Dot(edge2, qvec) * inv_det;				//*t = DOT(edge2, qvec) * inv_det;
 
-			Vector3 collisionPoint = ray.Position + t * ray.Direction;
+			Vector3 collisionPoint = ray.Origin + t * ray.Direction;
 			Vector3 surfaceNormal = Vector3.Cross(edge1, edge2);
 			surfaceNormal.Normalize();
 

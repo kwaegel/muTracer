@@ -37,7 +37,7 @@ namespace Raytracing.Primitives
 		}
 
 		public Sphere(Vector3 position, float radius)
-			: this(position, radius, AbstractPrimitive.BasicMaterial)
+			: this(position, radius, AbstractPrimitive.DefaultMaterial)
 		{	
 		}
 
@@ -52,12 +52,12 @@ namespace Raytracing.Primitives
 		/// Get a axis-aligned bounding box that contains this model.
 		/// </summary>
 		/// <returns></returns>
-		public override AxisAlignedBoundingBox getBoundingBox()
+		public override BBox getBounds()
 		{
 			Vector3 min = new Vector3(_center.X - _radius, _center.Y - _radius, _center.Z - _radius);
 			Vector3 max = new Vector3(_center.X + _radius, _center.Y + _radius, _center.Z + _radius);
 
-			return new AxisAlignedBoundingBox(min, max);
+			return new BBox(min, max);
 		}
 
 		// the ray does not need to be a unit ray. It needs a distance bound.
@@ -87,7 +87,7 @@ namespace Raytracing.Primitives
 
 			/** Geometric intersection test **/
 			// l = c - o
-			Vector3 distanceVector = _center - r.Position;
+			Vector3 distanceVector = _center - r.Origin;
 
 			// project the calculated direction vector onto the ray direction vector
 			// s = l * d
@@ -134,7 +134,7 @@ namespace Raytracing.Primitives
 
 			/** get the collision point and surface normal **/
 			r.Direction.Normalize();
-			collisionPoint = r.Position + (Vector3)((float)t * r.Direction);
+			collisionPoint = r.Origin + (Vector3)((float)t * r.Direction);
 			surfaceNormal = Vector3.Subtract(collisionPoint, _center);
 			surfaceNormal.Normalize();
 

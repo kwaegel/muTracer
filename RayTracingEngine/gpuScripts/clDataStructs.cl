@@ -40,4 +40,4 @@ typedef struct {
 
 typedef struct {
 	float4 p[2];
-} BBox
+} BBox;

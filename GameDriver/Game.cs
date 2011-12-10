@@ -9,8 +9,6 @@ using System.Runtime.InteropServices;
 using OpenTK;
 using OpenTK.Graphics;
 using OpenTK.Graphics.OpenGL;
-using OpenTK.Audio;
-using OpenTK.Audio.OpenAL;
 using OpenTK.Input;
 
 using Cloo;
@@ -69,7 +67,7 @@ namespace Raytracing.Driver
 		#endregion
 
 		GridCamera _gridCamera = null;	// Camera using voxel traversal
-        Scene _world;                   // The scene to render
+        GridScene _world;                   // The scene to render
 
 		/// <summary>Creates a window with the specified title.</summary>
         public Game()
@@ -105,7 +103,7 @@ namespace Raytracing.Driver
 
 			openCLSharedInit();
 
-            _world = new Scene(_commandQueue);
+            _world = new GridScene(_commandQueue);
             buildScene(_world);
 
 			// create the camera
@@ -163,9 +161,9 @@ namespace Raytracing.Driver
 		}
 
 
-        private void buildScene(Scene s)
+        private void buildScene(GridScene s)
         {
-			Ray r = new Ray(new Vector3(0.1f,0.1f,3.0f), new Vector3(0,0,-1.0f));
+			Ray r = new Ray(new Vector3(0.1f,0.1f,3.0f), new Vector3(0,0,-1.0f), 1);
 
 			/*
 			Triangle test = new Triangle(	new Vector3(0,0,0f),
@@ -178,7 +176,7 @@ namespace Raytracing.Driver
 
 			s.BackgroundColor = Color4.CornflowerBlue;
 
-            Material redGlass = new Material(Color4.Gray, 0, 0.97f, 1.52f);
+            Material redGlass = new Material(Color4.Gray, 0, 0.97f, 1.52f, 8);
             Material shinyRed = new Material(Color4.DarkRed, 0.25f);
             Material shinyGreen = new Material(Color4.DarkGreen, 0.30f);
             Material shinyBlue = new Material(Color4.DarkBlue, 0.75f);

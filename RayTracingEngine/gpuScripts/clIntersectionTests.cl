@@ -35,8 +35,8 @@ bool rayBboxIntersectP(	private Ray*	ray,
 	tMin = max(tMin, tyMin);	//if (tyMin > tMin) tMin = tyMin;
 	tMax = min(tMax, tyMax);	//if (tyMax < tMax) tMax = tyMax;
 
-	float tzMin = (bounds.p[    dirIsNeg.z].z - orig.Z) * invDir.Z;
-	float tzMax = (bounds.p[1 - dirIsNeg.z].z - orig.Z) * invDir.Z;
+	float tzMin = (bounds.p[    dirIsNeg.z].z - orig.z) * invDir.z;
+	float tzMax = (bounds.p[1 - dirIsNeg.z].z - orig.z) * invDir.z;
 	if ((tMin > tzMax) || (tzMin > tMax))
 		return false;
 	tMin = max(tMin, tzMin);	//if (tzMin > tMin) tMin = tzMin;

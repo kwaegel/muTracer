@@ -4,17 +4,17 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-using OpenTK.Graphics;
 using OpenTK;
+using OpenTK.Graphics;
 
-using SimpleTracer.RayTracing;
+using Raytracing.Primitives;
 
-namespace KDTreeTracer.RayTracing
+namespace Raytracing.SceneStructures
 {
 	/**
 	 * An accelerated scene class using a KD-Tree
 	 * */
-	class AccelScene : SimpleTracer.RayTracing.Scene
+	class AccelScene : Scene
 	{
 		public bool UseTree = true;
 

@@ -22,19 +22,6 @@ namespace Raytracing.CL
 	{
         private readonly string[] _sourcePaths = { "gpuScripts/clDataStructs.cl", "gpuScripts/clMathHelper.cl", "gpuScripts/clIntersectionTests.cl", "gpuScripts/VoxelTraversalTris.cl" };
 
-		[StructLayout(LayoutKind.Sequential)]
-		public struct Pixel
-		{
-			public int x;
-			public int y;
-
-			public Pixel(int x, int y)
-			{
-				this.x = x;
-				this.y = y;
-			}
-		}
-
 		public GridCamera(Rectangle clientBounds, ComputeCommandQueue commandQueue)
 			: base(clientBounds, commandQueue, MuxEngine.LinearAlgebra.Matrix4.Identity)
 		{

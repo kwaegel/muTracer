@@ -11,59 +11,6 @@ using Raytracing.BoundingVolumes;
 namespace Raytracing.Primitives
 {
 
-    [StructLayout(LayoutKind.Sequential)]
-	public struct Material
-	{
-		public Color4 Color;
-		public float Reflectivity;
-		public float Transparency;
-		public float RefractiveIndex;
-        private float paddingTo16Bytes;  // Not used for now.
-
-		public Material(Color4 c)
-			:this(c, 0, 0, 0)
-		{}
-
-		public Material(Color4 c, float reflectivity)
-			:this(c,reflectivity, 0,0)
-		{
-		}
-
-		public Material(Color4 c, float reflectivity, float transparency, float n)
-		{
-			this.Color = c;
-			this.RefractiveIndex = n;
-
-			float partialSum = reflectivity + transparency;
-			if (partialSum > 1.0f)
-			{
-				this.Reflectivity = reflectivity / partialSum;
-				this.Transparency = transparency / partialSum;
-			}
-			else
-			{
-				this.Reflectivity = reflectivity;
-				this.Transparency = transparency;
-			}
-
-            this.paddingTo16Bytes = 0.0f;
-		}
-
-        public static bool operator ==(Material m1, Material m2)
-        {
-            return  m1.Color == m2.Color && m1.Reflectivity == m2.Reflectivity && 
-                    m1.Transparency == m2.Transparency && m1.RefractiveIndex == m2.RefractiveIndex;
-        }
-
-        public static bool operator !=(Material m1, Material m2)
-        {
-            // TODO: rewrite to use short-circuit eval.
-            return !(m1 == m2);
-        }
-	}
-
-
-
 	public class PointLight
 	{
 
@@ -83,23 +30,23 @@ namespace Raytracing.Primitives
 
 	public class SceneBox : AbstractPrimitive
 	{
-		AxisAlignedBoundingBox _box;
+		BBox _box;
 
 		public override Vector3 Position
 		{
 			get
 			{
-				return _box.Min;
+				return _box.pMin;
 			}
 			set
 			{
-				_box.Min = value;
+				_box.pMin = value;
 			}
 		}
 
 		public SceneBox(Vector3 min, Vector3 max, Material mat)
 		{
-			_box = new AxisAlignedBoundingBox(min, max);
+			_box = new BBox(min, max);
 			this.Material = mat;
 		}
 
@@ -108,16 +55,17 @@ namespace Raytracing.Primitives
 			ref Vector3 surfaceNormal)
 		{
 			// call the XNA intersection for now
-			float distance = r.Intersects(_box);
+			float t0=0, t1=0;
+			float distance = _box.intersect(ref r, ref t0, ref t1);
 			if (!float.IsInfinity(distance))
 			{
 				// subtract a small ammount from the distance or the collision point will be
 				// inside the surface
 				distance -=0.000005f;
-				collisionPoint = r.Position + (Vector3)(distance * r.Direction);
+				collisionPoint = r.Origin + (Vector3)(distance * r.Direction);
 
 
-				surfaceNormal = Vector3.Subtract(collisionPoint, r.Position);
+				surfaceNormal = Vector3.Subtract(collisionPoint, r.Origin);
 				surfaceNormal.Normalize();
 
 				// move the collision point slightly away from the surface of the sphere.
@@ -131,16 +79,6 @@ namespace Raytracing.Primitives
 			}
 			return distance;
 		}
-
-		//// pass the ray and sphere by ref for speed. They will not be modified.
-		//public override bool simpleIntersects(ref Ray r)
-		//{
-		//    // call the XNA intersection for now
-		//    float distance = r.Intersects(_box);
-		//    if (!float.IsInfinity(distance))
-		//        return true;
-		//    return false;
-		//}
 	}
 
 

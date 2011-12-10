@@ -13,7 +13,7 @@ namespace Raytracing.Primitives
 {
 	public abstract class AbstractPrimitive
 	{
-		protected static Material BasicMaterial = new Material(Color4.Gray);
+		protected static Material DefaultMaterial = new Material(Color4.Gray);
 
 		public abstract Vector3 Position
 		{
@@ -30,7 +30,7 @@ namespace Raytracing.Primitives
 		public abstract float intersects(ref Ray r, ref Vector3 collisionPoint,
 			ref Vector3 surfaceNormal);
 
-		public virtual AxisAlignedBoundingBox getBoundingBox()
+		public virtual BBox getBounds()
 		{
 			throw new NotImplementedException("Not implemented for this type yet.");
 		}

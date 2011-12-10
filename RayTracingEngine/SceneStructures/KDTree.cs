@@ -1,13 +1,12 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text;
+using System.Collections.Generic;
 
 using OpenTK;
 
-using SimpleTracer.RayTracing;
+using Raytracing.Primitives;
 
-namespace KDTreeTracer.RayTracing
+namespace Raytracing
 {
 	// Some of the following code was inspired on examples from the 
 	// book "Physically Based Rendering", by Pharr and Humphreys.

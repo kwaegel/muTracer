@@ -4,9 +4,8 @@ using System.Linq;
 using System.Text;
 
 using OpenTK;
-using SimpleTracer.RayTracing;
 
-namespace KDTreeTracer.RayTracing
+namespace Raytracing
 {
 	public static class VectorExtensions
 	{

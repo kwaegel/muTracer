@@ -6,7 +6,6 @@ using OpenTK.Graphics;
 
 using Cloo;
 
-using Raytracing.Math;
 using Raytracing.Primitives;
 
 namespace Raytracing.SceneStructures

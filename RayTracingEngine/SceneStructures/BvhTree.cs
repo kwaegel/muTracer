@@ -3,9 +3,10 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 
 using OpenTK;
-using SimpleTracer.RayTracing;
 
-namespace KDTreeTracer.RayTracing
+using Raytracing.Primitives;
+
+namespace Raytracing
 {
 	class BvhTree : Accelerator
 	{

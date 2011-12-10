@@ -10,7 +10,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>Raytracing</RootNamespace>
     <AssemblyName>RayTracingEngine</AssemblyName>
-    <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <TargetFrameworkProfile>
     </TargetFrameworkProfile>
@@ -60,17 +60,32 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\libraries\Cloo.dll</HintPath>
     </Reference>
+    <Reference Include="System.XML" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="BoundingVolumes\AxisAlignedBoundingBox.cs" />
+    <Compile Include="BoundingVolumes\BBox.cs" />
     <Compile Include="BoundingVolumes\Frustum.cs" />
     <Compile Include="Cameras\ClTextureCamera.cs" />
+    <Compile Include="Cameras\GpuBvhCamera.cs" />
+    <Compile Include="Cameras\RayTracingCamera.cs" />
+    <Compile Include="ListExtensions.cs" />
+    <Compile Include="Primitives\DirectionalLight.cs" />
+    <Compile Include="SceneStructures\SceneLoader.cs" />
+    <Compile Include="Primitives\Material.cs" />
+    <Compile Include="SceneStructures\Accelerator.cs" />
+    <Compile Include="SceneStructures\AccelScene.cs" />
+    <Compile Include="SceneStructures\BvhTree.cs" />
+    <Compile Include="SceneStructures\KDTree.cs" />
+    <Compile Include="Primitives\Light.cs" />
     <Compile Include="SceneStructures\MaterialCache.cs" />
+    <Compile Include="SceneStructures\GridScene.cs" />
+    <Compile Include="Primitives\PointLight.cs" />
     <Compile Include="SceneStructures\Scene.cs" />
     <Compile Include="SceneStructures\VoxelGrid.cs" />
     <Compile Include="Cameras\GridCamera.cs" />
-    <Compile Include="Math\Vector4i.cs" />
     <Compile Include="Primitives\PrimitiveStructs.cs" />
+    <Compile Include="VectorExtensions.cs" />
+    <None Include="gpuScripts\BvhTraversal.cl" />
     <None Include="gpuScripts\clDataStructs.cl">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
@@ -86,7 +101,6 @@
     <None Include="gpuScripts\VoxelTraversal.cl">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <Compile Include="Math\Vector3i.cs" />
     <None Include="MuxEngineGL\Movables\Bone.cs" />
     <None Include="MuxEngineGL\LinearAlgebra\EulerAngles.cs" />
     <Compile Include="MuxEngineGL\LinearAlgebra\EVector3.cs" />
