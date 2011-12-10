@@ -16,6 +16,7 @@ namespace Raytracing.SceneStructures
 
 		private static int InitialPointLightArraySize = 4;
 		public int PointLightCount = 0;
+		private List<SimplePointLight> _lights;
 		private SimplePointLight[] _pointLightArray;
 		public ComputeBuffer<SimplePointLight> PointLightBuffer;
 
@@ -24,18 +25,21 @@ namespace Raytracing.SceneStructures
 
 		public ComputeBuffer<LinearBVHNode> BvhNodeBuffer;
 
-		public GpuBvhTree(ComputeCommandQueue commandQueue, List<Triangle> prims, int maxPrimsPerNode)
+		public GpuBvhTree(ComputeCommandQueue commandQueue,
+			List<Triangle> prims, List<SimplePointLight> lights, int maxPrimsPerNode)
 			:base(prims, maxPrimsPerNode)
 		{
 			_commandQueue = commandQueue;
+			_lights = lights;
 			initBuffers();
 		}
 
 		private void initBuffers()
 		{
 			// Create array for lights
-			_pointLightArray = new SimplePointLight[InitialPointLightArraySize];
-			PointLightCount = 0;
+			_pointLightArray = new SimplePointLight[_lights.Count];
+			_lights.CopyTo(_pointLightArray, 0);
+			PointLightCount = _lights.Count;
 			PointLightBuffer = new ComputeBuffer<SimplePointLight>(_commandQueue.Context, ComputeMemoryFlags.ReadOnly | ComputeMemoryFlags.UseHostPointer, _pointLightArray);
 
 			// Create primitive array

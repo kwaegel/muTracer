@@ -91,7 +91,8 @@ rayTriIntersect(	private Ray*		ray,
 	*surfaceNormal = fast_normalize( cross(edge1, edge2) );
 
 	// Invert surface normal to handle double-sided intersection
-	if (dot(*surfaceNormal, -ray->direction) < 0)
+	// May not want this for refraction...
+	if (dot(*surfaceNormal, -dir) < 0)
 		*surfaceNormal = -*surfaceNormal;
 
 	return t;

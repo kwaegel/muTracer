@@ -15,7 +15,9 @@ namespace Raytracing.SceneStructures
 		ComputeCommandQueue _commandQueue;
 
         protected List<Triangle> _primitives;
-        protected List<Light> _lights;
+
+		private static int InitialPointLightArraySize = 4;
+        protected List<SimplePointLight> _lights;
 
 		protected GpuBvhTree _tree;
 		protected int _maxPrims;
@@ -31,6 +33,7 @@ namespace Raytracing.SceneStructures
 			_commandQueue = commandQueue;
 			_primitives = new List<Triangle>();
 			_materialCache = new MaterialCache(_commandQueue);
+			_lights = new List<SimplePointLight>();
 		}
 
 		public GpuBVHScene(ComputeCommandQueue commandQueue, List<Triangle> prims, Color4 background, int maxPrimsPerNode) 
@@ -40,6 +43,7 @@ namespace Raytracing.SceneStructures
 			_primitives = prims;
 			_materialCache = new MaterialCache(_commandQueue);
 			rebuildTree();
+			_lights = new List<SimplePointLight>();
 		}
 
 		public void Dispose()
@@ -49,7 +53,7 @@ namespace Raytracing.SceneStructures
 
 		public void rebuildTree()
 		{
-			_tree = new GpuBvhTree(_commandQueue, _primitives, _maxPrims);
+			_tree = new GpuBvhTree(_commandQueue, _primitives, _lights, _maxPrims);
 		}
 
         /// <summary>
@@ -59,7 +63,7 @@ namespace Raytracing.SceneStructures
         public void add(Triangle s, Material m)
         {
 			int index = _materialCache.getMaterialIndex(m);
-			s.p2.W = Convert.ToSingle(index);
+			s.p2.W = Convert.ToSingle(index);	// Pack as a float. Precision issues?
             _primitives.Add(s);
         }
 
@@ -69,12 +73,25 @@ namespace Raytracing.SceneStructures
         /// <param name="position"></param>
         /// <param name="color"></param>
         /// <param name="intensity"></param>
-        public void add(Light light)
+        public void add(SimplePointLight light)
         {
             _lights.Add(light);
         }
 
-        public List<Light> getLights()
+		public void addPointLight(Vector3 position, Color4 color, float intensity)
+		{
+			SimplePointLight spl = new SimplePointLight();
+
+			// pack the color and intensity values into a single struct
+			Color4 colorAndIntensity = color;
+			colorAndIntensity.A = intensity;
+			spl.position = new Vector4(position, 1.0f);
+			spl.colorAndIntensity = colorAndIntensity;
+
+			_lights.Add(spl);
+		}
+
+        public List<SimplePointLight> getLights()
         {
             return _lights;
         }

@@ -106,9 +106,17 @@ namespace Raytracing.Driver
 
 			openCLSharedInit();
 
+			// Load file
+			//string filename = @"C:\Users\Ky\School\770 - Graphics\RasterizationHW\examples3d\test.txt";
+			string filename = @"C:\Users\Ky\School\770 - Graphics\RasterizationHW\examples3d\biplane.txt";
+			List<Triangle> trisFromFile = new List<Triangle>();
+			SceneLoader.loadSceneFromFlatFile(filename, trisFromFile);
+
 			_world = new GpuBVHScene(_commandQueue, Color4.CornflowerBlue, 1);
-			buildScene(_world);
+			buildScene(_world, trisFromFile);
 			_world.rebuildTree();
+
+			
 
 			// create the camera
 			// looking down the Z-axis into the scene
@@ -166,14 +174,35 @@ namespace Raytracing.Driver
 		}
 
 
-		private void buildScene(GpuBVHScene s)
+		private void buildScene(GpuBVHScene s, List<Triangle> triangles)
 		{
-			Material red = new Material(Color.Red);
-			Triangle test = new Triangle(new Vector3(0, 0, 0.3f),
-											new Vector3(0, 0.8f, 0),
-											new Vector3(0.5f, 0, 0),
-											0);
-			s.add(test, red);
+			Material red = new Material(Color4.Red);
+			Material green = new Material(Color4.DarkGreen);
+
+			if (triangles != null)
+			{
+				foreach (Triangle t in triangles)
+				{
+					s.add(t, red);
+				}
+			}
+			else
+			{
+				Triangle tri1 = new Triangle(new Vector3(0, 0, 0.3f),
+												new Vector3(0.5f, 0, 0),
+												new Vector3(0, 0.8f, 0),
+												0);
+				s.add(tri1, red);
+
+				Triangle tri2 = new Triangle(new Vector3(1, 0, 0.3f),
+												new Vector3(1.5f, 0, 0),
+												new Vector3(1, 0.8f, 0),
+												0);
+				// Second material causes problems...
+				s.add(tri2, green);
+			}
+
+			s.addPointLight(new Vector3(0, 5, 0), Color4.White, 50);
 		}
 
         private void buildScene(GridScene s)

@@ -5,7 +5,6 @@ namespace Raytracing
 {
     public class PointLight : Light
     {
-
         public Vector3 Position;
 
         public PointLight(Vector3 position, float intensity, Color4 color)

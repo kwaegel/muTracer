@@ -14,31 +14,51 @@ namespace Raytracing
 {
 	public static class SceneLoader
 	{
-		public static void buildScene(List<Triangle> triangles)
-		{
-			
-			Triangle t0 = new Triangle(Vector4.UnitX, Vector4.UnitY, Vector4.UnitZ, 1);
-		}
-
 		public static void loadSceneFromFlatFile(string filename, List<Triangle> triangles)
 		{
 			StreamReader infile = new StreamReader(filename);
 
+			List<Vector3> vertices = new List<Vector3>();
+			List<Color4> colors = new List<Color4>();
+			List<Vector3> normals = new List<Vector3>();
+
 			string line;
+			char[] splitMarkers = {' '};
 
 			while((line = infile.ReadLine()) != null)
 			{
-				bool isVertex = line.IndexOf(' ') != -1;	// If there is more then one token, this is a vertex line
-
-				char[] splitMarkers = {' '};
-				string[] tokens = line.Split(splitMarkers);
+				string[] tokens = line.Split(splitMarkers);	// If there is more then one token, this is a vertex line
+				float[] values = Array.ConvertAll<string, float>(tokens, float.Parse );
+				bool isVertex = tokens.Length > 1;
 
 				if (isVertex)
 				{
+					// Basic line format:
+					// x1 y1 z1 r1 g1 b1 a1 nx1 ny1 nz1
+					float x = values[0];
+					float y = values[1];
+					float z = values[2];
+					float r = values[3];
+					float g = values[4];
+					float b = values[5];
+					float a = values[6];
+					float nx = values[7];
+					float ny = values[8];
+					float nz = values[9];
 
+					vertices.Add(new Vector3(x, y, z));
+					colors.Add(new Color4(r, g, b, a));
+					normals.Add(new Vector3(nx, ny, nz));
 				}
 			}
 			infile.Close();
+
+			// Convert vertices to triangles
+			for (int i = 0; i < vertices.Count; i += 3)
+			{
+				Triangle t = new Triangle(vertices[i], vertices[i + 1], vertices[i + 2]);
+				triangles.Add(t);
+			}
 
 			/*
 			int itemsToRead = 0;

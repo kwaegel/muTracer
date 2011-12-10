@@ -78,7 +78,7 @@ getIntersection(
 						minT = t;
 						*collisionPoint = tempCP;
 						*surfaceNormal = tempSN;
-						*materialIndex = as_int(tri.p2.w);	// Packed value
+						*materialIndex = (int)tri.p2.w;// Packed value
 					}
 				}
 				if (todoOffset == 0) break;	// No more tests to be done
@@ -148,13 +148,6 @@ __global	read_only	float8*		pointLights,
 	float4 color;
 	
 	float4 collisionPoint, surfaceNormal;
-
-	//Ray currentRay = rayStack[0];
-	//int materialIndex;
-	//float distence = getIntersection(&currentRay, nodes, primitives, &collisionPoint, &surfaceNormal, &materialIndex);
-
-	//color = (float4)(distence);
-
 	
 	while (stackHeight > 0 && raysCast < 4)
 	{
@@ -165,10 +158,8 @@ __global	read_only	float8*		pointLights,
 		int materialIndex;
 		float distence = getIntersection(&currentRay, nodes, primitives, &collisionPoint, &surfaceNormal, &materialIndex);
 		
-		//color = float4(distence,0,0,1);
-		
 		// If the ray has hit somthing, draw the color of that object.
-		if (distence < HUGE_VALF)
+		if (distence < INFINITY)
 		{
 			color = (float4)(0.0f);
 
@@ -260,7 +251,7 @@ __global	read_only	float8*		pointLights,
 		
 		raysCast++;
 	}
-	
+
 
 	// Write the resulting color to the camera texture.
 	write_imagef(outputImage, coord, color);

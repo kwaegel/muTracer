@@ -13,6 +13,10 @@ namespace Raytracing.Primitives
 		public Vector4 p1;
 		public Vector4 p2;
 
+		public Triangle(Vector3 point0, Vector3 point1, Vector3 point2)
+			:this(new Vector4(point0, 1.0f), new Vector4(point1, 1.0f), new Vector4(point2, 1.0f))
+		{ }
+
 		public Triangle(Vector4 point0, Vector4 point1, Vector4 point2)
 		{
 			p0 = point0;
