@@ -17,81 +17,44 @@ using float4 = OpenTK.Vector4;
 
 namespace Raytracing.CL
 {
-
 	public class GridCamera : ClTextureCamera
 	{
-        private readonly string[] _sourcePaths = { "gpuScripts/clDataStructs.cl", "gpuScripts/clMathHelper.cl", "gpuScripts/clIntersectionTests.cl", "gpuScripts/VoxelTraversalTris.cl" };
+        private readonly string[] _gridSourcePaths = { "gpuScripts/clDataStructs.cl", 
+														"gpuScripts/clMathHelper.cl", 
+														"gpuScripts/clIntersectionTests.cl",
+														"gpuScripts/rayHelper.cl",
+														"gpuScripts/VoxelTraversalTris.cl" };
 
 		public GridCamera(Rectangle clientBounds, ComputeCommandQueue commandQueue)
 			: base(clientBounds, commandQueue, MuxEngine.LinearAlgebra.Matrix4.Identity)
 		{
+			Init();
 		}
 
 		public GridCamera(Rectangle clientBounds, ComputeCommandQueue commandQueue, MuxEngine.LinearAlgebra.Matrix4 transform)
 			: base(clientBounds, commandQueue, transform)
 		{
+			Init();
 		}
 
 		public GridCamera(Rectangle clientBounds, ComputeCommandQueue commandQueue, 
 			Vector3 forward, Vector3 up, Vector3 position)
 			: base (clientBounds, commandQueue, forward, up, position)
 		{
+			Init();
+		}
+
+		private void Init()
+		{
+			// Copy our source to the base class to be compiled
+			CLSourcePaths = _gridSourcePaths;
+			buildOpenCLProgram();
 		}
 
         public override void Dispose()
         {
-
             base.Dispose();
         }
-
-		protected override void buildOpenCLProgram()
-		{
-            String[] sourceArray = new String[_sourcePaths.Length];
-            try
-            {
-                
-                for (int i = 0; i < _sourcePaths.Length; i++)
-                {
-                    StreamReader sourceReader = new StreamReader(_sourcePaths[i]);
-                    sourceArray[i] = sourceReader.ReadToEnd();
-                }
-            }
-            catch (FileNotFoundException e)
-            {
-                System.Diagnostics.Trace.Write("Can't find: " + e.FileName + "\n");
-                Environment.Exit(-1);
-            }
-
-			// Build and compile the OpenCL program
-			_renderKernel = null;
-			_renderProgram = new ComputeProgram(_commandQueue.Context, sourceArray);
-			try
-			{
-				// build the program
-                _renderProgram.Build(null, "-cl-nv-verbose", null, IntPtr.Zero);
-
-				// create a reference a kernel function
-				_renderKernel = _renderProgram.CreateKernel("render");
-			}
-			catch (BuildProgramFailureComputeException)
-			{
-                printBuildLog();
-
-                Environment.Exit(-1);
-			}
-			catch (InvalidBuildOptionsComputeException)
-			{
-                printBuildLog();
-
-                Environment.Exit(-1);
-			}
-			catch (InvalidBinaryComputeException)
-			{
-                printBuildLog();
-
-                Environment.Exit(-1);
-			}
-		}
 
         // Version to be used with a scene object.
         internal void renderSceneToTexture(VoxelGrid voxelGrid, MaterialCache matCache, Color4 backgroundColor)

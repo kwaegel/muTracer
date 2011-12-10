@@ -12,14 +12,14 @@ using Raytracing.Primitives;
 namespace Raytracing.SceneStructures
 {
 	/**
-	 * An accelerated scene class using a KD-Tree
+	 * An accelerated scene class using a KD-Tree or BVH
 	 * */
-	class AccelScene : Scene
+	public class AccelScene : Scene
 	{
 		public bool UseTree = true;
 
-		int maxPrims = 3;
-		Accelerator _tree;
+		protected int maxPrims = 3;
+		protected Accelerator _tree;
 
 		public AccelScene(Color4 backgroundColor)
 			: base(backgroundColor)

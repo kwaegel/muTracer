@@ -68,14 +68,19 @@
     <Compile Include="Cameras\ClTextureCamera.cs" />
     <Compile Include="Cameras\GpuBvhCamera.cs" />
     <Compile Include="Cameras\RayTracingCamera.cs" />
+    <None Include="gpuScripts\rayHelper.cl">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <Compile Include="ListExtensions.cs" />
     <Compile Include="Primitives\DirectionalLight.cs" />
+    <Compile Include="SceneStructures\GpuBVHScene.cs" />
+    <Compile Include="SceneStructures\GpuBvhTree.cs" />
     <Compile Include="SceneStructures\SceneLoader.cs" />
     <Compile Include="Primitives\Material.cs" />
     <Compile Include="SceneStructures\Accelerator.cs" />
-    <Compile Include="SceneStructures\AccelScene.cs" />
+    <None Include="SceneStructures\AccelScene.cs" />
     <Compile Include="SceneStructures\BvhTree.cs" />
-    <Compile Include="SceneStructures\KDTree.cs" />
+    <None Include="SceneStructures\KDTree.cs" />
     <Compile Include="Primitives\Light.cs" />
     <Compile Include="SceneStructures\MaterialCache.cs" />
     <Compile Include="SceneStructures\GridScene.cs" />

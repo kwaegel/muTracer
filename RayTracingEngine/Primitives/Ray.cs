@@ -24,6 +24,11 @@ namespace Raytracing.Primitives
 			this.tMax = maxT;
 		}
 
+		public float intersects(Triangle tri, ref Vector3 collisionPoint, ref Vector3 surfaceNormal)
+		{
+			throw new System.NotImplementedException("Triangle intersection not implemented yet. GPU only.");
+		}
+
 		public float intersects(Sphere sphere, ref Vector3 collisionPoint, ref Vector3 surfaceNormal)
 		{
 			float t = intersects(sphere);
@@ -39,6 +44,11 @@ namespace Raytracing.Primitives
 			}
 
 			return t;
+		}
+
+		public float intersects(Triangle tri)
+		{
+			throw new System.NotImplementedException("Triangle intersection not implemented yet. GPU only.");
 		}
 
 		// the ray does not need to be a unit ray. It needs a distance bound.

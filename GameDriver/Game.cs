@@ -66,12 +66,15 @@ namespace Raytracing.Driver
 
 		#endregion
 
-		GridCamera _gridCamera = null;	// Camera using voxel traversal
-        GridScene _world;                   // The scene to render
+		//GridCamera _camera = null;	// Camera using voxel traversal
+        //GridScene _world;                   // The scene to render
+
+		GpuBvhCamera _camera;
+		GpuBVHScene _world;
 
 		/// <summary>Creates a window with the specified title.</summary>
         public Game()
-            : base(1024, 1024, GraphicsMode.Default, "Raytracing tester")
+            : base(1024, 800, GraphicsMode.Default, "Raytracing tester")
         {
             VSync = VSyncMode.Off;
             
@@ -81,7 +84,7 @@ namespace Raytracing.Driver
 		{
 			_commandQueue.Finish();
 			
-			_gridCamera.Dispose();
+			_camera.Dispose();
             _world.Dispose();
 
             _commandQueue.Dispose();
@@ -103,8 +106,12 @@ namespace Raytracing.Driver
 
 			openCLSharedInit();
 
-            _world = new GridScene(_commandQueue);
-            buildScene(_world);
+			_world = new GpuBVHScene(_commandQueue, Color4.CornflowerBlue, 1);
+			buildScene(_world);
+			_world.rebuildTree();
+
+            //_world = new GridScene(_commandQueue);
+            //buildScene(_world);
 
 			// create the camera
 			// looking down the Z-axis into the scene
@@ -117,10 +124,11 @@ namespace Raytracing.Driver
 
 			try
 			{
-				_gridCamera = new GridCamera(this.ClientRectangle, _commandQueue, -Vector3.UnitZ, Vector3.UnitY, cameraPosition);
-				_gridCamera.VerticalFieldOfView = vFOV;
-				_gridCamera.NearPlane = nearClip;
-				_gridCamera.computeProjection();
+				//_camera = new GridCamera(this.ClientRectangle, _commandQueue, -Vector3.UnitZ, Vector3.UnitY, cameraPosition);
+				_camera = new GpuBvhCamera(this.ClientRectangle, _commandQueue, -Vector3.UnitZ, Vector3.UnitY, cameraPosition);
+				_camera.VerticalFieldOfView = vFOV;
+				_camera.NearPlane = nearClip;
+				_camera.computeProjection();
 			}
 			catch (Exception)
 			{
@@ -160,6 +168,16 @@ namespace Raytracing.Driver
 			_commandQueue = new ComputeCommandQueue(_computeContext, device, ComputeCommandQueueFlags.None);
 		}
 
+
+		private void buildScene(GpuBVHScene s)
+		{
+			Material red = new Material(Color.Red);
+			Triangle test = new Triangle(new Vector3(0, 0, 0f),
+											new Vector3(0, 1, 0),
+											new Vector3(1, 0, 0),
+											0);
+			s.add(test, red);
+		}
 
         private void buildScene(GridScene s)
         {
@@ -251,8 +269,8 @@ namespace Raytracing.Driver
 			int halfWidth = ClientRectangle.Width / 2;
 
 			// Set the client bounds for the camera
-            _gridCamera.setClientBounds(ClientRectangle);
-			_gridCamera.computeProjection();
+            _camera.setClientBounds(ClientRectangle);
+			_camera.computeProjection();
 
 			// orthographic projection
 			GL.MatrixMode(MatrixMode.Projection);
@@ -289,7 +307,7 @@ namespace Raytracing.Driver
 
 
 			// move the camera
-			processCameraMovement(_gridCamera, (float)e.Time, false);
+			processCameraMovement(_camera, (float)e.Time, false);
 
             // Exit if escape is pressed.
             if (Keyboard[Key.Escape])
@@ -379,7 +397,7 @@ namespace Raytracing.Driver
 			// clear the screen
 			GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
 
-            _world.render(_commandQueue, _gridCamera);
+            _world.render(_commandQueue, _camera);
 
 			// Display the frame that was just rendered.
 			SwapBuffers();
@@ -401,7 +419,7 @@ namespace Raytracing.Driver
 			{
 				fpsString = String.Format("{0:##.0}", fps);
 			}
-			this.Title = "Raytracing tester (" + fpsString + " FPS, " + pixelString + " pixels) @ (" + _gridCamera.Position + ")";
+			this.Title = "Raytracing tester (" + fpsString + " FPS, " + pixelString + " pixels) @ (" + _camera.Position + ")";
 		}
 
         /// <summary>

@@ -1,7 +1,7 @@
 ﻿
 
 // Enter your kernel in this window
-bool rayBboxIntersectP(	private Ray*	ray,
+bool rayBBoxIntersectP(	private Ray*	ray,
 						private BBox	bounds,
 						private float4	invDir,
 						private int4	dirIsNeg)
@@ -12,8 +12,10 @@ bool rayBboxIntersectP(	private Ray*	ray,
 	// Vectorized version
 	// for select(a,b,c) => memberwise x= c ? b : a
 	// assuming true = -1 and false = 0
-	float4 tMinV = (select(bounds.p[0], bounds.p[1], dirIsNeg) - orig) * invDir;
-	float4 tMaxV = (select(bounds.p[1], bounds.p[0], dirIsNeg) - orig) * invDir;
+	// Since select looks at the MSB (sign bit), we can use invDir directly
+	//    in our bounds selecting instead of dirIsNeg.
+	float4 tMinV = (select(bounds.p[0], bounds.p[1], invDir) - orig) * invDir;
+	float4 tMaxV = (select(bounds.p[1], bounds.p[0], invDir) - orig) * invDir;
 	if (tMinV.x > tMaxV.y || tMinV.y > tMaxV.x)
 		return false;
 	float tMin = max(tMinV.x, tMinV.y);

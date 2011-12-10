@@ -14,22 +14,20 @@ namespace Raytracing.Primitives
 		public Vector4 p1;
 		public Vector4 p2;
 
-		public Triangle(Vector3 point1, Vector3 point2, Vector3 point3, int materialIndex)
+		public Triangle(Vector4 point0, Vector4 point1, Vector4 point2)
 		{
-			// Since all the vectors have w=1, we can pack the material index into the last w coordinate
-			float matAsFloat = BitConverter.ToSingle(BitConverter.GetBytes(materialIndex), 0);
-
-			p0 = new Vector4(point1, 1.0f);
-			p1 = new Vector4(point2, 1.0f);
-			p2 = new Vector4(point3, matAsFloat);
+			p0 = point0;
+			p1 = point1;
+			p2 = point2;
 		}
 
-		public Triangle(Vector4 point1, Vector4 point2, Vector4 point3, int materialIndex)
-		{
-			p0 = point1;
-			p1 = point2;
-			p2 = point3;
+		public Triangle(Vector3 point1, Vector3 point2, Vector3 point3, int materialIndex)
+			:this(new Vector4(point1, 1.0f), new Vector4(point2, 1.0f), new Vector4(point3, 1.0f), materialIndex)
+		{ }
 
+		public Triangle(Vector4 point1, Vector4 point2, Vector4 point3, int materialIndex)
+			:this(point1, point2, point3)
+		{
 			// Since all the vectors have w=1, we can pack the material index into the last w coordinate
 			p2.W = BitConverter.ToSingle(BitConverter.GetBytes(materialIndex), 0);
 		}

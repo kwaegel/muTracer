@@ -43,6 +43,9 @@ namespace Raytracing.CL
 
 #region Initialization
 
+
+		protected string[] CLSourcePaths { get; set;}
+
 		public ClTextureCamera(Rectangle clientBounds, ComputeCommandQueue commandQueue)
 			: this(clientBounds, commandQueue, MuxEngine.LinearAlgebra.Matrix4.Identity)
 		{
@@ -67,7 +70,7 @@ namespace Raytracing.CL
 
 			createSharedTexture();
 
-			buildOpenCLProgram();
+			//buildOpenCLProgram();
 		}
 
 		private void createSharedTexture()
@@ -82,39 +85,57 @@ namespace Raytracing.CL
 
 		protected virtual void buildOpenCLProgram()
 		{
-			// Load the OpenCL clSource code
-			StreamReader sourceReader = new StreamReader("CL/clCameraCode.cl");
-			String clSource = sourceReader.ReadToEnd();
+			if (CLSourcePaths == null)
+			{
+				System.Diagnostics.Trace.Write("No CL source defined.\n");
+				return;
+			}
+
+			String[] sourceArray = new String[CLSourcePaths.Length];
+			try
+			{
+
+				for (int i = 0; i < CLSourcePaths.Length; i++)
+				{
+					StreamReader sourceReader = new StreamReader(CLSourcePaths[i]);
+					sourceArray[i] = sourceReader.ReadToEnd();
+				}
+			}
+			catch (FileNotFoundException e)
+			{
+				System.Diagnostics.Trace.Write("Can't find: " + e.FileName + "\n");
+				Environment.Exit(-1);
+			}
 
 			// Build and compile the OpenCL program
 			_renderKernel = null;
-			_renderProgram = new ComputeProgram(_commandQueue.Context, clSource);
+			_renderProgram = new ComputeProgram(_commandQueue.Context, sourceArray);
 			try
 			{
 				// build the program
-				_renderProgram.Build(null, null, null, IntPtr.Zero);
+				_renderProgram.Build(null, "-cl-nv-verbose", null, IntPtr.Zero);
 
 				// create a reference a kernel function
 				_renderKernel = _renderProgram.CreateKernel("render");
 			}
-			catch (BuildProgramFailureComputeException e)
+			catch (BuildProgramFailureComputeException)
 			{
-				String buildLog = _renderProgram.GetBuildLog(_commandQueue.Device);
-				System.Diagnostics.Trace.WriteLine(buildLog);
-				throw e;
+				printBuildLog();
+
+				Environment.Exit(-1);
 			}
-			catch (InvalidBuildOptionsComputeException e)
+			catch (InvalidBuildOptionsComputeException)
 			{
-				String buildLog = _renderProgram.GetBuildLog(_commandQueue.Device);
-				System.Diagnostics.Trace.WriteLine(buildLog);
-				throw e;
+				printBuildLog();
+
+				Environment.Exit(-1);
 			}
-            catch (InvalidBinaryComputeException e)
-            {
-                String buildLog = _renderProgram.GetBuildLog(_commandQueue.Device);
-                System.Diagnostics.Trace.WriteLine(buildLog);
-				throw e;
-            }
+			catch (InvalidBinaryComputeException)
+			{
+				printBuildLog();
+
+				Environment.Exit(-1);
+			}
 		}
 
 

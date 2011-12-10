@@ -8,15 +8,15 @@ using Raytracing.Primitives;
 
 namespace Raytracing
 {
-	class BvhTree : Accelerator
+	public class BvhTree // : Accelerator
 	{
 #if DEBUG
 		string indent = "";
 #endif
 
-		int _maxPrimsInNode;
-		LinearBVHNode[] _nodes;
-		List<Sphere> _primitives;
+		protected int _maxPrimsInNode;
+		protected LinearBVHNode[] _nodes;
+		protected List<Triangle> _primitives;
 
 		#region Private Structs/Classes
 
@@ -123,7 +123,7 @@ namespace Raytracing
 
 		#region Construction
 
-		public BvhTree(List<Sphere> prims, int maxPrimsPerNode)
+		public BvhTree(List<Triangle> prims, int maxPrimsPerNode)
 		{
 			_maxPrimsInNode = Math.Min(8, maxPrimsPerNode);
 			_primitives = prims;
@@ -140,7 +140,7 @@ namespace Raytracing
 
 			// Recursively build BVH tree for all primitives
 			int totalNodes = 0;
-			List<Sphere> orderedPrims = new List<Sphere>(prims.Count);
+			List<Triangle> orderedPrims = new List<Triangle>(prims.Count);
 			BVHBuildNode root = recursiveBuild(buildData, 0, _primitives.Count, ref totalNodes, orderedPrims);
 
 			Console.WriteLine("Finished building tree with " + totalNodes + " nodes");
@@ -154,7 +154,7 @@ namespace Raytracing
 			flattenBVHTree(root, ref offset);
 		}
 
-		BVHBuildNode recursiveBuild(List<BVHPrimitiveInfo> buildData, int start, int end, ref int totalNodes, List<Sphere> orderedPrims)
+		BVHBuildNode recursiveBuild(List<BVHPrimitiveInfo> buildData, int start, int end, ref int totalNodes, List<Triangle> orderedPrims)
 		{
 #if DEBUG
 			indent += "  ";
@@ -338,7 +338,7 @@ namespace Raytracing
 
 		#region Intersection
 
-		public override float getNearestIntersection(ref Ray ray, out Sphere primHit)
+		public float getNearestIntersection(ref Ray ray, out Triangle? primHit)
 		{
 			float minT = float.PositiveInfinity;
 			primHit = null;

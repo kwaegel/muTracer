@@ -14,6 +14,12 @@ namespace Raytracing
 {
 	public static class SceneLoader
 	{
+		public static void buildScene(List<Triangle> triangles)
+		{
+			
+			Triangle t0 = new Triangle(Vector4.UnitX, Vector4.UnitY, Vector4.UnitZ, 1);
+		}
+
 		public static void loadSceneFromFlatFile(string filename, List<Triangle> triangles)
 		{
 			StreamReader infile = new StreamReader(filename);
