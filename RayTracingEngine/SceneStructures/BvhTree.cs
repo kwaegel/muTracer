@@ -20,6 +20,7 @@ namespace Raytracing
 
 		#region Private Structs/Classes
 
+		[StructLayout(LayoutKind.Sequential)]
 		public struct LinearBVHNode
 		{
 			public BBox bounds;

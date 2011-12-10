@@ -19,7 +19,7 @@ namespace Raytracing.CL
 		private readonly string[] _bvhSourcePaths = { "gpuScripts/clDataStructs.cl", 
 													 "gpuScripts/clMathHelper.cl", 
 													 "gpuScripts/clIntersectionTests.cl", 
-													 "gpuScripts/rayHelper.tl", 
+													 "gpuScripts/rayHelper.cl", 
 													 "gpuScripts/BvhTraversal.cl" };
 
 		public GpuBvhCamera(Rectangle clientBounds, ComputeCommandQueue commandQueue)
@@ -45,6 +45,7 @@ namespace Raytracing.CL
 		{
 			// Copy our source to the base class to be compiled
 			CLSourcePaths = _bvhSourcePaths;
+			buildOpenCLProgram();
 		}
 
         public override void Dispose()
@@ -57,8 +58,6 @@ namespace Raytracing.CL
 		{
 			// Switch viewport to camera client bounds
 			GL.Viewport(ClientBounds);
-
-			
 
 			// Aquire lock on OpenGL objects.
 			GL.Finish();
@@ -92,24 +91,7 @@ namespace Raytracing.CL
 			// Lights
 			_renderKernel.SetMemoryArgument(argi++, scene.PointLightBuffer);
 			_renderKernel.SetValueArgument<int>(argi++, scene.PointLightCount);
-/*
- * 
- * 
-			// Voxel grid arguments
-			_renderKernel.SetMemoryArgument(argi++, voxelGrid._grid, false);
-			_renderKernel.SetValueArgument<float>(argi++, cellSize);
 
-			// Pass in array of primitives
-			_renderKernel.SetMemoryArgument(argi++, voxelGrid.Geometry);
-			_renderKernel.SetValueArgument<int>(argi++, voxelGrid.VectorsPerVoxel);
-
-			// Pass in lights
-			_renderKernel.SetMemoryArgument(argi++, voxelGrid.PointLights);
-			_renderKernel.SetValueArgument<int>(argi++, voxelGrid.PointLightCount);
-
-			// Pass in materials
-			_renderKernel.SetMemoryArgument(argi++, matCache.Buffer);
-*/
 			// Add render task to the device queue.
 			_commandQueue.Execute(_renderKernel, null, globalWorkSize, localWorkSize, null);
 

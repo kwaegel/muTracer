@@ -90,7 +90,9 @@
     <Compile Include="Cameras\GridCamera.cs" />
     <Compile Include="Primitives\PrimitiveStructs.cs" />
     <Compile Include="VectorExtensions.cs" />
-    <None Include="gpuScripts\BvhTraversal.cl" />
+    <None Include="gpuScripts\BvhTraversal.cl">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Include="gpuScripts\clDataStructs.cl">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>

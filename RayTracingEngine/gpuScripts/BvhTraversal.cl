@@ -22,10 +22,12 @@ getIntersection(
 							float4*		surfaceNormal,		// Out: surface normal and return the distence.
 							int*		materialIndex)		// Out: index of the material to use
 {
+	//return (float)nodes[0].nPrimitives + 0.5f;
+
 	float minT = INFINITY;
 	int primHit = 0;
 	bool hit = false;
-
+	
 	// Temp for intersection. Move to calling function.
 	float u=0, v=0;
 	float4 tempCP, tempSN;
@@ -33,32 +35,36 @@ getIntersection(
 	float4 invDir = 1.0f/ray->direction;
 	// select(a,b,c) => memberwise MSB[C] ? b : a
 	// May not need dirIsNeg if we can directly use invDir in a select...
-	int4 dirIsNeg = select(int4(0), int4(-1), invDir);
-	int[3] dirIsNegArray;
-	dirINegArray[x_axis] = dirIsNeg.x;
+	int4 dirIsNeg = select( (int4)0, (int4)-1, as_int4(invDir) );
+	int dirIsNegArray[3];
+	dirIsNegArray[x_axis] = dirIsNeg.x;
 	dirIsNegArray[y_axis] = dirIsNeg.y;
 	dirIsNegArray[z_axis] = dirIsNeg.z;
 
 	// Create bvh traversal stack
 	int todoOffset = 0;
 	int nodeNum = 0;
-	int[32] todo;
+	int todo[32];
+
+	//float testX = ray->direction.x;
+	//return 2.0f / 2.3f;
+	//return nodes[0].nPrimitives;
 
 	// Traverse tree
 	while(true)
 	{
 		// Check for intersection with the current BBox
 		BvhNode node = nodes[nodeNum];
-		bool hitNode = bool rayBBoxIntersectP(ray, node.bounds, invDir, dirIsNeg);
+		bool hitNode = rayBBoxIntersectP(ray, node.bounds, invDir, dirIsNeg);
 
 		if(hitNode)
 		{
-			if (node->nPrimitives > 0)
+			if (node.nPrimitives > 0)
 			{
 				// Intersect primitives
-				for (int i=0; i < node->nPrimitives; ++i)
+				for (int i=0; i < node.nPrimitives; ++i)
 				{
-					int primIndex = node->primitivesOffset+i;
+					int primIndex = node.primitivesOffset+i;
 					Triangle tri = primitives[primIndex];
 
 					float t = rayTriIntersect(ray, tri,
@@ -68,9 +74,9 @@ getIntersection(
 					{
 						hit = true;
 						minT = t;
-						collisionPoint = tempCP;
-						surfaceNormal = tempSN;
-						materialIndex = as_int(tri.p2.w);	// Packed value
+						*collisionPoint = tempCP;
+						*surfaceNormal = tempSN;
+						*materialIndex = as_int(tri.p2.w);	// Packed value
 					}
 				}
 				if (todoOffset == 0) break;	// No more tests to be done
@@ -94,8 +100,8 @@ getIntersection(
 		else
 		{
 			// Node not hit. Check next node
-			todo[todoOffset++] = node.secondChildOffset;
-			nodeNum++;
+			if (todoOffset == 0) break;
+			nodeNum = todo[--todoOffset];
 		}
 	}
 
@@ -138,7 +144,15 @@ __global	read_only	float8*		pointLights,
 	float4 color;
 	
 	float4 collisionPoint, surfaceNormal;
-	
+
+	Ray currentRay = rayStack[0];
+	int materialIndex;
+	float distence = getIntersection(&currentRay, nodes, primitives, &collisionPoint, &surfaceNormal, &materialIndex);
+
+	color = (float4)(distence);
+	//color = (float4)(nodes[0].bounds.p[1].x);
+
+	/*
 	while (stackHeight > 0 && raysCast < 4)
 	{
 		stackHeight--;
@@ -146,7 +160,9 @@ __global	read_only	float8*		pointLights,
 		float currentRayWeight = rayWeights[stackHeight];
 
 		int materialIndex;
-		float distence = getIntersection(&currentRay, nodes, primitives, &collisionPoint, &surfaceNormal, &materialIndex);
+		//float distence = getIntersection(&currentRay, nodes, primitives, &collisionPoint, &surfaceNormal, &materialIndex);
+		
+		//color = float4(distence,0,0,1);
 		
 		// If the ray has hit somthing, draw the color of that object.
 		if (distence < HUGE_VALF)
@@ -172,7 +188,6 @@ __global	read_only	float8*		pointLights,
 				rayWeights[stackHeight] = mat.reflectivity;		// FIXME: this could be a problem with transparency...
 				stackHeight++;
 			}
-
 
 			// Add refracted ray to stack;
 			// NOTE: based on C# code from SimpleScene.cs (from initial import, rev 087a9e15)
@@ -239,9 +254,11 @@ __global	read_only	float8*		pointLights,
 			// if the ray hits nothing, add in the background color.
 			color += backgroundColor * currentRayWeight;
 		}
+		
 		raysCast++;
 	}
-	
+	*/
+
 	// Write the resulting color to the camera texture.
 	write_imagef(outputImage, coord, color);
 }

@@ -83,10 +83,9 @@ namespace Raytracing.SceneStructures
         {
             _materialCache.syncBuffer(commandQueue);
 			_tree.syncBuffers();
-            //_voxelGrid.syncBuffers();
 
             camera.computeView();
-            //camera.renderSceneToTexture(_voxelGrid, _materialCache, BackgroundColor);
+			camera.renderSceneToTexture(_tree, _materialCache, BackgroundColor);
             camera.drawTextureToScreen();
         }
 

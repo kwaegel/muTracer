@@ -172,9 +172,9 @@ namespace Raytracing.Driver
 		private void buildScene(GpuBVHScene s)
 		{
 			Material red = new Material(Color.Red);
-			Triangle test = new Triangle(new Vector3(0, 0, 0f),
-											new Vector3(0, 1, 0),
-											new Vector3(1, 0, 0),
+			Triangle test = new Triangle(new Vector3(0, 0, 0.3f),
+											new Vector3(0, 0.8f, 0),
+											new Vector3(0.5f, 0, 0),
 											0);
 			s.add(test, red);
 		}

@@ -6,7 +6,6 @@ using Raytracing.BoundingVolumes;
 
 namespace Raytracing.Primitives
 {
-	// Uses clockwise winding like XNA
 	[StructLayout(LayoutKind.Sequential)]
 	unsafe public struct Triangle
 	{
