@@ -1,4 +1,50 @@
 ﻿
+
+// Enter your kernel in this window
+bool rayBboxIntersectP(	private Ray*	ray,
+						private BBox	bounds,
+						private float4	invDir,
+						private int4	dirIsNeg)
+{
+	float4 orig = ray->origin;
+
+	/*
+	// Vectorized version
+	// for select(a,b,c) => memberwise x= c ? b : a
+	// assuming true = -1 and false = 0
+	float4 tMinV = (select(bounds.p[0], bounds.p[1], dirIsNeg) - orig) * invDir;
+	float4 tMaxV = (select(bounds.p[1], bounds.p[0], dirIsNeg) - orig) * invDir;
+	if (tMinV.x > tMaxV.y || tMinV.y > tMaxV.x)
+		return false;
+	float tMin = max(tMinV.x, tMinV.y);
+	float tMax = min(tMaxV.x, tMaxV.y);
+	if (tMin > tMaxV.z || tMax < tMinV.z)
+		return false;
+	tMin = max(tMin, tMinV.z);
+	tMax = min(tMax, tMaxV.z);
+	return (tMin < ray->tMax) && (tMax > ray->tMin);
+	*/
+
+	float  tMin = (bounds.p[    dirIsNeg.x].x - orig.x) * invDir.x;
+	float  tMax = (bounds.p[1 - dirIsNeg.x].x - orig.x) * invDir.x;
+	float tyMin = (bounds.p[    dirIsNeg.y].y - orig.y) * invDir.y;
+	float tyMax = (bounds.p[1 - dirIsNeg.y].y - orig.y) * invDir.y;
+	if ((tMin > tyMax) || (tyMin > tMax))
+		return false;
+
+	tMin = max(tMin, tyMin);	//if (tyMin > tMin) tMin = tyMin;
+	tMax = min(tMax, tyMax);	//if (tyMax < tMax) tMax = tyMax;
+
+	float tzMin = (bounds.p[    dirIsNeg.z].z - orig.Z) * invDir.Z;
+	float tzMax = (bounds.p[1 - dirIsNeg.z].z - orig.Z) * invDir.Z;
+	if ((tMin > tzMax) || (tzMin > tMax))
+		return false;
+	tMin = max(tMin, tzMin);	//if (tzMin > tMin) tMin = tzMin;
+	tMax = min(tMax, tzMax);	//if (tzMax < tMax) tMax = tzMax;
+
+	return (tMin < ray->tMax) && (tMax > ray->tMin);
+}
+
 float
 rayTriIntersect(	private Ray*		ray,
 					private Triangle	tri,

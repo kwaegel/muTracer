@@ -273,16 +273,6 @@ __global	read_only	Material*	materials)
 	
 	float4 collisionPoint, surfaceNormal;
 	int materialIndex;
-
-	/*
-	Ray currentRay = rayStack[0];
-	float distence = findNearestIntersectionSimple(&currentRay, 1, geometryArray, &collisionPoint, &surfaceNormal, &materialIndex, &debug);
-	if (distence < HUGE_VALF)
-	{
-		color = (float4)(0,1,0,0);
-	}
-	//color = debug;
-	*/
 	
 	
 	while (stackHeight > 0 && raysCast < 4)
@@ -293,8 +283,6 @@ __global	read_only	Material*	materials)
 
 		int materialIndex;
 		float distence = findNearestIntersection(&currentRay, &collisionPoint, &surfaceNormal, &materialIndex, voxelGrid, cellSize, geometryArray, vectorsPerVoxel);
-
-		//float distence = findNearestIntersectionSimple(&currentRay, 1, geometryArray, &collisionPoint, &surfaceNormal, &materialIndex);
 		
 		
 		// If the ray has hit somthing, draw the color of that object.

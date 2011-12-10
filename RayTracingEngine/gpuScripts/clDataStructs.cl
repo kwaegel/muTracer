@@ -9,6 +9,8 @@ typedef struct {
 	float4 origin;
 	float4 direction;
 	float currentN;	// The index of refraction of the material the ray is currently in.
+	float tMin;
+	float tMax;
 } Ray;
 
 
@@ -35,3 +37,7 @@ typedef struct {
 	float4 p1;
 	float4 p2;	// Last point plus packed material index
 } Triangle;
+
+typedef struct {
+	float4 p[2];
+} BBox
