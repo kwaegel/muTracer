@@ -1,7 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+using System.Runtime.InteropServices;
 
 using OpenTK;
 
@@ -11,26 +9,28 @@ namespace Raytracing
 {
 	public enum Axis { x, y, z, none}
 
+	[StructLayout(LayoutKind.Sequential)]
 	public struct BBox
 	{
-		public Vector3 pMin, pMax;
+		public Vector4 pMin;
+		public Vector4 pMax;
 
 		public BBox(bool temp)
 		{
-			pMin = new Vector3(float.PositiveInfinity, float.PositiveInfinity, float.PositiveInfinity);
-			pMax = new Vector3(float.NegativeInfinity, float.NegativeInfinity, float.NegativeInfinity);
+			pMin = new Vector4(float.PositiveInfinity, float.PositiveInfinity, float.PositiveInfinity,1);
+			pMax = new Vector4(float.NegativeInfinity, float.NegativeInfinity, float.NegativeInfinity,1);
 		}
 
 		public BBox(Vector3 min, Vector3 max)
 		{
-			pMin = min;
-			pMax = max;
+			pMin = new Vector4(min,1);
+			pMax = new Vector4(max,1);
 		}
 
 		public BBox(float minX, float maxX, float minY, float maxY, float minZ, float maxZ)
 		{
-			pMin = new Vector3(minX,minY,minZ);
-			pMax = new Vector3(maxX,maxY,maxZ);
+			pMin = new Vector4(minX,minY,minZ,1);
+			pMax = new Vector4(maxX,maxY,maxZ,1);
 		}
 
 		public BBox(BBox b)
@@ -43,14 +43,14 @@ namespace Raytracing
 		{
 			get
 			{
-				return (i == 0) ? pMin : pMax;
+				return (i == 0) ? pMin.Xyz : pMax.Xyz;
 			}
 			set
 			{
 				if (i == 0)
-					pMin = value;
+					pMin.Xyz = value;
 				else if (i == 1)
-					pMax = value;
+					pMax.Xyz = value;
 			}
 		}
 
@@ -93,13 +93,13 @@ namespace Raytracing
 
 		public float surfaceArea()
 		{
-			Vector3 sides = (pMax - pMin);
+			Vector3 sides = (pMax.Xyz - pMin.Xyz);
 			return 2* ((sides.X*sides.Y) + (sides.X*sides.Z) + (sides.Y*sides.Z) );
 		}
 
 		public Axis longestAxis()
 		{
-			Vector3 sides = (pMax - pMin);
+			Vector3 sides = (pMax.Xyz - pMin.Xyz);
 
 			return (sides.X < sides.Y) ? ( sides.Y < sides.Z ? Axis.z : Axis.y) : (sides.X < sides.Z ? Axis.z : Axis.x);
 		}
@@ -116,8 +116,8 @@ namespace Raytracing
 
 		public BBox union(BBox other)
 		{
-			pMin = Vector3.ComponentMin(pMin, other.pMin);
-			pMax = Vector3.ComponentMax(pMax, other.pMax);
+			pMin.Xyz = Vector3.ComponentMin(pMin.Xyz, other.pMin.Xyz);
+			pMax.Xyz = Vector3.ComponentMax(pMax.Xyz, other.pMax.Xyz);
 			return this;
 		}
 

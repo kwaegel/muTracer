@@ -110,9 +110,6 @@ namespace Raytracing.Driver
 			buildScene(_world);
 			_world.rebuildTree();
 
-            //_world = new GridScene(_commandQueue);
-            //buildScene(_world);
-
 			// create the camera
 			// looking down the Z-axis into the scene
 			Vector3 cameraPosition = InitialCameraPosition;
@@ -292,11 +289,6 @@ namespace Raytracing.Driver
 			if (limitFrames && _frames >= _frameLimit)
 			{
 				base.Exit();
-			}
-
-			if (Keyboard[Key.Space])
-			{
-				System.Diagnostics.Trace.WriteLine("Breakpoint hit");
 			}
 
 			// Allows the game to exit

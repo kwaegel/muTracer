@@ -36,11 +36,11 @@ namespace Raytracing.Primitives
 		{
 			get
 			{
-				return _box.pMin;
+				return _box.pMin.Xyz;
 			}
 			set
 			{
-				_box.pMin = value;
+				_box.pMin.Xyz = value;
 			}
 		}
 

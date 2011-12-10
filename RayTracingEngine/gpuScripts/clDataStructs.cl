@@ -39,5 +39,7 @@ typedef struct {
 } Triangle;
 
 typedef struct {
-	float4 p[2];
+	//float4 p[2];
+	float4 pMin;
+	float4 pMax;
 } BBox;

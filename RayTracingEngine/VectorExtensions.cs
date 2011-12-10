@@ -37,5 +37,14 @@ namespace Raytracing
 			return vec.Z;
 		}
 
+		public static float axisValue(this Vector4 vec, int axisId)
+		{
+			if (axisId == (int)Axis.x)
+				return vec.X;
+			else if (axisId == (int)Axis.y)
+				return vec.Y;
+			return vec.Z;
+		}
+
 	}
 }

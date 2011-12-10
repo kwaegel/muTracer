@@ -23,11 +23,11 @@ namespace Raytracing
 		[StructLayout(LayoutKind.Sequential)]
 		public struct LinearBVHNode
 		{
+			public BBox bounds;
 			public int primitivesOffset;
 			public int secondChildOffset;
 			public int nPrimitives;	// 0-> interior node
 			public int axis;
-			public BBox bounds;
 		}
 
 		private struct PointComparator : IComparer<BVHPrimitiveInfo>
@@ -73,7 +73,7 @@ namespace Raytracing
 			{
 				primitiveNumber = pn;
 				bounds = box;
-				centroid = 0.5f * box.pMin + 0.5f * box.pMax;
+				centroid = 0.5f * box.pMin.Xyz + 0.5f * box.pMax.Xyz;
 			}
 
 			public int primitiveNumber;

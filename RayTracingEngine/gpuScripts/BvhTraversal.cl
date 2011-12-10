@@ -5,11 +5,12 @@
 
 // BVH specific data structures
 typedef struct {
+	BBox	bounds;
 	int		primitivesOffset;
 	int		secondChildOffset;
 	int		nPrimitives;	// 0 -> interior node
 	int		axis;
-	BBox	bounds;
+	
 } BvhNode;
 
 float
@@ -45,16 +46,11 @@ getIntersection(
 	int nodeNum = 0;
 	int todo[32];
 
-
-	// Test first prim
-	//Triangle tri = primitives[0];
-	//float t = rayTriIntersect(ray, tri,&u, &v,&tempCP, &tempSN);
-	//return t/3.0f;
-	//return (t < HUGE_VALF) ? 0.9f : 0.2f;
-
-	BvhNode tn = nodes[0];
-
-	return (tn.nPrimitives == 1) ? 0.8f : 0.0f;
+	// Why is primitivesOffset holding the values for nPrimitives?!?
+	//return (nodes[0].primitivesOffset == 1) ? 0.8f : 0.0f;
+	//return (nodes[0].secondChildOffset == 1) ? 0.8f : 0.0f;
+	//return (nodes[0].nPrimitives == 1) ? 0.8f : 0.0f;
+	//return (nodes[0].axis == 1) ? 0.8f : 0.0f;
 
 	// Traverse tree
 	while(true)
@@ -153,14 +149,13 @@ __global	read_only	float8*		pointLights,
 	
 	float4 collisionPoint, surfaceNormal;
 
-	Ray currentRay = rayStack[0];
-	int materialIndex;
-	float distence = getIntersection(&currentRay, nodes, primitives, &collisionPoint, &surfaceNormal, &materialIndex);
+	//Ray currentRay = rayStack[0];
+	//int materialIndex;
+	//float distence = getIntersection(&currentRay, nodes, primitives, &collisionPoint, &surfaceNormal, &materialIndex);
 
-	color = (float4)(distence);
-	//color = (float4)(nodes[0].bounds.p[1].x);
+	//color = (float4)(distence);
 
-	/*
+	
 	while (stackHeight > 0 && raysCast < 4)
 	{
 		stackHeight--;
@@ -168,7 +163,7 @@ __global	read_only	float8*		pointLights,
 		float currentRayWeight = rayWeights[stackHeight];
 
 		int materialIndex;
-		//float distence = getIntersection(&currentRay, nodes, primitives, &collisionPoint, &surfaceNormal, &materialIndex);
+		float distence = getIntersection(&currentRay, nodes, primitives, &collisionPoint, &surfaceNormal, &materialIndex);
 		
 		//color = float4(distence,0,0,1);
 		
@@ -265,7 +260,7 @@ __global	read_only	float8*		pointLights,
 		
 		raysCast++;
 	}
-	*/
+	
 
 	// Write the resulting color to the camera texture.
 	write_imagef(outputImage, coord, color);
