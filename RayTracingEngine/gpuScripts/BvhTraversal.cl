@@ -5,11 +5,11 @@
 
 // BVH specific data structures
 typedef struct {
-	BBox	bounds;
 	int		primitivesOffset;
 	int		secondChildOffset;
 	int		nPrimitives;	// 0 -> interior node
 	int		axis;
+	BBox	bounds;
 } BvhNode;
 
 float
@@ -22,7 +22,6 @@ getIntersection(
 							float4*		surfaceNormal,		// Out: surface normal and return the distence.
 							int*		materialIndex)		// Out: index of the material to use
 {
-	//return (float)nodes[0].nPrimitives + 0.5f;
 
 	float minT = INFINITY;
 	int primHit = 0;
@@ -46,9 +45,16 @@ getIntersection(
 	int nodeNum = 0;
 	int todo[32];
 
-	//float testX = ray->direction.x;
-	//return 2.0f / 2.3f;
-	//return nodes[0].nPrimitives;
+
+	// Test first prim
+	//Triangle tri = primitives[0];
+	//float t = rayTriIntersect(ray, tri,&u, &v,&tempCP, &tempSN);
+	//return t/3.0f;
+	//return (t < HUGE_VALF) ? 0.9f : 0.2f;
+
+	BvhNode tn = nodes[0];
+
+	return (tn.nPrimitives == 1) ? 0.8f : 0.0f;
 
 	// Traverse tree
 	while(true)
@@ -138,6 +144,8 @@ __global	read_only	float8*		pointLights,
 	// Create the primary ray in world coordinates
 	rayStack[0] = unprojectPrimaryRay(coord, size, cameraPosition, unprojectionMatrix);
 	rayWeights[0] = 1.0f;
+	rayStack[0].tMin = 0;
+	rayStack[0].tMax = INFINITY;
 	stackHeight++;
 
 	// Vector to hold the final output color.

@@ -23,11 +23,11 @@ namespace Raytracing
 		[StructLayout(LayoutKind.Sequential)]
 		public struct LinearBVHNode
 		{
-			public BBox bounds;
 			public int primitivesOffset;
 			public int secondChildOffset;
 			public int nPrimitives;	// 0-> interior node
 			public int axis;
+			public BBox bounds;
 		}
 
 		private struct PointComparator : IComparer<BVHPrimitiveInfo>
@@ -363,7 +363,9 @@ namespace Raytracing
 					{
 						for (int i = 0; i < node.nPrimitives; i++)
 						{
-							float t = ray.intersects(_primitives[node.primitivesOffset + i]);
+							// Intersect primitives
+							Triangle tri = _primitives[node.primitivesOffset + i];
+							float t = ray.intersects(tri);
 							if( t < minT )
 							{
 								hit = true;
