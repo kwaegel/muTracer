@@ -8,14 +8,14 @@ bool rayBBoxIntersectP(	private Ray*	ray,
 {
 	float4 orig = ray->origin;
 
-	/*
+	
 	// Vectorized version
 	// for select(a,b,c) => memberwise x= c ? b : a
 	// assuming true = -1 and false = 0
 	// Since select looks at the MSB (sign bit), we can use invDir directly
 	//    in our bounds selecting instead of dirIsNeg.
-	float4 tMinV = (select(bounds.p[0], bounds.p[1], invDir) - orig) * invDir;
-	float4 tMaxV = (select(bounds.p[1], bounds.p[0], invDir) - orig) * invDir;
+	float4 tMinV = (select(bounds.p[0], bounds.p[1], as_int4(invDir) ) - orig) * invDir;
+	float4 tMaxV = (select(bounds.p[1], bounds.p[0], as_int4(invDir) ) - orig) * invDir;
 	if (tMinV.x > tMaxV.y || tMinV.y > tMaxV.x)
 		return false;
 	float tMin = max(tMinV.x, tMinV.y);
@@ -25,8 +25,9 @@ bool rayBBoxIntersectP(	private Ray*	ray,
 	tMin = max(tMin, tMinV.z);
 	tMax = min(tMax, tMaxV.z);
 	return (tMin < ray->tMax) && (tMax > ray->tMin);
-	*/
+	
 
+	/*
 	float  tMin = (bounds.p[    dirIsNeg.x].x - orig.x) * invDir.x;
 	float  tMax = (bounds.p[1 - dirIsNeg.x].x - orig.x) * invDir.x;
 	float tyMin = (bounds.p[    dirIsNeg.y].y - orig.y) * invDir.y;
@@ -34,17 +35,18 @@ bool rayBBoxIntersectP(	private Ray*	ray,
 	if ((tMin > tyMax) || (tyMin > tMax))
 		return false;
 
-	tMin = max(tMin, tyMin);	//if (tyMin > tMin) tMin = tyMin;
-	tMax = min(tMax, tyMax);	//if (tyMax < tMax) tMax = tyMax;
+	if (tyMin > tMin) tMin = tyMin; //tMin = max(tMin, tyMin);
+	if (tyMax < tMax) tMax = tyMax; //tMax = min(tMax, tyMax);
 
 	float tzMin = (bounds.p[    dirIsNeg.z].z - orig.z) * invDir.z;
 	float tzMax = (bounds.p[1 - dirIsNeg.z].z - orig.z) * invDir.z;
 	if ((tMin > tzMax) || (tzMin > tMax))
 		return false;
-	tMin = max(tMin, tzMin);	//if (tzMin > tMin) tMin = tzMin;
-	tMax = min(tMax, tzMax);	//if (tzMax < tMax) tMax = tzMax;
+	if (tzMin > tMin) tMin = tzMin; //tMin = max(tMin, tzMin);
+	if (tzMax < tMax) tMax = tzMax; //tMax = min(tMax, tzMax);
 
 	return (tMin < ray->tMax) && (tMax > ray->tMin);
+	*/
 }
 
 float
