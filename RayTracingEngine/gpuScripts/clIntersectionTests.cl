@@ -90,6 +90,10 @@ rayTriIntersect(	private Ray*		ray,
 	*collisionPoint = ray->origin + t * ray->direction;
 	*surfaceNormal = fast_normalize( cross(edge1, edge2) );
 
+	// Invert surface normal to handle double-sided intersection
+	if (dot(*surfaceNormal, -ray->direction) < 0)
+		*surfaceNormal = -*surfaceNormal;
+
 	return t;
 }
 
