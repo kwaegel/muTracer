@@ -16,6 +16,7 @@ namespace Raytracing.Primitives
 		public float Transparency;
 		public float RefractiveIndex;
 		public float phongExponent;
+		public float padding;
 
 		public Material(float diffuse, float specular, float ambient)
 			:this(diffuse, specular, ambient, 0, 0, 1, 0)
@@ -54,6 +55,7 @@ namespace Raytracing.Primitives
 			}
 
 			this.phongExponent = phongExponent;
+			padding = 0;
 		}
 
 		public override bool Equals(object obj)
