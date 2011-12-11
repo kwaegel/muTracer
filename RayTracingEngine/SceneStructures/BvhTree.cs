@@ -158,12 +158,14 @@ namespace Raytracing
 		BVHBuildNode recursiveBuild(List<BVHPrimitiveInfo> buildData, int start, int end, ref int totalNodes, List<Triangle> orderedPrims)
 		{
 #if DEBUG
-			indent += "  ";
+			indent += " ";
 #endif
 
 			totalNodes++;
 
 			BVHBuildNode node = new BVHBuildNode();
+
+			// Compute bounds for all primitives in this node
 			BBox bbox = new BBox(true);
 			for (int i=start; i<end; ++i)
 			{
@@ -183,8 +185,9 @@ namespace Raytracing
 				node.initLeaf(firstPrimOffset, nPrimitives, bbox);
 			}
 			else
-			{
-				//split
+			{//split
+				
+				// Compute centroid bounds and select longest dimension as the split axis
 				BBox centroidBounds = new BBox(true);
 				for (int i = start; i < end; i++)
 				{
@@ -195,8 +198,7 @@ namespace Raytracing
 				int mid = (start + end) / 2;
 				if ( centroidBounds.pMax.axisValue(dim) == centroidBounds.pMin.axisValue(dim) )
 				{
-					// Degenerate shapes with identical centroids
-					// Create leaf node
+					// Centroid bounds have zero volume, so just create a leaf node
 					int firstPrimOffset = orderedPrims.Count;
 					for (int i = start; i < end; ++i)
 					{
@@ -210,7 +212,7 @@ namespace Raytracing
 				// partition primitives
 				if (nPrimitives <= 4)
 				{
-					// SAH is not worth it here
+					// SAH is not worth it here. Split into equal sized subsets
 					mid = (start + end) / 2;
 					PointComparator midComp = new PointComparator(dim);
 					int sortCount = end - start;
@@ -247,7 +249,7 @@ namespace Raytracing
 							b1.union(buckets[j].bounds);
 							count1 += buckets[j].count;
 						}
-						cost[i] = 0.125f + (count0 * b0.surfaceArea() + count1 * b1.surfaceArea()) / bbox.surfaceArea();
+						cost[i] = 2.0f + (count0 * b0.surfaceArea() + count1 * b1.surfaceArea()) / bbox.surfaceArea();
 					}
 
 					// Find bucket to split at that minimizes SAH
@@ -306,7 +308,7 @@ namespace Raytracing
 				Console.WriteLine(indent + " Prims: { " + String.Join(",", nodePrims) + " }");
 			}
 
-			indent = indent.Substring(0, indent.Length - 2);
+			indent = indent.Substring(0, indent.Length - 1);
 #endif
 			return node;
 		} // end recursive build

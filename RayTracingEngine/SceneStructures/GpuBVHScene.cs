@@ -34,6 +34,7 @@ namespace Raytracing.SceneStructures
 			_primitives = new List<Triangle>();
 			_materialCache = new MaterialCache(_commandQueue);
 			_lights = new List<SimplePointLight>();
+			_maxPrims = maxPrimsPerNode;
 		}
 
 		public GpuBVHScene(ComputeCommandQueue commandQueue, List<Triangle> prims, Color4 background, int maxPrimsPerNode) 
@@ -44,6 +45,7 @@ namespace Raytracing.SceneStructures
 			_materialCache = new MaterialCache(_commandQueue);
 			rebuildTree();
 			_lights = new List<SimplePointLight>();
+			_maxPrims = maxPrimsPerNode;
 		}
 
 		public void Dispose()
