@@ -21,6 +21,7 @@ getIntersection(
 
 							float4*		collisionPoint,		// Out: collision point and surface normal
 							float4*		surfaceNormal,		// Out: surface normal and return the distence.
+							float4*		surfaceColor,
 							int*		materialIndex)		// Out: index of the material to use
 {
 
@@ -30,7 +31,7 @@ getIntersection(
 	
 	// Temp for intersection. Move to calling function.
 	float u=0, v=0;
-	float4 tempCP, tempSN;
+	float4 tempCP, tempSN, tempSC;
 
 	float4 invDir = 1.0f/ray->direction;
 	// select(a,b,c) => memberwise MSB[C] ? b : a
@@ -45,12 +46,6 @@ getIntersection(
 	int todoOffset = 0;
 	int nodeNum = 0;
 	int todo[32];
-
-	// Why is primitivesOffset holding the values for nPrimitives?!?
-	//return (nodes[0].primitivesOffset == 1) ? 0.8f : 0.0f;
-	//return (nodes[0].secondChildOffset == 1) ? 0.8f : 0.0f;
-	//return (nodes[0].nPrimitives == 1) ? 0.8f : 0.0f;
-	//return (nodes[0].axis == 1) ? 0.8f : 0.0f;
 
 	// Traverse tree
 	while(true)
@@ -71,7 +66,7 @@ getIntersection(
 
 					float t = rayTriIntersect(ray, tri,
 											&u, &v,
-											&tempCP, &tempSN);
+											&tempCP, &tempSN, &tempSC);
 					if (t < minT)
 					{
 						hit = true;
@@ -79,6 +74,7 @@ getIntersection(
 						*collisionPoint = tempCP;
 						*surfaceNormal = tempSN;
 						*materialIndex = (int)tri.p2.w;// Packed value
+						*surfaceColor = tempSC;
 					}
 				}
 				if (todoOffset == 0) break;	// No more tests to be done
@@ -147,7 +143,7 @@ __global	read_only	float8*		pointLights,
 	// Vector to hold the final output color.
 	float4 color;
 	
-	float4 collisionPoint, surfaceNormal;
+	float4 collisionPoint, surfaceNormal, surfaceColor;
 	
 	while (stackHeight > 0 && raysCast < 4)
 	{
@@ -156,7 +152,7 @@ __global	read_only	float8*		pointLights,
 		float currentRayWeight = rayWeights[stackHeight];
 
 		int materialIndex;
-		float distence = getIntersection(&currentRay, nodes, primitives, &collisionPoint, &surfaceNormal, &materialIndex);
+		float distence = getIntersection(&currentRay, nodes, primitives, &collisionPoint, &surfaceNormal, &surfaceColor, &materialIndex);
 		
 		// If the ray has hit somthing, draw the color of that object.
 		if (distence < INFINITY)
@@ -165,7 +161,7 @@ __global	read_only	float8*		pointLights,
 
 			// Get the material properties.
 			Material mat = materials[materialIndex];
-			float4 objectColor = mat.color;
+			float4 objectColor = surfaceColor; //mat.color;
 			float diffusion = 1.0f - mat.reflectivity - mat.transparency;
 
 			// Calculate the cos of theta for both reflecton and refraction
@@ -226,8 +222,8 @@ __global	read_only	float8*		pointLights,
 
 				// check for shadowing. Reuse collisionPoint and surfaceNormal as they are no longer needed.
 				Ray shadowRay = {collisionPoint - currentRay.direction * distence*0.0004f, lightDirection};
-				float4 tempCP, tempSN;
-				float shadowRayDistence = getIntersection(&shadowRay, nodes, primitives, &tempCP, &tempSN, &materialIndex);
+				float4 tempCP, tempSN, tempSC;
+				float shadowRayDistence = getIntersection(&shadowRay, nodes, primitives, &tempCP, &tempSN, &tempSC, &materialIndex);
 
 				bool isInShadow = shadowRayDistence < lightDistence;
 

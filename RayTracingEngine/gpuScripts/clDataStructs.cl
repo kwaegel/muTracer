@@ -33,9 +33,9 @@ typedef struct {
 
 // The material index is packed into p2.w
 typedef struct {
-	float4 p0;
-	float4 p1;
-	float4 p2;	// Last point plus packed material index
+	float4 p0, p1, p2; // Last point includes packed material index in w
+	float4 c0, c1, c2;
+	float4 n0, n1, n2;
 } Triangle;
 
 typedef struct {

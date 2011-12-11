@@ -12,9 +12,7 @@ bool rayBBoxIntersectP(	private Ray*	ray,
 	// for select(a,b,c) => memberwise x= c ? b : a
 	// assuming true = -1 and false = 0
 	// Since select looks at the MSB (sign bit), we can use invDir directly
-	//    in our bounds selecting instead of dirIsNeg.
-	//float4 tMinV = (select(bounds.p[0], bounds.p[1], as_int4(invDir) ) - orig) * invDir;
-	//float4 tMaxV = (select(bounds.p[1], bounds.p[0], as_int4(invDir) ) - orig) * invDir;
+	// in our bounds select() instead of dirIsNeg.
 	float4 tMinV = (select(bounds.pMin, bounds.pMax, as_int4(invDir) ) - orig) * invDir;
 	float4 tMaxV = (select(bounds.pMax, bounds.pMin, as_int4(invDir) ) - orig) * invDir;
 	if (tMinV.x > tMaxV.y || tMinV.y > tMaxV.x)
@@ -34,7 +32,8 @@ rayTriIntersect(	private Ray*		ray,
 					private float*		u,
 					private float*		v,
 					private float4*		collisionPoint,
-					private float4*		surfaceNormal)
+					private float4*		surfaceNormal,
+					private float4*		surfaceColor)
 {
 	float EPSILON = 10e-5;	// epsilon
 
@@ -87,8 +86,14 @@ rayTriIntersect(	private Ray*		ray,
 	if (t < 0)
 		return HUGE_VALF;
 
+	// Calculate barycentric coordinates for interpolation
+	float alpha = 1 - *u - *v;
+	float beta = *u;
+	float gamma = *v;
+
 	*collisionPoint = ray->origin + t * ray->direction;
-	*surfaceNormal = fast_normalize( cross(edge1, edge2) );
+	*surfaceNormal = alpha*tri.n0+beta*tri.n1+gamma*tri.n2;
+	*surfaceColor = alpha*tri.c0+beta*tri.c1+gamma*tri.c2;
 
 	// Invert surface normal to handle double-sided intersection
 	// May not want this for refraction...

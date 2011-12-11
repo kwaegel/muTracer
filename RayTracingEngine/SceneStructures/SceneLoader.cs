@@ -56,7 +56,9 @@ namespace Raytracing
 			// Convert vertices to triangles
 			for (int i = 0; i < vertices.Count; i += 3)
 			{
-				Triangle t = new Triangle(vertices[i], vertices[i + 1], vertices[i + 2]);
+				Triangle t = new Triangle(vertices[i], vertices[i + 1], vertices[i + 2],
+					colors[i], colors[i + 1], colors[i + 2],
+					normals[i], normals[i + 1], normals[i + 2]);
 				triangles.Add(t);
 			}
 		}

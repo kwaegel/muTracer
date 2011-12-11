@@ -1,17 +1,22 @@
 ﻿using System;
 using System.Runtime.InteropServices;
 using OpenTK;
+using OpenTK.Graphics;
 
 using Raytracing.BoundingVolumes;
+
+using float4 = OpenTK.Vector4;
 
 namespace Raytracing.Primitives
 {
 	[StructLayout(LayoutKind.Sequential)]
 	unsafe public struct Triangle
 	{
-		public Vector4 p0;
-		public Vector4 p1;
-		public Vector4 p2;
+		public float4 p0;
+		public float4 p1;
+		public float4 p2;
+		public Color4 c0, c1, c2;
+		public float4 n0, n1, n2;
 
 		public Triangle(Vector3 point0, Vector3 point1, Vector3 point2)
 			:this(new Vector4(point0, 1.0f), new Vector4(point1, 1.0f), new Vector4(point2, 1.0f))
@@ -22,6 +27,39 @@ namespace Raytracing.Primitives
 			p0 = point0;
 			p1 = point1;
 			p2 = point2;
+
+			// Use default vertex color
+			c0 = c1 = c2 = Color4.White;
+
+			// Use cross probuct to compute default normals
+			Vector3 edge1 = new Vector3(point1 - point0);
+			Vector3 edge2 = new Vector3(point2 - point0);
+			Vector3 norm = Vector3.Cross(edge1, edge2);
+			norm.Normalize();
+			n0 = n1 = n2 = new float4(norm);
+		}
+
+		public Triangle(Vector3 point0, Vector3 point1, Vector3 point2,
+			Color4 color0, Color4 color1, Color4 color2,
+			Vector3 norm0, Vector3 norm1, Vector3 norm2)
+			: this(new Vector4(point0, 1.0f), new Vector4(point1, 1.0f), new Vector4(point2, 1.0f),
+				color0, color1, color2,
+				new Vector4(norm0, 1.0f), new Vector4(norm1, 1.0f), new Vector4(norm2, 1.0f))
+		{ }
+
+		public Triangle(Vector4 point0, Vector4 point1, Vector4 point2,
+			Color4 color0, Color4 color1, Color4 color2,
+			float4 norm0, float4 norm1, float4 norm2)
+		{
+			p0 = point0;
+			p1 = point1;
+			p2 = point2;
+			c0 = color0;
+			c1 = color1;
+			c2 = color2;
+			n0 = norm0;
+			n1 = norm1;
+			n2 = norm2;
 		}
 
 		public Triangle(Vector3 point1, Vector3 point2, Vector3 point3, int materialIndex)

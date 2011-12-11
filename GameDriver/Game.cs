@@ -108,12 +108,13 @@ namespace Raytracing.Driver
 
 			// Load file
 			//string filename = @"C:\Users\Ky\School\770 - Graphics\RasterizationHW\examples3d\test.txt";
-			string filename = @"C:\Users\Ky\School\770 - Graphics\RasterizationHW\examples3d\biplane.txt";
-			List<Triangle> trisFromFile = new List<Triangle>();
-			SceneLoader.loadSceneFromFlatFile(filename, trisFromFile);
+			//string filename = @"C:\Users\Ky\School\770 - Graphics\RasterizationHW\examples3d\apple.txt";
+			//List<Triangle> trisFromFile = new List<Triangle>();
+			//SceneLoader.loadSceneFromFlatFile(filename, trisFromFile);
 
-			_world = new GpuBVHScene(_commandQueue, Color4.CornflowerBlue, 1);
-			buildScene(_world, trisFromFile);
+			_world = new GpuBVHScene(_commandQueue, Color4.CornflowerBlue, 8);
+			//buildScene(_world, trisFromFile);
+			buildScene(_world);
 			_world.rebuildTree();
 
 			
@@ -129,7 +130,6 @@ namespace Raytracing.Driver
 
 			try
 			{
-				//_camera = new GridCamera(this.ClientRectangle, _commandQueue, -Vector3.UnitZ, Vector3.UnitY, cameraPosition);
 				_camera = new GpuBvhCamera(this.ClientRectangle, _commandQueue, -Vector3.UnitZ, Vector3.UnitY, cameraPosition);
 				_camera.VerticalFieldOfView = vFOV;
 				_camera.NearPlane = nearClip;
@@ -173,11 +173,53 @@ namespace Raytracing.Driver
 			_commandQueue = new ComputeCommandQueue(_computeContext, device, ComputeCommandQueueFlags.None);
 		}
 
+		
+		private void buildScene(GpuBVHScene s)
+		{
+			Material red = new Material(Color4.Red);
+			Material green = new Material(Color4.DarkGreen, 0.25f);
+
+			//string filename = @"C:\Users\Ky\School\770 - Graphics\RasterizationHW\examples3d\test.txt";
+			string filename = @"C:\Users\Ky\School\770 - Graphics\RasterizationHW\examples3d\biplane.txt";
+			List<Triangle> trisFromFile = new List<Triangle>();
+			SceneLoader.loadSceneFromFlatFile(filename, trisFromFile);
+
+			foreach (Triangle t in trisFromFile)
+			{
+				s.add(t, red);
+			}
+
+			// Build room to surround model
+			List<Triangle> floor = buildFloor(-20, 20, -0.75f);
+			foreach (Triangle t in floor)
+			{
+				s.add(t, green);
+			}
+
+			s.addPointLight(new Vector3(0, 3, 1), Color4.White, 20.0f);
+		}
+
+		private List<Triangle> buildFloor(float min, float max, float y)
+		{
+			Vector3 v0 = new Vector3(min, y, min);
+			Vector3 v1 = new Vector3(min, y, max);
+			Vector3 v2 = new Vector3(max, y, max);
+			Vector3 v3 = new Vector3(max, y, min);
+
+			List<Triangle> tris = new List<Triangle>();
+			tris.Add(new Triangle(v0, v1, v2));
+			tris.Add(new Triangle(v0, v2, v3));
+
+			return tris;
+		}
+		
 
 		private void buildScene(GpuBVHScene s, List<Triangle> triangles)
 		{
 			Material red = new Material(Color4.Red);
 			Material green = new Material(Color4.DarkGreen);
+
+			s.addPointLight(new Vector3(0, 3, 1), Color4.White, 20.0f);
 
 			if (triangles != null)
 			{
@@ -201,8 +243,6 @@ namespace Raytracing.Driver
 				// Second material causes problems...
 				s.add(tri2, green);
 			}
-
-			s.addPointLight(new Vector3(0, 5, 0), Color4.White, 50);
 		}
 
         private void buildScene(GridScene s)
