@@ -97,8 +97,8 @@ rayTriIntersect(	private Ray*		ray,
 
 	// Invert surface normal to handle double-sided intersection
 	// May not want this for refraction...
-	if (dot(*surfaceNormal, -dir) < 0)
-		*surfaceNormal = -*surfaceNormal;
+	//if (dot(*surfaceNormal, -dir) < 0)
+	//	*surfaceNormal = -*surfaceNormal;
 
 	return t;
 }

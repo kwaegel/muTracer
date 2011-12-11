@@ -15,10 +15,11 @@ typedef struct {
 
 
 typedef struct {
-	float4 color;
+	float kd, ks, ka;
 	float reflectivity;
 	float transparency;
 	float refractiveIndex;
+	float phongExponent;
 	float padding;
 } Material;
 

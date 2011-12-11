@@ -9,24 +9,36 @@ namespace Raytracing.Primitives
 	[StructLayout(LayoutKind.Sequential)]
 	public struct Material
 	{
-		public Color4 Color;
+		public float kd;	// diffuse reflection value
+		public float ks;	// specular reflection value
+		public float ka;	// ambient reflection value
 		public float Reflectivity;
 		public float Transparency;
 		public float RefractiveIndex;
 		public float phongExponent;
 
-		public Material(Color4 c)
-			: this(c, 0, 0, 0, 0)
+		public Material(float diffuse, float specular, float ambient)
+			:this(diffuse, specular, ambient, 0, 0, 1, 0)
 		{ }
 
-		public Material(Color4 c, float reflectivity)
-			: this(c, reflectivity, 0, 0, 0)
-		{
-		}
+		public Material(float diffuse, float specular, float ambient, float reflectivity)
+			: this(diffuse, specular, ambient, reflectivity, 0, 1, 0)
+		{ }
 
-		public Material(Color4 c, float reflectivity, float transparency, float n, float phongExponent)
+		public Material(float diffuse, float specular, float ambient, float reflectivity, float transparency)
+			: this(diffuse, specular, ambient, reflectivity, transparency, 1, 0)
+		{ }
+
+		public Material(float reflectivity)
+			: this(0,0,0, reflectivity, 0, 1, 0)
+		{ }
+
+		public Material(float diffuse, float specular, float ambient,
+			float reflectivity, float transparency, float n, float phongExponent)
 		{
-			this.Color = c;
+			kd = diffuse;
+			ks = specular;
+			ka = ambient;
 			this.RefractiveIndex = n;
 
 			float partialSum = reflectivity + transparency;
@@ -46,24 +58,17 @@ namespace Raytracing.Primitives
 
 		public override bool Equals(object obj)
 		{
-			// If parameter is null return false.
-			if (obj == null)
-			{
-				return false;
-			}
-
 			if (obj is Material)
 			{
 				Material m2 = (Material)obj;
-				return this.Color == m2.Color
+				return kd == m2.kd 
+					&& ks == m2.ks 
+					&& ka == m2.ka
 					&& this.Reflectivity == m2.Reflectivity
 					&& this.Transparency == m2.Transparency
 					&& this.RefractiveIndex == m2.RefractiveIndex;
 			}
-			else
-			{
-				return false;
-			}
+			return false;
 		}
 
 		// Not used

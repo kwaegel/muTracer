@@ -23,3 +23,8 @@ transformVector(	const	float16		transform,
 
 	return result;
 }
+
+float4 bisector(float4 lhs, float4 rhs)
+{
+	return fast_normalize(lhs+rhs);
+}

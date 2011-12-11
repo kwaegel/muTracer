@@ -13,7 +13,7 @@ namespace Raytracing.Primitives
 {
 	public abstract class AbstractPrimitive
 	{
-		protected static Material DefaultMaterial = new Material(Color4.Gray);
+		protected static Material DefaultMaterial = new Material();
 
 		public abstract Vector3 Position
 		{

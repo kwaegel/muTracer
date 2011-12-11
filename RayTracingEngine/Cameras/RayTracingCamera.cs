@@ -257,7 +257,7 @@ namespace Raytracing
 
 				Color4 color = Color4.Black;
 
-				float diffuseCoef = mat.Color.A;	//Math.Max(mat.Color.A-mat.Reflectivity, 0);	// Opacaty - reflectivity = diffuse lighting
+				float diffuseCoef = mat.kd;	//Math.Max(mat.Color.A-mat.Reflectivity, 0);	// Opacaty - reflectivity = diffuse lighting
 
 				// Add contribution of direct lighting
 				// Loop over lights to check for shadowing

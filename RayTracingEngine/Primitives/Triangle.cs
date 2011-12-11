@@ -29,7 +29,25 @@ namespace Raytracing.Primitives
 			p2 = point2;
 
 			// Use default vertex color
-			c0 = c1 = c2 = Color4.White;
+			c0 = c1 = c2 = Color4.HotPink;
+
+			// Use cross probuct to compute default normals
+			Vector3 edge1 = new Vector3(point1 - point0);
+			Vector3 edge2 = new Vector3(point2 - point0);
+			Vector3 norm = Vector3.Cross(edge1, edge2);
+			norm.Normalize();
+			n0 = n1 = n2 = new float4(norm);
+		}
+		public Triangle(Vector3 point0, Vector3 point1, Vector3 point2,
+			Color4 color0, Color4 color1, Color4 color2)
+		{
+			p0 = new Vector4(point0, 1.0f);
+			p1 = new Vector4(point1, 1.0f);
+			p2 = new Vector4(point2, 1.0f);
+
+			c0 = color0;
+			c1 = color1;
+			c2 = color2;
 
 			// Use cross probuct to compute default normals
 			Vector3 edge1 = new Vector3(point1 - point0);

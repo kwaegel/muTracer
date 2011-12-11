@@ -161,7 +161,7 @@ __global	read_only	float8*		pointLights,
 
 			// Get the material properties.
 			Material mat = materials[materialIndex];
-			float4 objectColor = surfaceColor; //mat.color;
+			float4 objectColor = surfaceColor;
 			float diffusion = 1.0f - mat.reflectivity - mat.transparency;
 
 			// Calculate the cos of theta for both reflecton and refraction
@@ -220,6 +220,11 @@ __global	read_only	float8*		pointLights,
 
 				float shade = clamp(dot(surfaceNormal, lightDirection), 0.0f, 1.0f);	// Clamped cosine shading
 
+				// Phong highlight
+				float4 bisector = fast_normalize(lightDirection - currentRay.direction);
+				float specularCoef = mat.ks * powr(max(0.0f, dot(surfaceNormal, bisector)), mat.phongExponent);
+				float4 specularColor = specularCoef * lightColor;
+
 				// check for shadowing. Reuse collisionPoint and surfaceNormal as they are no longer needed.
 				Ray shadowRay = {collisionPoint - currentRay.direction * distence*0.0004f, lightDirection};
 				float4 tempCP, tempSN, tempSC;
@@ -236,7 +241,8 @@ __global	read_only	float8*		pointLights,
 			
 				// Add light contribution to total color.
 				// Multiply by shadow factor to ignore the contribution of hidden lights.
-				color += lightContrib * !isInShadow;
+				color += (lightContrib) * !isInShadow;
+				//color += (specularColor) * !isInShadow;
 			}
 		}
 		else

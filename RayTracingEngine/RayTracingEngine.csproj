@@ -67,7 +67,7 @@
     <Compile Include="BoundingVolumes\Frustum.cs" />
     <Compile Include="Cameras\ClTextureCamera.cs" />
     <Compile Include="Cameras\GpuBvhCamera.cs" />
-    <Compile Include="Cameras\RayTracingCamera.cs" />
+    <None Include="Cameras\RayTracingCamera.cs" />
     <None Include="gpuScripts\rayHelper.cl">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>

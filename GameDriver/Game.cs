@@ -176,39 +176,39 @@ namespace Raytracing.Driver
 		
 		private void buildScene(GpuBVHScene s)
 		{
-			Material red = new Material(Color4.Red);
-			Material green = new Material(Color4.DarkGreen, 0.25f);
+			Material matte = new Material(1, 3, 1, 0, 0, 1, 64);
+			Material green = new Material(1, 3, 1, 0, 0, 1, 64);
 
-			//string filename = @"C:\Users\Ky\School\770 - Graphics\RasterizationHW\examples3d\test.txt";
 			string filename = @"C:\Users\Ky\School\770 - Graphics\RasterizationHW\examples3d\biplane.txt";
 			List<Triangle> trisFromFile = new List<Triangle>();
 			SceneLoader.loadSceneFromFlatFile(filename, trisFromFile);
 
 			foreach (Triangle t in trisFromFile)
 			{
-				s.add(t, red);
+				s.add(t, matte);
 			}
 
 			// Build room to surround model
-			List<Triangle> floor = buildFloor(-20, 20, -0.75f);
+			List<Triangle> floor = buildFloor(-20, 20, -0.75f, Color4.DarkGreen);
 			foreach (Triangle t in floor)
 			{
 				s.add(t, green);
 			}
 
-			s.addPointLight(new Vector3(0, 3, 1), Color4.White, 20.0f);
+			s.addPointLight(new Vector3(0, 3, 1), Color4.White, 15.0f);
 		}
 
-		private List<Triangle> buildFloor(float min, float max, float y)
+		private List<Triangle> buildFloor(float min, float max, float y, Color4 floorColor)
 		{
+
 			Vector3 v0 = new Vector3(min, y, min);
 			Vector3 v1 = new Vector3(min, y, max);
 			Vector3 v2 = new Vector3(max, y, max);
 			Vector3 v3 = new Vector3(max, y, min);
 
 			List<Triangle> tris = new List<Triangle>();
-			tris.Add(new Triangle(v0, v1, v2));
-			tris.Add(new Triangle(v0, v2, v3));
+			tris.Add(new Triangle(v0, v1, v2, floorColor, floorColor, floorColor));
+			tris.Add(new Triangle(v0, v2, v3, floorColor, floorColor, floorColor));
 
 			return tris;
 		}
@@ -216,8 +216,8 @@ namespace Raytracing.Driver
 
 		private void buildScene(GpuBVHScene s, List<Triangle> triangles)
 		{
-			Material red = new Material(Color4.Red);
-			Material green = new Material(Color4.DarkGreen);
+			Material red = new Material(1,1,1, 0.1f);
+			Material green = new Material(0.5f, 0.5f, 0.5f, 0.75f);
 
 			s.addPointLight(new Vector3(0, 3, 1), Color4.White, 20.0f);
 
@@ -245,19 +245,9 @@ namespace Raytracing.Driver
 			}
 		}
 
+		/*
         private void buildScene(GridScene s)
         {
-			Ray r = new Ray(new Vector3(0.1f,0.1f,3.0f), new Vector3(0,0,-1.0f), 1);
-
-			/*
-			Triangle test = new Triangle(	new Vector3(0,0,0f),
-											new Vector3(0,1,0),
-											new Vector3(1,0,0),
-											0);
-
-			float testDist = test.rayTriIntersect(r);
-			*/
-
 			s.BackgroundColor = Color4.CornflowerBlue;
 
             Material redGlass = new Material(Color4.Gray, 0, 0.97f, 1.52f, 8);
@@ -314,6 +304,7 @@ namespace Raytracing.Driver
             //float mid = min + (max - min) / 2.0f;
            // s.addLight(new Vector3(mid, mid, mid), Color4.White, 2.0f);
         }
+		 * */
 		#endregion
 
 		/// <summary>

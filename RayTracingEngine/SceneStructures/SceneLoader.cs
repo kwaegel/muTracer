@@ -63,6 +63,7 @@ namespace Raytracing
 			}
 		}
 
+		/*
 		public static bool loadSceneFromXml(string filename, Scene scene, RayTracingCamera camera)
 		{
 			XmlTextReader reader = new XmlTextReader(filename);
@@ -194,5 +195,6 @@ namespace Raytracing
 
 			return new OpenTK.Graphics.Color4(r, g, b, a);
 		}
+		 * */
 	}
 }
