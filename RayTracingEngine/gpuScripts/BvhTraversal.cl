@@ -242,7 +242,7 @@ __global	read_only	float8*		pointLights,
 				// Add light contribution to total color.
 				// Multiply by shadow factor to ignore the contribution of hidden lights.
 				color += (lightContrib) * !isInShadow;
-				//color += (specularColor) * !isInShadow;
+				color += (specularColor) * !isInShadow;
 			}
 		}
 		else

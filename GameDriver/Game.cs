@@ -176,8 +176,8 @@ namespace Raytracing.Driver
 		
 		private void buildScene(GpuBVHScene s)
 		{
-			Material matte = new Material(1, 3, 1, 0, 0, 1, 64);
-			Material green = new Material(1, 3, 1, 0, 0, 1, 64);
+			Material matte = new Material(1, 5, 1, 0, 0, 1.2f, 64);
+			Material green = new Material(1, 0.9f, 1, 0.35f, 0, 1, 500);
 
 			string filename = @"C:\Users\Ky\School\770 - Graphics\RasterizationHW\examples3d\biplane.txt";
 			List<Triangle> trisFromFile = new List<Triangle>();
@@ -189,7 +189,7 @@ namespace Raytracing.Driver
 			}
 
 			// Build room to surround model
-			List<Triangle> floor = buildFloor(-20, 20, -0.75f, Color4.DarkGreen);
+			List<Triangle> floor = buildFloor(-100, 100, -0.75f, Color4.DarkGreen);
 			foreach (Triangle t in floor)
 			{
 				s.add(t, green);
